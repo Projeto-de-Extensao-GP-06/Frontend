@@ -22,6 +22,7 @@ export default function NovoUsuario({ usuarios, onCriarUsuario, onLogout }) {
   const [cargo, setCargo] = useState('Administrador')
   const [erro, setErro] = useState('')
   const [sucesso, setSucesso] = useState('')
+  const [carregando, setCarregando] = useState(false)
 
   function handleCriarUsuario(e) {
     e.preventDefault()
@@ -34,21 +35,29 @@ export default function NovoUsuario({ usuarios, onCriarUsuario, onLogout }) {
       setErro('Informe um e-mail válido.')
       return
     }
-    if (usuarios.some((usuario) => usuario.email.toLowerCase() === email.trim().toLowerCase())) {
+
+    const nomeCompletoTratado = nomeCompleto.trim()
+    const emailTratado = email.trim()
+
+    if (usuarios.some((usuario) => usuario.email.toLowerCase() === emailTratado.toLowerCase())) {
       setErro('Já existe um usuário cadastrado com este e-mail.')
       return
     }
 
-    onCriarUsuario({
-      id: Date.now(),
-      nomeCompleto: nomeCompleto.trim(),
-      email: email.trim(),
-      cargo,
-    })
-    setSucesso(`Usuário "${nomeCompleto.trim()}" cadastrado com sucesso.`)
-    setNomeCompleto('')
-    setEmail('')
-    setCargo('Administrador')
+    setCarregando(true)
+    setTimeout(() => {
+      onCriarUsuario({
+        id: Date.now(),
+        nomeCompleto: nomeCompletoTratado,
+        email: emailTratado,
+        cargo,
+      })
+      setCarregando(false)
+      setSucesso(`Usuário "${nomeCompletoTratado}" cadastrado com sucesso.`)
+      setNomeCompleto('')
+      setEmail('')
+      setCargo('Administrador')
+    }, 1200)
   }
 
   return (
@@ -142,8 +151,9 @@ export default function NovoUsuario({ usuarios, onCriarUsuario, onLogout }) {
             <button
               type="submit"
               className="btn-criar"
+              disabled={carregando}
             >
-              Criar usuário
+              {carregando ? 'Criando...' : 'Criar usuário'}
             </button>
           </div>
         </form>

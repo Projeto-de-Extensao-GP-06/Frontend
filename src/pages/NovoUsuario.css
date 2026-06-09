@@ -132,11 +132,14 @@
   color: #111827;
   background: #f9fafb;
   outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
   font-family: inherit;
 }
 
 .campo-claro input:focus,
 .campo-claro select:focus {
+  border-color: #1a2744;
+  box-shadow: 0 0 0 3px rgba(26, 39, 68, 0.1);
   background: #ffffff;
 }
 

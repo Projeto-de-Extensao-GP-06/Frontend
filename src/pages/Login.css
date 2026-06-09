@@ -147,6 +147,12 @@
   font-size: 0.9375rem;
   padding: 0.68rem 0.9rem;
   outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.campo > input:focus {
+  border-color: #c9a84c;
+  box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.15);
 }
 
 .campo > input::placeholder { color: #8fa8cc; }
@@ -161,6 +167,12 @@
   border: 1.5px solid #2d4070;
   border-radius: 10px;
   padding: 0 0.75rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input-com-icone:focus-within {
+  border-color: #c9a84c;
+  box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.15);
 }
 
 .input-com-icone input {
@@ -219,6 +231,12 @@
   text-align: center !important;
   padding: 0 !important;
   outline: none !important;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.otp-input:focus {
+  border-color: #c9a84c !important;
+  box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.15) !important;
 }
 
 .otp-input::placeholder { color: #3a5070 !important; }
@@ -385,11 +403,17 @@
 
 .campo input {
   padding: 0.65rem 0.85rem;
-  border: 1.5px;
+  border: 1.5px solid #d1d5db;
   border-radius: 8px;
   font-size: 0.95rem;
   color: #ffffff;
+  transition: border-color 0.2s;
   outline: none;
+}
+
+.campo input:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
 }
 
 .login-erro {
