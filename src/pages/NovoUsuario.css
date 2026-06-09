@@ -132,14 +132,11 @@
   color: #111827;
   background: #f9fafb;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
   font-family: inherit;
 }
 
 .campo-claro input:focus,
 .campo-claro select:focus {
-  border-color: #1a2744;
-  box-shadow: 0 0 0 3px rgba(26, 39, 68, 0.1);
   background: #ffffff;
 }
 
@@ -216,4 +213,113 @@
 .btn-criar:disabled {
   opacity: 0.65;
   cursor: not-allowed;
+}
+
+/* ── Lista de usuários ──────────────────────────────────── */
+.usuarios-lista {
+  margin-top: 1.25rem;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 1.25rem;
+  box-shadow: 0 1px 10px rgba(0, 0, 0, 0.07);
+}
+
+.usuarios-lista-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.usuarios-lista h2 {
+  font-size: 1rem;
+  color: #1a2744;
+  margin: 0;
+}
+
+.usuarios-lista p {
+  margin: 0.2rem 0 0;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.usuarios-vazio {
+  background: #f9fafb;
+  border: 1px dashed #d1d5db;
+  border-radius: 10px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.usuarios-itens {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.usuario-item {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #f9fafb;
+  border: 1px solid #edf0f5;
+  border-radius: 10px;
+}
+
+.usuario-avatar {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #1a2744;
+  color: #ffffff;
+  font-size: 0.8125rem;
+  font-weight: 800;
+}
+
+.usuario-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.usuario-info strong {
+  color: #111827;
+  font-size: 0.9375rem;
+  overflow-wrap: anywhere;
+}
+
+.usuario-info span {
+  color: #6b7280;
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+
+.usuario-cargo {
+  color: #1a2744;
+  background: #eef2ff;
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .usuario-item {
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  .usuario-cargo {
+    grid-column: 2;
+    justify-self: start;
+  }
 }

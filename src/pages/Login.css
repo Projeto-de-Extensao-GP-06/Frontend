@@ -147,63 +147,46 @@
   font-size: 0.9375rem;
   padding: 0.68rem 0.9rem;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.campo > input:focus {
-  border-color: #c9a84c;
-  box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.15);
 }
 
 .campo > input::placeholder { color: #8fa8cc; }
 
 /* Input com ícone */
 .input-com-icone {
-  position: relative;
   display: flex;
   align-items: center;
-}
-
-.input-com-icone input {
+  gap: 0.55rem;
   width: 100%;
   background: #1c2e56;
   border: 1.5px solid #2d4070;
   border-radius: 10px;
-  color: #e8edf5;
-  font-size: 0.9375rem;
-  padding: 0.68rem 2.75rem 0.68rem 2.75rem;
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  padding: 0 0.75rem;
 }
 
-.input-com-icone input:focus {
-  border-color: #c9a84c;
-  box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.15);
+.input-com-icone input {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  background: transparent;
+  border: none;
+  color: #e8edf5;
+  font-size: 0.9375rem;
+  padding: 0.68rem 0;
+  outline: none;
 }
 
 .input-com-icone input::placeholder { color: #8fa8cc; }
 
-/* Input com ícone mas sem prefixo (só olho) */
-.input-com-icone:not(:has(.icone-prefixo)) input {
-  padding-left: 0.9rem;
-}
-
 .icone-prefixo {
-  position: absolute;
-  left: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
   color: #8fa8cc;
   display: flex;
   align-items: center;
+  flex: 0 0 auto;
   pointer-events: none;
 }
 
 .btn-olho {
-  position: absolute;
-  right: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
+  flex: 0 0 auto;
   background: none;
   border: none;
   color: #8fa8cc;
@@ -236,12 +219,6 @@
   text-align: center !important;
   padding: 0 !important;
   outline: none !important;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.otp-input:focus {
-  border-color: #c9a84c !important;
-  box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.15) !important;
 }
 
 .otp-input::placeholder { color: #3a5070 !important; }
@@ -408,17 +385,11 @@
 
 .campo input {
   padding: 0.65rem 0.85rem;
-  border: 1.5px solid #d1d5db;
+  border: 1.5px;
   border-radius: 8px;
   font-size: 0.95rem;
   color: #ffffff;
-  transition: border-color 0.2s;
   outline: none;
-}
-
-.campo input:focus {
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
 }
 
 .login-erro {
