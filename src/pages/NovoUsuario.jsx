@@ -14,7 +14,7 @@ const MOCK_USUARIO_LOGADO = {
 }
 
 // ── Componente ────────────────────────────────────────────
-export default function NovoUsuario({ onLogout }) {
+export default function NovoUsuario({ usuarios, onCriarUsuario, onLogout }) {
   const navigate = useNavigate()
   const [menuAberto, setMenuAberto] = useState(false)
   const [nomeCompleto, setNomeCompleto] = useState('')
@@ -36,11 +36,24 @@ export default function NovoUsuario({ onLogout }) {
       return
     }
 
-    // Mock: simula chamada à API
+    const nomeCompletoTratado = nomeCompleto.trim()
+    const emailTratado = email.trim()
+
+    if (usuarios.some((usuario) => usuario.email.toLowerCase() === emailTratado.toLowerCase())) {
+      setErro('Já existe um usuário cadastrado com este e-mail.')
+      return
+    }
+
     setCarregando(true)
     setTimeout(() => {
+      onCriarUsuario({
+        id: Date.now(),
+        nomeCompleto: nomeCompletoTratado,
+        email: emailTratado,
+        cargo,
+      })
       setCarregando(false)
-      setSucesso(`Usuário "${nomeCompleto}" criado com sucesso! Um e-mail foi enviado para ${email}.`)
+      setSucesso(`Usuário "${nomeCompletoTratado}" cadastrado com sucesso.`)
       setNomeCompleto('')
       setEmail('')
       setCargo('Administrador')
@@ -144,6 +157,40 @@ export default function NovoUsuario({ onLogout }) {
             </button>
           </div>
         </form>
+
+        <section className="usuarios-lista" aria-labelledby="usuarios-lista-titulo">
+          <div className="usuarios-lista-cabecalho">
+            <div>
+              <h2 id="usuarios-lista-titulo">Usuários cadastrados</h2>
+              <p>{usuarios.length} {usuarios.length === 1 ? 'usuário' : 'usuários'} na lista</p>
+            </div>
+          </div>
+
+          {usuarios.length === 0 ? (
+            <p className="usuarios-vazio">Nenhum usuário cadastrado ainda.</p>
+          ) : (
+            <ul className="usuarios-itens">
+              {usuarios.map((usuario) => (
+                <li key={usuario.id} className="usuario-item">
+                  <div className="usuario-avatar" aria-hidden="true">
+                    {usuario.nomeCompleto
+                      .split(' ')
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .map((parte) => parte[0])
+                      .join('')
+                      .toUpperCase()}
+                  </div>
+                  <div className="usuario-info">
+                    <strong>{usuario.nomeCompleto}</strong>
+                    <span>{usuario.email}</span>
+                  </div>
+                  <span className="usuario-cargo">{usuario.cargo}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </main>
     </div>
   )

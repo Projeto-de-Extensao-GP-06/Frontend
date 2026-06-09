@@ -4,8 +4,22 @@ import Login from './pages/Login'
 import NovoUsuario from './pages/NovoUsuario'
 import './App.css'
 
+const USUARIOS_INICIAIS = [
+  {
+    id: 1,
+    nomeCompleto: 'Thauany Barbosa',
+    email: 'thauany@escritorio.com',
+    cargo: 'Administrador',
+  },
+]
+
 function App() {
   const [autenticado, setAutenticado] = useState(false)
+  const [usuarios, setUsuarios] = useState(USUARIOS_INICIAIS)
+
+  function adicionarUsuario(usuario) {
+    setUsuarios((usuariosAtuais) => [usuario, ...usuariosAtuais])
+  }
 
   return (
     <BrowserRouter>
@@ -22,7 +36,13 @@ function App() {
           path="/usuarios/novo"
           element={
             autenticado
-              ? <NovoUsuario onLogout={() => setAutenticado(false)} />
+              ? (
+                <NovoUsuario
+                  usuarios={usuarios}
+                  onCriarUsuario={adicionarUsuario}
+                  onLogout={() => setAutenticado(false)}
+                />
+              )
               : <Navigate to="/" replace />
           }
         />
