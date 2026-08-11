@@ -1,0 +1,316 @@
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #0f2357;
+  color: #fff;
+  font-family: "DM Sans", sans-serif;
+}
+
+.login-page__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+}
+
+.login-page__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2.5rem;
+  user-select: none;
+}
+
+.login-page__brand-mark-wrap {
+  position: relative;
+  margin-bottom: 1.25rem;
+}
+
+.login-page__brand-mark {
+  width: 5rem;
+  height: 5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(6px);
+}
+
+.login-page__brand-icon {
+  color: #c9a96e;
+}
+
+.login-page__brand-glow {
+  position: absolute;
+  inset: -0.25rem;
+  z-index: -1;
+  border-radius: 1.5rem;
+  background: rgba(201, 169, 110, 0.2);
+  filter: blur(4px);
+}
+
+.login-page__title {
+  margin: 0;
+  color: #fff;
+  font-family: "Playfair Display", serif;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.login-page__subtitle {
+  max-width: 13.75rem;
+  margin: 0.5rem 0 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.login-page__divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.login-page__divider-line {
+  width: 2.5rem;
+  height: 1px;
+  border-radius: 999px;
+  background: rgba(201, 169, 110, 0.4);
+}
+
+.login-page__divider-dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 999px;
+  background: #c9a96e;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 24.375rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(12px);
+}
+
+.login-card__header {
+  padding: 1.25rem 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.login-card__title {
+  margin: 0;
+  color: #fff;
+  font-family: "Playfair Display", serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.login-card__subtitle {
+  margin: 0.125rem 0 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.75rem;
+}
+
+.login-card__body {
+  padding: 1.75rem 2rem;
+}
+
+.login-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.login-field__label {
+  display: block;
+  margin-bottom: 0.375rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.login-field__input-wrap {
+  position: relative;
+}
+
+.login-field__icon {
+  position: absolute;
+  left: 0.875rem;
+  top: 50%;
+  color: rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.login-field__input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 3rem;
+  padding: 0 1rem 0 2.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.login-field__input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.login-field__input:focus {
+  border-color: #c9a96e;
+  box-shadow: 0 0 0 2px rgba(201, 169, 110, 0.2);
+}
+
+.login-field__input--password {
+  padding-right: 3rem;
+}
+
+.login-field__toggle {
+  position: absolute;
+  right: 0.875rem;
+  top: 50%;
+  border: 0;
+  background: none;
+  padding: 0.25rem;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: color 0.2s ease;
+}
+
+.login-field__toggle:hover {
+  color: #fff;
+}
+
+.login-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  height: 3rem;
+  margin-top: 0.25rem;
+  border: 0;
+  border-radius: 0.75rem;
+  background: #c9a96e;
+  color: #0f2357;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease, opacity 0.2s ease;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.login-submit:hover {
+  background: #b8925a;
+}
+
+.login-submit:active {
+  background: #a88451;
+}
+
+.login-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.login-submit__spinner {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid rgba(15, 35, 87, 0.3);
+  border-top-color: #0f2357;
+  border-radius: 999px;
+  animation: login-spin 0.9s linear infinite;
+}
+
+.login-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.login-links__button {
+  border: 0;
+  background: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.login-links__button:hover {
+  color: #c9a96e;
+}
+
+.login-links__divider {
+  width: 1px;
+  height: 0.75rem;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.login-site-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 2rem;
+  border: 0;
+  background: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.login-site-link:hover {
+  color: #fff;
+}
+
+.login-footer {
+  margin: 0.75rem 0 0;
+  color: #c9a96e;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 640px) {
+  .login-card__header,
+  .login-card__body {
+    padding-inline: 1.25rem;
+  }
+
+  .login-page__content {
+    padding-inline: 1rem;
+  }
+}
+
+@keyframes login-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

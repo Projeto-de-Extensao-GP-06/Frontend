@@ -1,0 +1,44 @@
+.ui-switch {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  width: 2rem;
+  height: 1.15rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: #d1d5db;
+  outline: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.ui-switch[data-state="checked"] {
+  background: #0f2357;
+}
+
+.ui-switch:focus-visible {
+  box-shadow: 0 0 0 3px rgba(15, 35, 87, 0.18);
+}
+
+.ui-switch:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.ui-switch__thumb {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  background: #fff;
+  pointer-events: none;
+  transition: transform 0.2s ease;
+}
+
+.ui-switch__thumb[data-state="checked"] {
+  transform: translateX(calc(100% - 2px));
+}
+
+.ui-switch__thumb[data-state="unchecked"] {
+  transform: translateX(0);
+}

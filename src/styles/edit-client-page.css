@@ -1,0 +1,271 @@
+.edit-client-page {
+  padding: 1.5rem 1rem 2.5rem;
+  font-family: "DM Sans", sans-serif;
+}
+
+.edit-client-page--empty {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.edit-client-empty-text {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
+
+.edit-client-empty-button {
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  border: 0;
+  background: #0f2357;
+  color: #fff;
+}
+
+.edit-client-breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-bottom: 1.25rem;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: #9ca3af;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.edit-client-breadcrumb:hover {
+  color: #0f2357;
+}
+
+.edit-client-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.edit-client-avatar {
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  flex-shrink: 0;
+}
+
+.edit-client-avatar--pf {
+  background: #eef1f8;
+}
+
+.edit-client-avatar--pj {
+  background: #f5edd8;
+}
+
+.edit-client-avatar-icon--pf {
+  color: #0f2357;
+}
+
+.edit-client-avatar-icon--pj {
+  color: #8b6234;
+}
+
+.edit-client-header-copy {
+  min-width: 0;
+}
+
+.edit-client-kicker {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 0.75rem;
+}
+
+.edit-client-title {
+  margin: 0.25rem 0 0;
+  color: #0f2357;
+  font-family: "Playfair Display", serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.edit-client-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1.5rem;
+  padding: 0.25rem;
+  border-radius: 0.75rem;
+  background: #eef1f8;
+}
+
+.edit-client-tab {
+  flex: 1;
+  border: 0;
+  border-radius: 0.625rem;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  color: #6b7280;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.edit-client-tab:hover {
+  color: #374151;
+}
+
+.edit-client-tab.is-active {
+  background: #fff;
+  color: #0f2357;
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.08);
+}
+
+.edit-client-section {
+  display: grid;
+  gap: 1rem;
+}
+
+.edit-client-section--contacts {
+  gap: 1.25rem;
+}
+
+.edit-client-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.edit-client-grid--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.edit-client-grid--state {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  align-items: end;
+}
+
+.edit-client-grid-main {
+  min-width: 0;
+}
+
+.edit-client-state-field {
+  min-width: 0;
+}
+
+.edit-client-label {
+  display: block;
+  margin: 0 0 0.375rem;
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.edit-client-input,
+.edit-client-select {
+  width: 100%;
+  height: 2.75rem;
+  border: 1px solid #e4e8f2;
+  border-radius: 0.75rem;
+  background: #f4f6fa;
+  color: #1a2237;
+}
+
+.edit-client-input--mono {
+  font-family: "JetBrains Mono", monospace;
+}
+
+.edit-client-empty-card,
+.edit-client-contact-card {
+  padding: 1.25rem;
+  border: 1px solid #e8ecf4;
+  border-radius: 1.25rem;
+  background: #fff;
+}
+
+.edit-client-empty-card {
+  text-align: center;
+}
+
+.edit-client-primary-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.edit-client-primary-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: #c9a96e;
+}
+
+.edit-client-primary-label {
+  color: #c9a96e;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.edit-client-add-contact-button {
+  width: 100%;
+  height: 2.75rem;
+  border: 2px dashed #c7d0e8;
+  border-radius: 0.75rem;
+  background: #fff;
+  color: #0f2357;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.edit-client-add-contact-button:hover {
+  background: #eef1f8;
+}
+
+.edit-client-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.edit-client-button {
+  flex: 1;
+  height: 3rem;
+  border-radius: 0.75rem;
+}
+
+.edit-client-button--outline {
+  border: 1px solid #e4e8f2;
+  color: #374151;
+  background: #fff;
+}
+
+.edit-client-button--outline:hover {
+  background: #f4f6fa;
+}
+
+.edit-client-button--primary {
+  border: 0;
+  background: #0f2357;
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(15, 35, 87, 0.15);
+}
+
+.edit-client-button--primary:hover {
+  background: #1a3a7a;
+}
+
+@media (min-width: 640px) {
+  .edit-client-page {
+    padding-inline: 1.5rem;
+  }
+}

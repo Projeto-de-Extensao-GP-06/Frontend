@@ -1,0 +1,62 @@
+.status-badge,
+.priority-badge,
+.phase-badge {
+  display: inline-flex;
+  align-items: center;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 9999px;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-badge--active {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.status-badge--closed,
+.status-badge--accepted {
+  background: #ecfdf5;
+  color: #065f46;
+  border-color: #a7f3d0;
+}
+
+.status-badge--inactive,
+.status-badge--denied {
+  background: #fef2f2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+.status-badge--pending {
+  background: #fffbeb;
+  color: #92400e;
+  border-color: #fde68a;
+}
+
+.priority-badge--high {
+  background: #fef2f2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+.priority-badge--medium {
+  background: #fffbeb;
+  color: #92400e;
+  border-color: #fde68a;
+}
+
+.priority-badge--low {
+  background: #f0fdf4;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.phase-badge {
+  background: #eef1f8;
+  color: #0f2357;
+  border-color: #c7d0e8;
+}

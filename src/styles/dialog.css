@@ -1,0 +1,150 @@
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.5);
+  animation: dialog-fade-in 0.2s ease-out;
+}
+
+.dialog-overlay[data-state="closed"] {
+  animation: dialog-fade-out 0.2s ease-out;
+}
+
+.dialog-content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 50;
+  display: grid;
+  width: calc(100% - 2rem);
+  max-width: 32rem;
+  gap: 1rem;
+  padding: 1.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  background: #fff;
+  color: #111827;
+  box-shadow: 0 20px 50px rgba(15, 35, 87, 0.16);
+  transform: translate(-50%, -50%);
+  animation: dialog-pop-in 0.2s ease-out;
+}
+
+.dialog-content[data-state="closed"] {
+  animation: dialog-pop-out 0.2s ease-out;
+}
+
+.dialog-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0.25rem;
+  background: transparent;
+  color: #6b7280;
+  opacity: 0.8;
+  cursor: pointer;
+  transition: color 0.2s ease, opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.dialog-close:hover {
+  opacity: 1;
+  background: #f3f4f6;
+}
+
+.dialog-close:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(15, 35, 87, 0.18);
+}
+
+.dialog-close svg {
+  width: 1rem;
+  height: 1rem;
+  pointer-events: none;
+}
+
+.dialog-close__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.dialog-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  text-align: center;
+}
+
+.dialog-footer {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.5rem;
+}
+
+.dialog-title {
+  margin: 0;
+  color: #0f2357;
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.dialog-description {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+@media (min-width: 640px) {
+  .dialog-header {
+    text-align: left;
+  }
+
+  .dialog-footer {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+}
+
+@keyframes dialog-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes dialog-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes dialog-pop-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes dialog-pop-out {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.98);
+  }
+}

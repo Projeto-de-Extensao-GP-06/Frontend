@@ -1,0 +1,46 @@
+.scroll-area {
+  position: relative;
+  overflow: hidden;
+}
+
+.scroll-area__viewport {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  outline: none;
+}
+
+.scroll-area__viewport:focus-visible {
+  box-shadow: 0 0 0 3px rgba(15, 35, 87, 0.18);
+}
+
+.scroll-area__bar {
+  display: flex;
+  padding: 1px;
+  touch-action: none;
+  user-select: none;
+  transition: background-color 0.2s ease;
+}
+
+.scroll-area__bar--vertical {
+  width: 0.625rem;
+  height: 100%;
+  border-left: 1px solid transparent;
+}
+
+.scroll-area__bar--horizontal {
+  height: 0.625rem;
+  flex-direction: column;
+  border-top: 1px solid transparent;
+}
+
+.scroll-area__thumb {
+  position: relative;
+  flex: 1;
+  border-radius: 999px;
+  background: #d1d5db;
+}
+
+.scroll-area__thumb:hover {
+  background: #9ca3af;
+}

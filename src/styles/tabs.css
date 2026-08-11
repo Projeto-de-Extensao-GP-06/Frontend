@@ -1,0 +1,64 @@
+.ui-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ui-tabs__list {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.25rem;
+  width: fit-content;
+  padding: 3px;
+  border-radius: 0.75rem;
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.ui-tabs__trigger {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  height: calc(100% - 1px);
+  padding: 0.25rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 0.625rem;
+  background: transparent;
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  outline: none;
+  transition: color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ui-tabs__trigger[data-state="active"] {
+  background: #fff;
+  color: #0f2357;
+  box-shadow: 0 1px 3px rgba(15, 35, 87, 0.1);
+}
+
+.ui-tabs__trigger:focus-visible {
+  box-shadow: 0 0 0 3px rgba(15, 35, 87, 0.18);
+}
+
+.ui-tabs__trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.ui-tabs__trigger svg {
+  flex-shrink: 0;
+  pointer-events: none;
+  width: 1rem;
+  height: 1rem;
+}
+
+.ui-tabs__content {
+  flex: 1;
+  outline: none;
+}

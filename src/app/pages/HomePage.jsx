@@ -1,0 +1,257 @@
+import { useState } from "react";
+import { useNavigate } from "react-router";
+import { Plus, Search, Scale, Calendar, ChevronRight, FileText, Zap, TrendingUp, Clock, X, BarChart3 } from "lucide-react";
+import { StatusBadge, PriorityBadge, PhaseBadge } from "../components/StatusBadge";
+import { mockProcesses, mockRequests } from "../data/mockData";
+import "../../styles/home-page.css";
+const STATUS_OPTS = [{
+  value: "Todos",
+  label: "Todos os status"
+}, {
+  value: "ativo",
+  label: "Ativo"
+}, {
+  value: "encerrado",
+  label: "Encerrado"
+}, {
+  value: "inativo",
+  label: "Inativo"
+}];
+const PHASE_OPTS = ["Todas", "Inicial", "Citação", "Saneamento", "Sentença", "Cumprimento de sentença", "Penhora"];
+export default function HomePage() {
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("Todos");
+  const [filterTribunal, setFilterTribunal] = useState("Todos");
+  const [filterPhase, setFilterPhase] = useState("Todas");
+  const navigate = useNavigate();
+  const activeProcesses = mockProcesses.filter(p => p.status === "ativo");
+  const encerrados = mockProcesses.filter(p => p.status === "encerrado");
+  const comAudiencia = mockProcesses.filter(p => p.hearingDate !== "—");
+  const pendingRequests = mockRequests.filter(r => r.status === "pendente");
+  const tribunalOptions = ["Todos", ...Array.from(new Set(mockProcesses.map(p => p.tribunal)))];
+  const filtered = mockProcesses.filter(p => {
+    const q = search.toLowerCase();
+    const matchQ = !search || p.clientName.toLowerCase().includes(q) || p.cnj.includes(q);
+    const matchS = filterStatus === "Todos" || p.status === filterStatus;
+    const matchT = filterTribunal === "Todos" || p.tribunal === filterTribunal;
+    const matchP = filterPhase === "Todas" || p.phase === filterPhase;
+    return matchQ && matchS && matchT && matchP;
+  });
+  const hasActiveFilters = search !== "" || filterStatus !== "Todos" || filterTribunal !== "Todos" || filterPhase !== "Todas";
+  const clearFilters = () => {
+    setSearch("");
+    setFilterStatus("Todos");
+    setFilterTribunal("Todos");
+    setFilterPhase("Todas");
+    setPage(1);
+  };
+  const PAGE_SIZE = 6;
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  return <div className="home-page">
+      {/* ── Page header ── */}
+      <div className="home-header">
+        <div>
+          <p className="page-kicker">
+            SGPJ
+          </p>
+          <h1 className="page-title">
+            Processos
+          </h1>
+        </div>
+        <button onClick={() => navigate("/app/processos/novo")} className="home-new-button">
+          <Plus size={16} />
+          <span className="home-new-button-label home-new-button-label--wide">Novo Processo</span>
+          <span className="home-new-button-label home-new-button-label--compact">Novo</span>
+        </button>
+      </div>
+
+      {/* ── Metric cards ── */}
+      <div className="home-metrics-grid">
+        <MetricCard icon={<Scale size={15} className="metric-card-icon metric-card-icon--blue" />} iconVariant="metric-card-badge--blue" value={activeProcesses.length} label="Processos ativos" trend="+1 esta semana" trendVariant="metric-trend--success" trendIcon={<TrendingUp size={10} />} />
+        <MetricCard icon={<Zap size={15} className="metric-card-icon metric-card-icon--amber" />} iconVariant="metric-card-badge--amber" value={pendingRequests.length} label="Solicitações" trend="Aguardando análise" trendVariant="metric-trend--amber" trendIcon={<Clock size={10} />} />
+        <MetricCard icon={<BarChart3 size={15} className="metric-card-icon metric-card-icon--green" />} iconVariant="metric-card-badge--green" value={encerrados.length} label="Encerrados" trend="Total histórico" trendVariant="metric-trend--muted" trendIcon={<FileText size={10} />} />
+        <MetricCard icon={<Calendar size={15} className="metric-card-icon metric-card-icon--gold" />} iconVariant="metric-card-badge--gold" value={comAudiencia.length} label="Com audiência" trend="Agendadas" trendVariant="metric-trend--muted" trendIcon={<Calendar size={10} />} />
+      </div>
+
+      {/* ── Search + Filters panel ── */}
+      <div className="home-panel">
+        {/* Search row */}
+        <div className="home-search-row">
+          <div className="home-search-wrap">
+            <Search size={16} className="home-search-icon" />
+            <input type="text" placeholder="Pesquisar por cliente ou número CNJ..." value={search} onChange={e => setSearch(e.target.value)} className="home-search-input" />
+          </div>
+          <button className="home-search-button">
+            Buscar
+          </button>
+        </div>
+
+        {/* Divider */}
+        <div className="home-divider" />
+
+        {/* Filters row */}
+        <div className="home-filter-row">
+          <span className="home-filter-label">
+            Filtros
+          </span>
+
+          <FilterSelect label="Status" value={filterStatus} onChange={setFilterStatus}>
+            {STATUS_OPTS.map(o => <option key={o.value} value={o.value}>
+                {o.label}
+              </option>)}
+          </FilterSelect>
+
+          <FilterSelect label="Fase" value={filterPhase} onChange={setFilterPhase}>
+            {PHASE_OPTS.map(p => <option key={p} value={p}>
+                {p === "Todas" ? "Todas as fases" : p}
+              </option>)}
+          </FilterSelect>
+
+          <FilterSelect label="Tribunal" value={filterTribunal} onChange={setFilterTribunal}>
+            {tribunalOptions.map(t => <option key={t} value={t}>
+                {t}
+              </option>)}
+          </FilterSelect>
+
+          {hasActiveFilters && <button onClick={clearFilters} className="home-clear-button">
+              <X size={11} />
+              Limpar filtros
+            </button>}
+        </div>
+      </div>
+
+      {/* ── Results count ── */}
+      <div className="home-results-row">
+        <p className="home-results-count">
+          {filtered.length === mockProcesses.length ? `${filtered.length} processos` : `${filtered.length} de ${mockProcesses.length} processos`}
+        </p>
+        {filtered.length > 0 && <p className="home-results-tip">
+            Clique em um processo para ver detalhes
+          </p>}
+      </div>
+
+      {/* ── Process grid ── */}
+      {filtered.length === 0 ? <div className="home-empty-state">
+          <div className="home-empty-icon-wrap">
+            <FileText size={24} className="home-empty-icon" />
+          </div>
+          <p className="home-empty-title">
+            Nenhum processo encontrado
+          </p>
+          <p className="home-empty-text">
+            Tente ajustar os filtros de busca
+          </p>
+          {hasActiveFilters && <button onClick={clearFilters} className="home-empty-clear">
+              Limpar filtros
+            </button>}
+        </div> : <div className="home-grid">
+          {paginated.map(p => <ProcessCard key={p.id} process={p} onClick={() => navigate(`/app/processos/${p.id}`)} />)}
+        </div>}
+      <PaginationBar page={safePage} total={totalPages} onPage={setPage} />
+    </div>;
+}
+
+/* ────────────────────────────────────────── */
+/* Sub-components                             */
+/* ────────────────────────────────────────── */
+
+function MetricCard({
+  icon,
+  iconVariant,
+  value,
+  label,
+  trend,
+  trendVariant,
+  trendIcon
+}) {
+  return <div className="metric-card">
+      <div className={`metric-card-badge ${iconVariant}`}>
+        {icon}
+      </div>
+      <p className="metric-card-value">
+        {value}
+      </p>
+      <p className="metric-card-label">{label}</p>
+      <div className={`metric-card-trend ${trendVariant}`}>
+        {trendIcon}
+        <span className="metric-card-trend-text">{trend}</span>
+      </div>
+    </div>;
+}
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  children
+}) {
+  return <div className="home-filter-select">
+      <span className="home-filter-select-label">
+        {label}:
+      </span>
+      <select value={value} onChange={e => onChange(e.target.value)} className="home-filter-select-input">
+        {children}
+      </select>
+    </div>;
+}
+function PaginationBar({ page, total, onPage }) {
+  if (total <= 1) return null;
+  return (
+    <div className="pagination">
+      <button className="pagination__btn" onClick={() => onPage(page - 1)} disabled={page === 1}>‹</button>
+      {Array.from({ length: total }, (_, i) => (
+        <button key={i} className={`pagination__page ${page === i + 1 ? "is-active" : ""}`} onClick={() => onPage(i + 1)}>{i + 1}</button>
+      ))}
+      <button className="pagination__btn" onClick={() => onPage(page + 1)} disabled={page === total}>›</button>
+    </div>
+  );
+}
+function ProcessCard({
+  process,
+  onClick
+}) {
+  return <div onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === "Enter" && onClick()} className="process-card">
+      {/* Card body */}
+      <div className="process-card-body">
+        {/* CNJ + Tribunal */}
+        <div className="process-card-topline">
+          <p className="process-card-cnj">
+            {process.cnj}
+          </p>
+          <span className="process-card-tribunal">
+            {process.tribunal}
+          </span>
+        </div>
+
+        {/* Client name — primary hierarchy */}
+        <p className="process-card-name">
+          {process.clientName}
+        </p>
+
+        {/* Hearing date — secondary hierarchy */}
+        {process.hearingDate !== "—" ? <div className="process-card-hearing">
+            <Calendar size={12} className="process-card-hearing-icon" />
+            <span className="process-card-hearing-text">
+              Audiência:{" "}
+              <strong className="process-card-hearing-date">
+                {process.hearingDate}
+              </strong>
+            </span>
+          </div> : <div className="process-card-hearing-spacer" />}
+
+        {/* Badges */}
+        <div className="process-card-badges">
+          <StatusBadge status={process.status} />
+          <PriorityBadge priority={process.priority} />
+          <PhaseBadge phase={process.phase} />
+        </div>
+      </div>
+
+      {/* Card footer */}
+      <div className="process-card-footer">
+        <ChevronRight size={15} className="process-card-chevron" />
+      </div>
+    </div>;
+}
