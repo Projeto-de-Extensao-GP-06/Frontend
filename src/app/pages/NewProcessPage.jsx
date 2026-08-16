@@ -11,10 +11,18 @@ import { phases, tribunals } from "../data/mockData";
 import "../../styles/edit-process-page.css";
 import "../../styles/select-client-modal.css";
 
+const maskDate = (value) => {
+  const digits = value.replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+};
+
 export default function NewProcessPage() {
   const navigate = useNavigate();
   const [selectedClient, setSelectedClient] = useState(null);
   const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
+  const [hearingDate, setHearingDate] = useState("");
   const [observations, setObservations] = useState([""]);
 
   const addObs = () => setObservations((prev) => [...prev, ""]);
@@ -157,11 +165,21 @@ export default function NewProcessPage() {
             <Input placeholder="R$ 0,00" className="edit-process-input edit-process-input--mono" />
           </div>
           <div className="edit-process-field">
-            <Label className="edit-process-label">Data audiência (opcional)</Label>
-            <Input
-              placeholder="00/00/0000"
-              className="edit-process-input edit-process-input--mono"
-            />
+            <Label className="edit-process-label">Data e hora da audiência (opcional)</Label>
+            <div className="edit-process-datetime-group">
+              <Input
+                type="text"
+                value={hearingDate}
+                onChange={(e) => setHearingDate(maskDate(e.target.value))}
+                placeholder="dd/mm/yyyy"
+                maxLength={10}
+                className="edit-process-input edit-process-input--mono"
+              />
+              <Input
+                type="time"
+                className="edit-process-input edit-process-input--mono"
+              />
+            </div>
           </div>
         </div>
 

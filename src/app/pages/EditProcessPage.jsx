@@ -8,6 +8,14 @@ import { Textarea } from "../components/ui/textarea";
 import { mockProcesses, mockClients, phases, tribunals } from "../data/mockData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import "../../styles/edit-process-page.css";
+
+const maskDate = (value) => {
+  const digits = value.replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+};
+
 export default function EditProcessPage() {
   const {
     id
@@ -23,6 +31,7 @@ export default function EditProcessPage() {
         </Button>
       </div>;
   }
+  const [hearingDate, setHearingDate] = useState(process.hearingDate !== "—" ? process.hearingDate : "");
   const [observations, setObservations] = useState(process.observations.map(o => o.text));
   const addObs = () => setObservations(prev => [...prev, ""]);
   const updateObs = (i, val) => setObservations(prev => prev.map((o, idx) => idx === i ? val : o));
@@ -90,8 +99,22 @@ export default function EditProcessPage() {
             <Input defaultValue={process.value.toString()} className="edit-process-input edit-process-input--mono" />
           </div>
           <div className="edit-process-field">
-            <Label className="edit-process-label">Data audiência</Label>
-            <Input defaultValue={process.hearingDate !== "—" ? process.hearingDate : ""} placeholder="00/00/0000" className="edit-process-input edit-process-input--mono" />
+            <Label className="edit-process-label">Data e hora da audiência</Label>
+            <div className="edit-process-datetime-group">
+              <Input
+                type="text"
+                value={hearingDate}
+                onChange={(e) => setHearingDate(maskDate(e.target.value))}
+                placeholder="dd/mm/yyyy"
+                maxLength={10}
+                className="edit-process-input edit-process-input--mono"
+              />
+              <Input
+                type="time"
+                defaultValue={process.hearingTime || ""}
+                className="edit-process-input edit-process-input--mono"
+              />
+            </div>
           </div>
         </div>
 

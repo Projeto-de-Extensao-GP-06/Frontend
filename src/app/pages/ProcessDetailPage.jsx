@@ -73,7 +73,7 @@ export default function ProcessDetailPage() {
             <InfoRow label="Sistema do Tribunal" value={process.tribunalSystem} />
             <InfoRow label="Responsável" value={process.responsible} />
             <InfoRow label="Valor da causa" value={fmt(process.value)} mono />
-            <InfoRow label="Data da audiência" value={process.hearingDate !== "—" ? process.hearingDate : "Não definida"} />
+            <InfoRow label="Data da audiência" value={process.hearingDate && process.hearingDate !== "—" ? `${process.hearingDate}${process.hearingTime ? ` às ${process.hearingTime}` : ""}` : "Não definida"} />
           </div>
         </div>
 
