@@ -1,0 +1,366 @@
+/* ── Select Client Modal & Trigger Styles ── */
+
+/* Trigger / Placeholder Button in Form */
+.client-picker-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 1.125rem;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  font-family: "DM Sans", sans-serif;
+}
+
+.client-picker-trigger:hover {
+  border-color: #0f2357;
+  background: #f1f5f9;
+  color: #0f2357;
+}
+
+.client-picker-trigger-content {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.client-picker-trigger-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.625rem;
+  background: #eef1f8;
+  color: #0f2357;
+  flex-shrink: 0;
+}
+
+.client-picker-trigger-title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.client-picker-trigger-sub {
+  margin: 0.125rem 0 0;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.client-picker-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.875rem;
+  border-radius: 0.5rem;
+  background: #0f2357;
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+/* Selected Client in Form */
+.selected-client-card-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.selected-client-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.selected-client-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.5rem;
+  color: #0f2357;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: "DM Sans", sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.selected-client-action-btn:hover {
+  background: #f8fafc;
+  border-color: #0f2357;
+}
+
+.selected-client-action-btn--remove {
+  color: #dc2626;
+  border-color: #fee2e2;
+  background: #fef2f2;
+}
+
+.selected-client-action-btn--remove:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+/* ── Dialog Layout & Responsive Behavior ── */
+.select-client-dialog-content {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  max-width: 52rem !important;
+  width: min(94vw, 52rem) !important;
+  max-height: 90vh !important;
+  height: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 1.25rem !important;
+  border-radius: 1.25rem !important;
+  overflow: hidden !important;
+  gap: 0.75rem !important;
+  font-family: "DM Sans", sans-serif !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 640px) {
+  .select-client-dialog-content {
+    width: calc(100vw - 1rem) !important;
+    padding: 1rem !important;
+    max-height: 94vh !important;
+  }
+}
+
+.select-client-dialog-header {
+  flex-shrink: 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.select-client-modal-kicker {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.select-client-modal-title {
+  margin: 0.25rem 0 0;
+  color: #0f2357;
+  font-family: "Playfair Display", serif;
+  font-size: 1.375rem;
+  font-weight: 700;
+}
+
+.select-client-modal-subtitle {
+  margin: 0.25rem 0 0;
+  color: #64748b;
+  font-size: 0.8125rem;
+}
+
+/* Modal Body (Scrollable Container) */
+.select-client-modal-body {
+  flex: 1 1 auto;
+  min-height: 0; /* Necessary for flex scrolling in CSS */
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0.25rem 0.25rem 0.5rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.select-client-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+.select-client-modal-body::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 3px;
+}
+.select-client-modal-body::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+.select-client-modal-body::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Search Panel inside Modal */
+.select-client-dialog-content .clients-panel {
+  flex-shrink: 0;
+  margin-bottom: 0;
+  border: 1px solid #e8ecf4;
+  border-radius: 0.875rem;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(17, 24, 39, 0.05);
+}
+
+.select-client-dialog-content .clients-search-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+}
+
+.select-client-dialog-content .clients-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.select-client-dialog-content .clients-search-icon {
+  position: absolute;
+  left: 0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.select-client-dialog-content .clients-search-input {
+  width: 100%;
+  height: 2.5rem;
+  padding: 0 0.875rem 0 2.5rem;
+  border: 1px solid #e4e8f2;
+  border-radius: 0.625rem;
+  outline: none;
+  background: #f8fafc;
+  color: #374151;
+  font-size: 0.875rem;
+  font-family: "DM Sans", sans-serif;
+  transition: all 0.2s ease;
+}
+
+.select-client-dialog-content .clients-search-input:focus {
+  border-color: #0f2357;
+  box-shadow: 0 0 0 2px rgba(15, 35, 87, 0.08);
+}
+
+.select-client-dialog-content .clients-search-button {
+  height: 2.5rem;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: 0.625rem;
+  background: #0f2357;
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: "DM Sans", sans-serif;
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.select-client-dialog-content .clients-search-button:hover {
+  background: #162d6b;
+}
+
+.select-client-dialog-content .clients-divider {
+  height: 1px;
+  margin: 0 0.75rem;
+  background: #f1f5f9;
+}
+
+.select-client-dialog-content .clients-filters-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.625rem;
+  padding: 0.625rem 0.75rem;
+}
+
+@media (min-width: 540px) {
+  .select-client-dialog-content .clients-filters-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.select-client-dialog-content .clients-filter-label {
+  margin: 0 0 0.375rem;
+  color: #9ca3af;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.select-client-dialog-content .clients-filter-group {
+  display: flex;
+  gap: 0.125rem;
+  padding: 0.125rem;
+  border-radius: 0.625rem;
+  background: #f4f6fa;
+}
+
+.select-client-dialog-content .clients-filter-pill {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  border-radius: 0.5rem;
+  padding: 0.35rem 0.375rem;
+  background: transparent;
+  color: #6b7280;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: "DM Sans", sans-serif;
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.select-client-dialog-content .clients-filter-pill:hover {
+  color: #374151;
+}
+
+.select-client-dialog-content .clients-filter-pill.is-active {
+  background: #fff;
+  color: #0f2357;
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.08);
+}
+
+/* Modal Client Card Grid */
+.select-client-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr);
+  flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+  .select-client-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Selected state for client card */
+.client-card.is-selected {
+  border-color: #0f2357;
+  background: #f8fafc;
+  box-shadow: 0 0 0 1.5px #0f2357;
+}
+
+.client-card-selected-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 9999px;
+  background: #0f2357;
+  color: #fff;
+  flex-shrink: 0;
+}
