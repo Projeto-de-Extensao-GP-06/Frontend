@@ -18,10 +18,30 @@ const maskDate = (value) => {
   return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
 };
 
+const maskCurrency = (value) => {
+  if (value === null || value === undefined || value === "") return "";
+  if (typeof value === "number") {
+    const safeNumber = Math.min(value, 9999999999999.99);
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(safeNumber);
+  }
+  // DECIMAL(15,2): máx. 15 dígitos no total (13 inteiros + 2 decimais)
+  const digits = value.toString().replace(/\D/g, "").slice(0, 15);
+  if (!digits) return "";
+  const numberValue = Number(digits) / 100;
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(numberValue);
+};
+
 export default function NewProcessPage() {
   const navigate = useNavigate();
   const [selectedClient, setSelectedClient] = useState(null);
   const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
+  const [causeValue, setCauseValue] = useState("");
   const [hearingDate, setHearingDate] = useState("");
   const [observations, setObservations] = useState([""]);
 
@@ -162,7 +182,14 @@ export default function NewProcessPage() {
         <div className="edit-process-grid edit-process-grid--2">
           <div className="edit-process-field">
             <Label className="edit-process-label">Valor da causa (opcional)</Label>
-            <Input placeholder="R$ 0,00" className="edit-process-input edit-process-input--mono" />
+            <Input
+              type="text"
+              value={causeValue}
+              onChange={(e) => setCauseValue(maskCurrency(e.target.value))}
+              placeholder="R$ 0,00"
+              maxLength={26}
+              className="edit-process-input edit-process-input--mono"
+            />
           </div>
           <div className="edit-process-field">
             <Label className="edit-process-label">Data e hora da audiência (opcional)</Label>
