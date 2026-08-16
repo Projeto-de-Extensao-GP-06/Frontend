@@ -19,6 +19,17 @@ const maskDate = (value) => {
   return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
 };
 
+const maskCNJ = (value) => {
+  if (!value) return "";
+  const digits = value.replace(/\D/g, "").slice(0, 20);
+  if (digits.length <= 7) return digits;
+  if (digits.length <= 9) return `${digits.slice(0, 7)}-${digits.slice(7)}`;
+  if (digits.length <= 13) return `${digits.slice(0, 7)}-${digits.slice(7, 9)}.${digits.slice(9)}`;
+  if (digits.length <= 14) return `${digits.slice(0, 7)}-${digits.slice(7, 9)}.${digits.slice(9, 13)}.${digits.slice(13)}`;
+  if (digits.length <= 16) return `${digits.slice(0, 7)}-${digits.slice(7, 9)}.${digits.slice(9, 13)}.${digits.slice(13, 14)}.${digits.slice(14)}`;
+  return `${digits.slice(0, 7)}-${digits.slice(7, 9)}.${digits.slice(9, 13)}.${digits.slice(13, 14)}.${digits.slice(14, 16)}.${digits.slice(16)}`;
+};
+
 const maskCurrency = (value) => {
   if (value === null || value === undefined || value === "") return "";
   if (typeof value === "number") {
@@ -47,6 +58,7 @@ export default function EditProcessPage() {
   const initialClient = process ? mockClients.find((c) => c.id === process.clientId) || null : null;
   const [selectedClient, setSelectedClient] = useState(initialClient);
   const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
+  const [cnj, setCnj] = useState(process?.cnj ? maskCNJ(process.cnj) : "");
   const [causeValue, setCauseValue] = useState(
     process?.value !== undefined && process?.value !== null ? maskCurrency(process.value) : ""
   );
@@ -93,7 +105,14 @@ export default function EditProcessPage() {
         {/* CNJ */}
         <div className="edit-process-field">
           <Label className="edit-process-label">Número CNJ (opcional)</Label>
-          <Input defaultValue={process.cnj} className="edit-process-input edit-process-input--mono" />
+          <Input
+            type="text"
+            value={cnj}
+            onChange={(e) => setCnj(maskCNJ(e.target.value))}
+            placeholder="0000000-00.0000.0.00.0000"
+            maxLength={25}
+            className="edit-process-input edit-process-input--mono"
+          />
         </div>
 
         {/* Client Selection via Modal */}
