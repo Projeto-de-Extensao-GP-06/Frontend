@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Search, Users, X } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
+import { useState, useEffect } from "react";
+import { Search, Users, X, Check } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog";
 import { ClientCard } from "./ClientCard";
 import { mockClients } from "../data/mockData";
 import "../../styles/select-client-modal.css";
@@ -12,10 +12,19 @@ export function SelectClientModal({
   selectedClientId,
   onSelect,
 }) {
+  const [selectedClient, setSelectedClient] = useState(() =>
+    mockClients.find((c) => c.id === selectedClientId) || null
+  );
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("todos");
   const [statusFilter, setStatusFilter] = useState("todos");
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    if (open) {
+      setSelectedClient(mockClients.find((c) => c.id === selectedClientId) || null);
+    }
+  }, [open, selectedClientId]);
 
   const PAGE_SIZE = 6;
 
@@ -45,9 +54,15 @@ export function SelectClientModal({
   const safePage = Math.min(page, totalPages);
   const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
-  const handleSelectClient = (client) => {
-    onSelect(client);
-    onOpenChange(false);
+  const handleCardClick = (client) => {
+    setSelectedClient(client);
+  };
+
+  const handleConfirm = () => {
+    if (selectedClient) {
+      onSelect(selectedClient);
+      onOpenChange(false);
+    }
   };
 
   return (
@@ -170,8 +185,8 @@ export function SelectClientModal({
                 <ClientCard
                   key={client.id}
                   client={client}
-                  selected={selectedClientId === client.id}
-                  onClick={() => handleSelectClient(client)}
+                  selected={selectedClient?.id === client.id}
+                  onClick={() => handleCardClick(client)}
                   showChevron={false}
                 />
               ))}
@@ -183,6 +198,46 @@ export function SelectClientModal({
             <PaginationBar page={safePage} total={totalPages} onPage={setPage} />
           )}
         </div>
+
+        {/* ── Footer / Confirm Action ── */}
+        <DialogFooter className="select-client-dialog-footer">
+          <div className="select-client-footer-info">
+            {selectedClient ? (
+              <div className="select-client-footer-selected">
+                <span className="select-client-footer-label">Selecionado:</span>
+                <span className="select-client-footer-name" title={selectedClient.name}>
+                  {selectedClient.name}
+                </span>
+                <span className={`select-client-footer-type ${selectedClient.type === "PF" ? "is-pf" : "is-pj"}`}>
+                  {selectedClient.type}
+                </span>
+              </div>
+            ) : (
+              <span className="select-client-footer-placeholder">
+                Nenhum cliente selecionado
+              </span>
+            )}
+          </div>
+
+          <div className="select-client-footer-actions">
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="select-client-btn select-client-btn--cancel"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              disabled={!selectedClient}
+              onClick={handleConfirm}
+              className="select-client-btn select-client-btn--confirm"
+            >
+              <Check size={15} />
+              Confirmar Escolha
+            </button>
+          </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

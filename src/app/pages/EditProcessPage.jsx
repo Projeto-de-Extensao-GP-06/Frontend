@@ -1,13 +1,16 @@
 import { useNavigate, useParams } from "react-router";
-import { ArrowLeft, Plus, X, Trash2, Save } from "lucide-react";
+import { ArrowLeft, Plus, X, Trash2, Save, Search, Users, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
+import { ClientCard } from "../components/ClientCard";
+import { SelectClientModal } from "../components/SelectClientModal";
 import { mockProcesses, mockClients, phases, tribunals } from "../data/mockData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import "../../styles/edit-process-page.css";
+import "../../styles/select-client-modal.css";
 
 const maskDate = (value) => {
   const digits = value.replace(/\D/g, "").slice(0, 8);
@@ -17,26 +20,39 @@ const maskDate = (value) => {
 };
 
 export default function EditProcessPage() {
-  const {
-    id
-  } = useParams();
+  const { id } = useParams();
   const navigate = useNavigate();
   const [deleteDialog, setDeleteDialog] = useState(false);
-  const process = mockProcesses.find(p => p.id === id);
+  const process = mockProcesses.find((p) => p.id === id);
+
+  const initialClient = process ? mockClients.find((c) => c.id === process.clientId) || null : null;
+  const [selectedClient, setSelectedClient] = useState(initialClient);
+  const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
+  const [hearingDate, setHearingDate] = useState(
+    process && process.hearingDate !== "—" ? process.hearingDate : ""
+  );
+  const [observations, setObservations] = useState(
+    process?.observations ? process.observations.map((o) => o.text) : [""]
+  );
+
   if (!process) {
-    return <div className="edit-process-page edit-process-page--empty">
+    return (
+      <div className="edit-process-page edit-process-page--empty">
         <p className="edit-process-empty-text">Processo não encontrado.</p>
         <Button onClick={() => navigate("/app/inicio")} className="edit-process-empty-button">
           Voltar
         </Button>
-      </div>;
+      </div>
+    );
   }
-  const [hearingDate, setHearingDate] = useState(process.hearingDate !== "—" ? process.hearingDate : "");
-  const [observations, setObservations] = useState(process.observations.map(o => o.text));
-  const addObs = () => setObservations(prev => [...prev, ""]);
-  const updateObs = (i, val) => setObservations(prev => prev.map((o, idx) => idx === i ? val : o));
-  const removeObs = i => setObservations(prev => prev.filter((_, idx) => idx !== i));
-  return <div className="edit-process-page">
+
+  const addObs = () => setObservations((prev) => [...prev, ""]);
+  const updateObs = (i, val) =>
+    setObservations((prev) => prev.map((o, idx) => (idx === i ? val : o)));
+  const removeObs = (i) =>
+    setObservations((prev) => prev.filter((_, idx) => idx !== i));
+  return (
+    <div className="edit-process-page">
       {/* Breadcrumb */}
       <button onClick={() => navigate(`/app/processos/${id}`)} className="edit-process-breadcrumb">
         <ArrowLeft size={14} />
@@ -58,12 +74,76 @@ export default function EditProcessPage() {
           <Input defaultValue={process.cnj} className="edit-process-input edit-process-input--mono" />
         </div>
 
-        {/* Client */}
+        {/* Client Selection via Modal */}
         <div className="edit-process-field">
-          <Label className="edit-process-label">Cliente</Label>
-          <select className="edit-process-select" defaultValue={process.clientId}>
-            {mockClients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: "0.375rem",
+            }}
+          >
+            <Label className="edit-process-label" style={{ marginBottom: 0 }}>
+              Cliente
+            </Label>
+            {selectedClient && (
+              <div className="selected-client-header-actions">
+                <button
+                  type="button"
+                  onClick={() => setIsSelectModalOpen(true)}
+                  className="selected-client-action-btn"
+                >
+                  <RefreshCw size={13} />
+                  Trocar cliente
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedClient(null)}
+                  className="selected-client-action-btn selected-client-action-btn--remove"
+                  title="Remover cliente"
+                >
+                  <Trash2 size={13} />
+                  Remover
+                </button>
+              </div>
+            )}
+          </div>
+
+          {selectedClient ? (
+            <div className="selected-client-card-container">
+              <ClientCard client={selectedClient} showChevron={false} />
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsSelectModalOpen(true)}
+              className="client-picker-trigger"
+            >
+              <div className="client-picker-trigger-content">
+                <div className="client-picker-trigger-icon-wrap">
+                  <Users size={18} />
+                </div>
+                <div>
+                  <p className="client-picker-trigger-title">Selecionar Cliente</p>
+                  <p className="client-picker-trigger-sub">
+                    Clique para buscar e selecionar um cliente
+                  </p>
+                </div>
+              </div>
+              <div className="client-picker-trigger-btn">
+                <Search size={14} />
+                Buscar
+              </div>
+            </button>
+          )}
+
+          <SelectClientModal
+            open={isSelectModalOpen}
+            onOpenChange={setIsSelectModalOpen}
+            selectedClientId={selectedClient?.id}
+            onSelect={setSelectedClient}
+          />
         </div>
 
         {/* Priority + Phase */}
@@ -205,5 +285,6 @@ export default function EditProcessPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>;
+    </div>
+  );
 }
