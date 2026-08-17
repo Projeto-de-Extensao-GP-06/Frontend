@@ -201,7 +201,7 @@ export default function PublicSitePage() {
               <div className="site-contact-privacy">
                 <Checkbox id="privacy" checked={accepted} onCheckedChange={v => setAccepted(!!v)} className="site-contact-checkbox" />
                 <label htmlFor="privacy" className="site-contact-privacy__label">
-                  Li e aceito as <span className="site-contact-privacy__link">Políticas de privacidade</span> e <span className="site-contact-privacy__link">Termos de uso</span>
+                  Li e aceito as <a href="/politica-de-privacidade" className="site-contact-privacy__link">Políticas de privacidade</a> e <a href="/termos-de-uso" className="site-contact-privacy__link">Termos de uso</a>
                 </label>
               </div>
               <Button type="submit" disabled={!accepted} className="site-contact-submit">
@@ -226,8 +226,8 @@ export default function PublicSitePage() {
           </div>
           <div className="site-footer__legal">
             <div className="site-footer__legal-links">
-              <a href="#" className="site-footer__legal-link">Políticas de privacidade</a>
-              <a href="#" className="site-footer__legal-link">Termos de uso</a>
+              <a href="/politica-de-privacidade" className="site-footer__legal-link">Políticas de privacidade</a>
+              <a href="/termos-de-uso" className="site-footer__legal-link">Termos de uso</a>
             </div>
             <p className="site-footer__copy">© 2026 Thauany Bezerra Advocacia. Todos os direitos reservados.</p>
           </div>
