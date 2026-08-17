@@ -18,6 +18,7 @@ import RequestDetailPage from "./pages/RequestDetailPage";
 import UsersPage from "./pages/UsersPage";
 import RolesPage from "./pages/RolesPage";
 import ProfilePage from "./pages/ProfilePage";
+import LegalPage from "./pages/LegalPage";
 export const router = createBrowserRouter([{
   path: "/",
   Component: LoginPage
@@ -27,6 +28,12 @@ export const router = createBrowserRouter([{
 }, {
   path: "/site",
   Component: PublicSitePage
+}, {
+  path: "/politica-de-privacidade",
+  Component: LegalPage
+}, {
+  path: "/termos-de-uso",
+  Component: LegalPage
 }, {
   path: "/app",
   Component: AppLayout,
