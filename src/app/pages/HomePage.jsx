@@ -6,7 +6,7 @@ import { mockProcesses, mockRequests } from "../data/mockData";
 import "../../styles/home-page.css";
 const STATUS_OPTS = [{
   value: "Todos",
-  label: "Todos os status"
+  label: "Todos"
 }, {
   value: "ativo",
   label: "Ativo"
@@ -18,11 +18,40 @@ const STATUS_OPTS = [{
   label: "Inativo"
 }];
 const PHASE_OPTS = ["Todas", "Inicial", "Citação", "Saneamento", "Sentença", "Cumprimento de sentença", "Penhora"];
+const PRIORITY_OPTS = [{
+  value: "Todas",
+  label: "Todas"
+}, {
+  value: "alta",
+  label: "Alta"
+}, {
+  value: "média",
+  label: "Média"
+}, {
+  value: "baixa",
+  label: "Baixa"
+}];
+
+const PRIORITY_WEIGHT = {
+  alta: 3,
+  media: 2,
+  média: 2,
+  baixa: 1
+};
+
+const parseDateToTimestamp = (dateStr) => {
+  if (!dateStr || dateStr === "—") return null;
+  const [day, month, year] = dateStr.split("/");
+  return new Date(`${year}-${month}-${day}`).getTime();
+};
+
 export default function HomePage() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("Todos");
   const [filterTribunal, setFilterTribunal] = useState("Todos");
   const [filterPhase, setFilterPhase] = useState("Todas");
+  const [filterPriority, setFilterPriority] = useState("Todas");
+  const [sortBy, setSortBy] = useState("cliente_asc");
   const navigate = useNavigate();
   const activeProcesses = mockProcesses.filter(p => p.status === "ativo");
   const encerrados = mockProcesses.filter(p => p.status === "encerrado");
@@ -35,21 +64,60 @@ export default function HomePage() {
     const matchS = filterStatus === "Todos" || p.status === filterStatus;
     const matchT = filterTribunal === "Todos" || p.tribunal === filterTribunal;
     const matchP = filterPhase === "Todas" || p.phase === filterPhase;
-    return matchQ && matchS && matchT && matchP;
+    const matchPriority = filterPriority === "Todas" || p.priority === filterPriority;
+    return matchQ && matchS && matchT && matchP && matchPriority;
   });
-  const hasActiveFilters = search !== "" || filterStatus !== "Todos" || filterTribunal !== "Todos" || filterPhase !== "Todas";
+
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortBy === "cliente_asc") {
+      return a.clientName.localeCompare(b.clientName, "pt");
+    }
+    if (sortBy === "cliente_desc") {
+      return b.clientName.localeCompare(a.clientName, "pt");
+    }
+    if (sortBy === "audiencia_asc") {
+      const timeA = parseDateToTimestamp(a.hearingDate);
+      const timeB = parseDateToTimestamp(b.hearingDate);
+      if (timeA && !timeB) return -1;
+      if (!timeA && timeB) return 1;
+      if (timeA && timeB) return timeA - timeB;
+      return 0;
+    }
+    if (sortBy === "audiencia_desc") {
+      const timeA = parseDateToTimestamp(a.hearingDate);
+      const timeB = parseDateToTimestamp(b.hearingDate);
+      if (timeA && !timeB) return -1;
+      if (!timeA && timeB) return 1;
+      if (timeA && timeB) return timeB - timeA;
+      return 0;
+    }
+    if (sortBy === "prioridade_desc") {
+      const weightA = PRIORITY_WEIGHT[a.priority] || 0;
+      const weightB = PRIORITY_WEIGHT[b.priority] || 0;
+      return weightB - weightA;
+    }
+    if (sortBy === "prioridade_asc") {
+      const weightA = PRIORITY_WEIGHT[a.priority] || 0;
+      const weightB = PRIORITY_WEIGHT[b.priority] || 0;
+      return weightA - weightB;
+    }
+    return 0;
+  });
+
+  const hasActiveFilters = search !== "" || filterStatus !== "Todos" || filterTribunal !== "Todos" || filterPhase !== "Todas" || filterPriority !== "Todas";
   const clearFilters = () => {
     setSearch("");
     setFilterStatus("Todos");
     setFilterTribunal("Todos");
     setFilterPhase("Todas");
+    setFilterPriority("Todas");
     setPage(1);
   };
   const PAGE_SIZE = 6;
   const [page, setPage] = useState(1);
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
-  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const paginated = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
   return <div className="home-page">
       {/* ── Page header ── */}
       <div className="home-header">
@@ -94,32 +162,59 @@ export default function HomePage() {
 
         {/* Filters row */}
         <div className="home-filter-row">
-          <span className="home-filter-label">
-            Filtros
-          </span>
+          <div className="home-filter-group-left">
+            <span className="home-filter-label">
+              Filtros
+            </span>
 
-          <FilterSelect label="Status" value={filterStatus} onChange={setFilterStatus}>
-            {STATUS_OPTS.map(o => <option key={o.value} value={o.value}>
-                {o.label}
-              </option>)}
-          </FilterSelect>
+            <FilterSelect label="Status" value={filterStatus} onChange={setFilterStatus}>
+              {STATUS_OPTS.map(o => <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>)}
+            </FilterSelect>
 
-          <FilterSelect label="Fase" value={filterPhase} onChange={setFilterPhase}>
-            {PHASE_OPTS.map(p => <option key={p} value={p}>
-                {p === "Todas" ? "Todas as fases" : p}
-              </option>)}
-          </FilterSelect>
+            <FilterSelect label="Fase" value={filterPhase} onChange={setFilterPhase}>
+              {PHASE_OPTS.map(p => <option key={p} value={p}>
+                  {p === "Todas" ? "Todas" : p}
+                </option>)}
+            </FilterSelect>
 
-          <FilterSelect label="Tribunal" value={filterTribunal} onChange={setFilterTribunal}>
-            {tribunalOptions.map(t => <option key={t} value={t}>
-                {t}
-              </option>)}
-          </FilterSelect>
+            <FilterSelect label="Prioridade" value={filterPriority} onChange={setFilterPriority}>
+              {PRIORITY_OPTS.map(o => <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>)}
+            </FilterSelect>
 
-          {hasActiveFilters && <button onClick={clearFilters} className="home-clear-button">
-              <X size={11} />
-              Limpar filtros
-            </button>}
+            <FilterSelect label="Tribunal" value={filterTribunal} onChange={setFilterTribunal}>
+              {tribunalOptions.map(t => <option key={t} value={t}>
+                  {t}
+                </option>)}
+            </FilterSelect>
+
+            {hasActiveFilters && <button onClick={clearFilters} className="home-clear-button">
+                <X size={11} />
+                Limpar filtros
+              </button>}
+          </div>
+
+          <div className="home-sort-wrap">
+            <span className="home-sort-label">Ordenar:</span>
+            <select
+              value={sortBy}
+              onChange={e => {
+                setSortBy(e.target.value);
+                setPage(1);
+              }}
+              className="home-sort-select"
+            >
+              <option value="cliente_asc">Nome do cliente (A → Z)</option>
+              <option value="cliente_desc">Nome do cliente (Z → A)</option>
+              <option value="audiencia_asc">Audiência (Mais próxima)</option>
+              <option value="audiencia_desc">Audiência (Mais distante)</option>
+              <option value="prioridade_desc">Prioridade (Alta → Baixa)</option>
+              <option value="prioridade_asc">Prioridade (Baixa → Alta)</option>
+            </select>
+          </div>
         </div>
       </div>
 

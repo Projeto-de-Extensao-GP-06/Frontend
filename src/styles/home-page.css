@@ -210,8 +210,16 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
+}
+
+.home-filter-group-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .home-filter-label {
@@ -256,6 +264,42 @@
 }
 
 .home-filter-select-input {
+  box-sizing: border-box;
+  height: 2rem;
+  padding: 0 0.625rem 0 0.25rem;
+  border: 0;
+  border-left: 1px solid #e4e8f2;
+  border-radius: 0;
+  background: transparent;
+  color: #0f2357;
+  font-size: 0.75rem;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  appearance: auto;
+}
+
+.home-sort-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid #e4e8f2;
+  border-radius: 0.625rem;
+  background: #f4f6fa;
+  overflow: hidden;
+  margin-left: auto;
+}
+
+.home-sort-label {
+  padding: 0.375rem 0.5rem 0.375rem 0.75rem;
+  color: #374151;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.home-sort-select {
   box-sizing: border-box;
   height: 2rem;
   padding: 0 0.625rem 0 0.25rem;
