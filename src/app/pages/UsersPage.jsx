@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { Plus, Mail, Shield, Trash2, ChevronRight, ArrowLeft, UserCog, Search, X } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
 import { mockUsers } from "../data/mockData";
@@ -34,12 +35,9 @@ function UserAvatar({
     </div>;
 }
 export default function UsersPage() {
-  const [showNewUser, setShowNewUser] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("az");
-  if (showNewUser) return <NewUserForm onBack={() => setShowNewUser(false)} />;
-  if (selectedUser) return <UserDetail user={selectedUser} onBack={() => setSelectedUser(null)} />;
+  const navigate = useNavigate();
 
   const bySearch = search.trim() === ""
     ? mockUsers
@@ -70,7 +68,7 @@ export default function UsersPage() {
             Usuários
           </h1>
         </div>
-        <button onClick={() => setShowNewUser(true)} className="users-new-button">
+        <button onClick={() => navigate("/app/usuarios/novo")} className="users-new-button">
           <Plus size={16} />
           Novo Usuário
         </button>
@@ -145,7 +143,7 @@ export default function UsersPage() {
               <p className="users-empty__text">Nenhum usuário encontrado</p>
             </div>
           : paginated.map(user => (
-            <div key={user.id} className="user-row" onClick={() => setSelectedUser(user)}>
+            <div key={user.id} className="user-row" onClick={() => navigate(`/app/usuarios/${user.id}`)}>
               <div className="user-row-main">
                 <UserAvatar name={user.name} />
                 <div className="user-row-copy">
@@ -212,182 +210,4 @@ function PaginationBar({ page, total, onPage }) {
       </button>
     </div>
   );
-}
-
-/* ── New User Form ── */
-function NewUserForm({
-  onBack
-}) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState("Administrador");
-  return <div className="users-form-page">
-      <button onClick={onBack} className="back-link">
-        <ArrowLeft size={14} />
-        Usuários
-      </button>
-
-      <div className="users-form-header">
-        <p className="page-kicker">Usuários › Novo</p>
-        <h1 className="page-title page-title--sm">
-          Novo Usuário
-        </h1>
-        <p className="users-form-subtitle">Preencha os dados para criar o acesso:</p>
-      </div>
-
-      <div className="users-form-card">
-        <div className="users-field">
-          <label className="users-label">Nome Completo</label>
-          <input value={name} onChange={e => setName(e.target.value)} className="users-input" placeholder="Nome do usuário" />
-        </div>
-        <div className="users-field">
-          <label className="users-label">E-mail</label>
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="users-input" placeholder="email@escritório.com" />
-        </div>
-        <div className="users-field">
-          <label className="users-label">Cargo</label>
-          <select value={role} onChange={e => setRole(e.target.value)} className="users-input">
-            <option>Administrador</option>
-            <option>Advogado</option>
-            <option>Assistente</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="users-form-actions">
-        <button onClick={onBack} className="users-secondary-button">
-          Cancelar
-        </button>
-        <button onClick={onBack} className="users-primary-button">
-          Criar usuário
-        </button>
-      </div>
-    </div>;
-}
-
-/* ── User Detail ── */
-function UserDetail({
-  user,
-  onBack
-}) {
-  const [deleteDialog, setDeleteDialog] = useState(false);
-  const [status, setStatus] = useState(user.status);
-  const [role, setRole] = useState(user.role);
-  const [saved, setSaved] = useState(false);
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
-  return <div className="users-detail-page">
-
-      {/* ── Navy hero ── */}
-      <div className="users-detail-hero">
-        <button onClick={onBack} className="users-detail-back">
-          <ArrowLeft size={13} />
-          Usuários
-        </button>
-
-        <div className="users-detail-orb" />
-
-        <div className="users-detail-head">
-          <div className="users-detail-avatar">
-            <span className="users-detail-initials">
-              {user.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
-            </span>
-          </div>
-          <div className="users-detail-copy">
-            <h1 className="users-detail-name">
-              {user.name}
-            </h1>
-            <div className="users-detail-status-row">
-              <StatusBadge status={user.status} />
-              <span className="users-detail-role">
-                <Shield size={10} className="users-detail-role-icon" />
-                {user.role}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Content ── */}
-      <div className="users-detail-content">
-
-        {/* Contact info */}
-        <div className="users-card">
-          <h3 className="users-card-title">Informações</h3>
-          <div className="users-info-list">
-            <div className="users-info-row">
-              <div className="users-info-icon-wrap">
-                <Mail size={13} className="users-info-icon" />
-              </div>
-              <span className="users-info-text">{user.email}</span>
-            </div>
-            <div className="users-info-row">
-              <div className="users-info-icon-wrap">
-                <Shield size={13} className="users-info-icon" />
-              </div>
-              <span className="users-info-mono">
-                {user.cpf}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Manage access */}
-        <div className="users-card users-card--spaced">
-          <h3 className="users-card-title">Gerenciar acesso</h3>
-
-          <div className="users-field">
-            <label className="users-label">Status</label>
-            <select value={status} onChange={e => setStatus(e.target.value)} className="users-input">
-              <option value="ativo">Ativo</option>
-              <option value="inativo">Inativo</option>
-            </select>
-          </div>
-
-          <div className="users-field">
-            <label className="users-label">Cargo</label>
-            <select value={role} onChange={e => setRole(e.target.value)} className="users-input">
-              <option>Administrador</option>
-              <option>Advogado</option>
-              <option>Assistente</option>
-            </select>
-          </div>
-
-          <button onClick={handleSave} className={`users-primary-button users-primary-button--save ${saved ? "is-saved" : ""}`}>
-            {saved ? "✓ Salvo com sucesso" : "Salvar alterações"}
-          </button>
-        </div>
-
-        {/* Delete */}
-        <button onClick={() => setDeleteDialog(true)} className="users-danger-button">
-          <Trash2 size={14} />
-          Excluir Usuário
-        </button>
-      </div>
-
-      {/* ── Delete Dialog ── */}
-      <Dialog open={deleteDialog} onOpenChange={setDeleteDialog}>
-        <DialogContent className="users-dialog">
-          <DialogHeader>
-            <DialogTitle className="users-dialog-title">Excluir usuário?</DialogTitle>
-          </DialogHeader>
-          <p className="users-dialog-text">
-            {user.name} será removido do sistema permanentemente.
-          </p>
-          <DialogFooter className="users-dialog-actions">
-            <button className="users-secondary-button" onClick={() => setDeleteDialog(false)}>
-              Cancelar
-            </button>
-            <button className="users-danger-confirm" onClick={() => {
-            setDeleteDialog(false);
-            onBack();
-          }}>
-              Excluir
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>;
 }

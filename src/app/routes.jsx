@@ -16,6 +16,8 @@ import EditProcessPage from "./pages/EditProcessPage";
 import RequestsPage from "./pages/RequestsPage";
 import RequestDetailPage from "./pages/RequestDetailPage";
 import UsersPage from "./pages/UsersPage";
+import NewUserPage from "./pages/NewUserPage";
+import UserDetailPage from "./pages/UserDetailPage";
 import RolesPage from "./pages/RolesPage";
 import ProfilePage from "./pages/ProfilePage";
 import LegalPage from "./pages/LegalPage";
@@ -79,6 +81,12 @@ export const router = createBrowserRouter([{
   }, {
     path: "usuarios",
     Component: UsersPage
+  }, {
+    path: "usuarios/novo",
+    Component: NewUserPage,
+  }, {
+    path: "usuarios/:id",
+    Component: UserDetailPage,
   }, {
     path: "cargos",
     Component: RolesPage
