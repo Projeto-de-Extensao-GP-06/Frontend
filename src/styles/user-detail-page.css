@@ -171,6 +171,7 @@
   font-weight: 500;
 }
 
+.user-detail-input,
 .user-detail-select {
   width: 100%;
   height: 2.75rem;
@@ -185,6 +186,11 @@
   transition: all 0.2s ease;
 }
 
+.user-detail-input::placeholder {
+  color: #9ca3af;
+}
+
+.user-detail-input:focus,
 .user-detail-select:focus {
   border-color: #0f2357;
   background: #ffffff;

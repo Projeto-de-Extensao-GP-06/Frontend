@@ -60,8 +60,7 @@ export default function UsersPage() {
     const matchQ =
       !search ||
       u.name.toLowerCase().includes(q) ||
-      u.email.toLowerCase().includes(q) ||
-      (u.cpf && u.cpf.includes(q));
+      u.email.toLowerCase().includes(q);
     const matchRole = filterRole === "Todos" || u.role === filterRole;
     const matchStatus = filterStatus === "Todos" || u.status === filterStatus;
     return matchQ && matchRole && matchStatus;

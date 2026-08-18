@@ -339,28 +339,24 @@ export const mockUsers = [{
   id: "u1",
   name: "Thauany Bezerra",
   email: "thauany@thauanybezerra.adv.br",
-  cpf: "111.222.333-44",
   role: "Administrador",
   status: "ativo"
 }, {
   id: "u2",
   name: "Carolina Almeida",
   email: "carolina@thauanybezerra.adv.br",
-  cpf: "222.333.444-55",
   role: "Assistente",
   status: "ativo"
 }, {
   id: "u3",
   name: "Rafael Monteiro",
   email: "rafael@thauanybezerra.adv.br",
-  cpf: "333.444.555-66",
   role: "Advogado",
   status: "ativo"
 }, {
   id: "u4",
   name: "Isabela Corrêa",
   email: "isabela@thauanybezerra.adv.br",
-  cpf: "444.555.666-77",
   role: "Assistente",
   status: "inativo"
 }];

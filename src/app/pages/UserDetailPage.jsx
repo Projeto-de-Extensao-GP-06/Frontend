@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate, Navigate } from "react-router";
-import { ArrowLeft, Mail, Shield, Trash2 } from "lucide-react";
+import { ArrowLeft, Shield, Trash2 } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
 import { mockUsers } from "../data/mockData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
@@ -18,6 +18,7 @@ export default function UserDetailPage() {
 function UserDetail({ user }) {
   const navigate = useNavigate();
   const [deleteDialog, setDeleteDialog] = useState(false);
+  const [email, setEmail] = useState(user.email || "");
   const [status, setStatus] = useState(user.status);
   const [role, setRole] = useState(user.role);
   const [saved, setSaved] = useState(false);
@@ -61,10 +62,10 @@ function UserDetail({ user }) {
               {user.name}
             </h1>
             <div className="user-detail-status-row">
-              <StatusBadge status={user.status} />
+              <StatusBadge status={status} />
               <span className="user-detail-role">
                 <Shield size={10} className="user-detail-role-icon" />
-                {user.role}
+                {role}
               </span>
             </div>
           </div>
@@ -73,30 +74,20 @@ function UserDetail({ user }) {
 
       {/* ── Content ── */}
       <div className="user-detail-content">
-        {/* Informações */}
+        {/* Informações e Gerenciamento */}
         <div className="user-detail-card">
-          <h3 className="user-detail-card-title">Informações</h3>
-          <div className="user-detail-info-list">
-            <div className="user-detail-info-row">
-              <div className="user-detail-info-icon-wrap">
-                <Mail size={13} className="user-detail-info-icon" />
-              </div>
-              <span className="user-detail-info-text">{user.email}</span>
-            </div>
-            <div className="user-detail-info-row">
-              <div className="user-detail-info-icon-wrap">
-                <Shield size={13} className="user-detail-info-icon" />
-              </div>
-              <span className="user-detail-info-mono">
-                {user.cpf}
-              </span>
-            </div>
-          </div>
-        </div>
+          <h3 className="user-detail-card-title">Informações e Acesso</h3>
 
-        {/* Gerenciar acesso */}
-        <div className="user-detail-card">
-          <h3 className="user-detail-card-title">Gerenciar acesso</h3>
+          <div className="user-detail-field">
+            <label className="user-detail-label">E-mail</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="user-detail-input"
+              placeholder="email@exemplo.com"
+            />
+          </div>
 
           <div className="user-detail-field">
             <label className="user-detail-label">Status</label>
