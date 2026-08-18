@@ -1,9 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { ArrowLeft } from "lucide-react";
 import "../../styles/new-user-page.css";
 
 export default function NewUserPage() {
+  useEffect(() => {
+    document.title = "Novo Usuário";
+  }, []);
+
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");

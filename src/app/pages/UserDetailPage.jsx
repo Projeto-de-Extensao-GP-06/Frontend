@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, Navigate } from "react-router";
 import { ArrowLeft, Mail, Shield, Trash2 } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
@@ -7,6 +7,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import "../../styles/user-detail-page.css";
 
 export default function UserDetailPage() {
+  useEffect(() => {
+    document.title = `Usuário - ${user.name}`;
+  }, []);
+
   const { id } = useParams();
   const user = mockUsers.find((u) => u.id === id);
 

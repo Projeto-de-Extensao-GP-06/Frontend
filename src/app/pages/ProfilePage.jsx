@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Mail, Key, Shield, CheckCircle, AlertCircle, Check } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
@@ -6,6 +6,10 @@ import { Button } from "../components/ui/button";
 import "../../styles/profile-page.css";
 
 export default function ProfilePage() {
+  useEffect(() => {
+    document.title = "Perfil";
+  }, []);
+
   const [email, setEmail] = useState("thauany@thauanybezerra.adv.br");
   const [emailSaved, setEmailSaved] = useState(false);
   const [confirmPassDialogOpen, setConfirmPassDialogOpen] = useState(false);
@@ -40,7 +44,7 @@ export default function ProfilePage() {
             </div>
             <div className="profile-hero__copy">
               <h1 className="profile-hero__name">Thauany Bezerra</h1>
-              <p className="profile-hero__role">Admin Advogada</p>
+              <p className="profile-hero__role">Administrador</p>
               <div className="profile-hero__status">
                 <div className="profile-hero__status-dot" />
                 <span className="profile-hero__status-label">Ativo</span>
@@ -158,7 +162,7 @@ export default function ProfilePage() {
           </p>
           <DialogFooter className="profile-dialog__footer">
             <Button variant="outline" className="edit-process-dialog-button edit-process-dialog-button--outline" onClick={() => setConfirmPassDialogOpen(false)}>Cancelar</Button>
-            <Button className="edit-process-button edit-process-button--primary" style={{flex:1}} onClick={() => { setConfirmPassDialogOpen(false); navigate("/redefinir-senha"); }}>Continuar</Button>
+            <Button className="edit-process-button edit-process-button--primary" style={{flex:1}} onClick={() => { setConfirmPassDialogOpen(false); navigate("/redefinir-senha?mode=redefinir"); }}>Continuar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

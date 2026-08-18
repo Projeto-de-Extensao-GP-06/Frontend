@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Plus, Shield, ChevronRight, UserCog, Search, X } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
@@ -46,6 +46,10 @@ function FilterSelect({ label, value, onChange, children }) {
 }
 
 export default function UsersPage() {
+  useEffect(() => {
+    document.title = "Usuários";
+  }, []);
+
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState("Todos");
   const [filterStatus, setFilterStatus] = useState("Todos");

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
 import { ArrowLeft, Mail, Phone, Calendar, FileText, Check, X, User } from "lucide-react";
 import { Button } from "../components/ui/button";
@@ -7,6 +8,10 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import "../../styles/request-detail-page.css";
 export default function RequestDetailPage() {
+  useEffect(() => {
+    document.title = `Solicitação - ${request.name}`;
+  }, []);
+
   const {
     id
   } = useParams();

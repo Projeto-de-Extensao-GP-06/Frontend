@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { ChevronRight, Mail, Calendar, Inbox, Search, X } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
@@ -19,6 +19,10 @@ const TABS = [{
 }];
 
 export default function RequestsPage() {
+  useEffect(() => {
+    document.title = "Solicitações";
+  }, []);
+
   const [activeTab, setActiveTab] = useState("todas");
   const [search, setSearch] = useState("");
   const [filterState, setFilterState] = useState("Todos");

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Shield, ChevronDown, ChevronRight, Check, Lock, Edit2, Trash2, Search, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import "../../styles/roles-page.css";
@@ -56,6 +56,10 @@ permissionModules.forEach(m => m.permissions.forEach(p => {
   defaultPerms[`${m.key}-${p}`] = true;
 }));
 export default function RolesPage() {
+  useEffect(() => {
+    document.title = "Cargos e Permissões";
+  }, []);
+
   const [expandedModules, setExpandedModules] = useState(["processo"]);
   const [allExpanded, setAllExpanded] = useState(false);
   const [selectedRole, setSelectedRole] = useState("admin");

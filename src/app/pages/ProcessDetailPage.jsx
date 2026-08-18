@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
 import { ArrowLeft, Pencil, Trash2, FileText, Clock, Plus, ChevronRight, Calendar, User, Building, Scale, AlertTriangle, Flag } from "lucide-react";
 import { mockProcesses } from "../data/mockData";
@@ -27,6 +28,10 @@ function InfoRow({ label, value, mono = false }) {
     </div>;
 }
 export default function ProcessDetailPage() {
+  useEffect(() => {
+    document.title = `Processo - ${process.clientName}`;
+  }, []);
+
   const {
     id
   } = useParams();

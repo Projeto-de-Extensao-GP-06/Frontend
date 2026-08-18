@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Plus, Search, Scale, Calendar, ChevronRight, FileText, Zap, TrendingUp, Clock, X, BarChart3 } from "lucide-react";
 import { StatusBadge, PriorityBadge, PhaseBadge } from "../components/StatusBadge";
@@ -46,6 +46,10 @@ const parseDateToTimestamp = (dateStr) => {
 };
 
 export default function HomePage() {
+  useEffect(() => {
+    document.title = "Início - Processos";
+  }, []);
+
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("Todos");
   const [filterTribunal, setFilterTribunal] = useState("Todos");

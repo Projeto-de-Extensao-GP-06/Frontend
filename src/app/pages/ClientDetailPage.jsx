@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
 import { User, Building2, Mail, Phone, MapPin, Briefcase, ChevronRight, Plus, Pencil, Trash2, ArrowLeft, Calendar, FileText, Scale } from "lucide-react";
 import { Button } from "../components/ui/button";
@@ -7,6 +8,10 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import "../../styles/client-detail-page.css";
 export default function ClientDetailPage() {
+  useEffect(() => {
+    document.title = `Cliente - ${client.name}`;
+  }, []);
+
   const {
     id
   } = useParams();

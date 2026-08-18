@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, Link } from "react-router";
 import { Menu, X, Instagram, MessageCircle, Linkedin, Phone, Mail, ChevronRight, CheckCircle, Send, FileText, Shield, Home, Briefcase, Users, Eye, Languages, Sun, Moon } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -40,6 +40,10 @@ const steps = [{
   desc: "Retornamos com orientações claras e próximos passos personalizados."
 }];
 export default function PublicSitePage() {
+  useEffect(() => {
+    document.title = "Thauany Bezerra Advogada";
+  }, []);
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [accessibilityMenuOpen, setAccessibilityMenuOpen] = useState(false);
@@ -201,7 +205,7 @@ export default function PublicSitePage() {
               <div className="site-contact-privacy">
                 <Checkbox id="privacy" checked={accepted} onCheckedChange={v => setAccepted(!!v)} className="site-contact-checkbox" />
                 <label htmlFor="privacy" className="site-contact-privacy__label">
-                  Li e aceito as <a href="/politica-de-privacidade" className="site-contact-privacy__link">Políticas de privacidade</a> e <a href="/termos-de-uso" className="site-contact-privacy__link">Termos de uso</a>
+                  Li e aceito as <Link to="/politica-de-privacidade" className="site-contact-privacy__link">Políticas de privacidade</Link> e <Link to="/termos-de-uso" className="site-contact-privacy__link">Termos de uso</Link>
                 </label>
               </div>
               <Button type="submit" disabled={!accepted} className="site-contact-submit">
@@ -226,8 +230,8 @@ export default function PublicSitePage() {
           </div>
           <div className="site-footer__legal">
             <div className="site-footer__legal-links">
-              <a href="/politica-de-privacidade" className="site-footer__legal-link">Políticas de privacidade</a>
-              <a href="/termos-de-uso" className="site-footer__legal-link">Termos de uso</a>
+              <Link to="/politica-de-privacidade" className="site-footer__legal-link">Políticas de privacidade</Link>
+              <Link to="/termos-de-uso" className="site-footer__legal-link">Termos de uso</Link>
             </div>
             <p className="site-footer__copy">© 2026 Thauany Bezerra Advocacia. Todos os direitos reservados.</p>
           </div>

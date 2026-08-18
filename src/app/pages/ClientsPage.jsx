@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Plus, Search, Building2, User, ChevronRight, Users, X } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
@@ -6,6 +6,10 @@ import { mockClients } from "../data/mockData";
 import "../../styles/clients-page.css";
 
 export default function ClientsPage() {
+  useEffect(() => {
+    document.title = "Clientes";
+  }, []);
+
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("todos");
   const [statusFilter, setStatusFilter] = useState("todos");

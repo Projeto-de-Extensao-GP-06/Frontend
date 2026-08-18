@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { ArrowLeft, Plus, FileText, Trash2, X, Check, Search, Users, RefreshCw } from "lucide-react";
 import { Button } from "../components/ui/button";
@@ -49,6 +49,10 @@ const maskCurrency = (value) => {
 };
 
 export default function NewProcessPage() {
+  useEffect(() => {
+    document.title = "Novo Processo";
+  }, []);
+
   const navigate = useNavigate();
   const [selectedClient, setSelectedClient] = useState(null);
   const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
