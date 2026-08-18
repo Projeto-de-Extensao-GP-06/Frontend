@@ -90,7 +90,7 @@ export default function EditProcessPage() {
       {/* Breadcrumb */}
       <button onClick={() => navigate(`/app/processos/${id}`)} className="edit-process-breadcrumb">
         <ArrowLeft size={14} />
-        Processo {process.cnj.slice(0, 10)}...
+        Processo
       </button>
 
       <div className="edit-process-header">

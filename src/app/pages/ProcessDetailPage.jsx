@@ -28,16 +28,55 @@ function InfoRow({ label, value, mono = false }) {
     </div>;
 }
 export default function ProcessDetailPage() {
-  useEffect(() => {
-    document.title = `Processo - ${process.clientName}`;
-  }, []);
-
   const {
     id
   } = useParams();
   const navigate = useNavigate();
   const [deleteDialog, setDeleteDialog] = useState(false);
   const process = mockProcesses.find(p => p.id === id);
+
+  const [observations, setObservations] = useState(process?.observations || []);
+  const [isAddingComment, setIsAddingComment] = useState(false);
+  const [newComment, setNewComment] = useState("");
+
+  useEffect(() => {
+    if (process) {
+      document.title = `Processo - ${process.clientName}`;
+      setObservations(process.observations || []);
+    }
+  }, [id, process]);
+
+  const handleAddComment = () => {
+    const trimmed = newComment.trim();
+    if (!trimmed) return;
+
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    const formattedDate = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+    const newObs = {
+      id: `o_${Date.now()}`,
+      text: trimmed,
+      createdAt: formattedDate,
+    };
+
+    const updatedObservations = [...observations, newObs];
+    setObservations(updatedObservations);
+    if (process) {
+      if (!process.observations) {
+        process.observations = [];
+      }
+      process.observations.push(newObs);
+    }
+    setNewComment("");
+    setIsAddingComment(false);
+  };
+
+  const handleCancelComment = () => {
+    setNewComment("");
+    setIsAddingComment(false);
+  };
+
   if (!process) {
     return <div className="proc-detail-empty">
         <Scale size={36} className="proc-detail-empty__icon" />
@@ -87,18 +126,63 @@ export default function ProcessDetailPage() {
           <p className="proc-card__text">{process.description}</p>
         </div>
 
-        {process.observations.length > 0 && <div className="proc-card">
-            <div className="proc-card__header">
-              <h3 className="proc-card__title"><AlertTriangle size={14} className="proc-card__title-icon" />Observações</h3>
-              <button onClick={() => navigate(`/app/processos/${id}/editar`)} className="proc-card__action-btn"><Plus size={12} />Adicionar</button>
-            </div>
+        <div className="proc-card">
+          <div className="proc-card__header">
+            <h3 className="proc-card__title"><AlertTriangle size={14} className="proc-card__title-icon" />Observações</h3>
+            {!isAddingComment && (
+              <button onClick={() => setIsAddingComment(true)} className="proc-card__action-btn">
+                <Plus size={12} />Adicionar comentário
+              </button>
+            )}
+          </div>
+
+          {observations.length > 0 ? (
             <div className="proc-obs-list">
-              {process.observations.map(obs => <div key={obs.id} className="proc-obs-item">
+              {observations.map(obs => <div key={obs.id} className="proc-obs-item">
                   <p className="proc-obs-item__text">• {obs.text}</p>
                   <p className="proc-obs-item__date">{obs.createdAt}</p>
                 </div>)}
             </div>
-          </div>}
+          ) : !isAddingComment ? (
+            <p className="proc-obs-empty">Nenhuma observação cadastrada.</p>
+          ) : null}
+
+          {isAddingComment && (
+            <div className="proc-obs-form">
+              <textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    handleAddComment();
+                  }
+                }}
+                placeholder="Digite o comentário..."
+                className="proc-obs-textarea"
+                rows={3}
+                autoFocus
+              />
+              <div className="proc-obs-form__actions">
+                <button
+                  type="button"
+                  onClick={handleCancelComment}
+                  className="proc-obs-btn proc-obs-btn--cancel"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAddComment}
+                  disabled={!newComment.trim()}
+                  className="proc-obs-btn proc-obs-btn--submit"
+                >
+                  Adicionar
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="proc-card">
           <h3 className="proc-card__title"><Clock size={14} className="proc-card__title-icon" />Histórico</h3>
@@ -122,7 +206,6 @@ export default function ProcessDetailPage() {
         <div className="proc-card">
           <div className="proc-card__header">
             <h3 className="proc-card__title"><FileText size={14} className="proc-card__title-icon" />Documentos</h3>
-            <button onClick={() => navigate(`/app/processos/${id}/editar`)} className="proc-card__action-btn"><Plus size={12} />Add Arquivo</button>
           </div>
           {process.documents.length === 0
             ? <div className="proc-doc-empty">
@@ -140,7 +223,7 @@ export default function ProcessDetailPage() {
                 })}
                 <div className="proc-doc-add" onClick={() => navigate(`/app/processos/${id}/editar`)}>
                   <Plus size={20} className="proc-doc-add__icon" />
-                  <p className="proc-doc-add__label">Add Arquivo</p>
+                  <p className="proc-doc-add__label">Adicionar Arquivo</p>
                 </div>
               </div>}
         </div>
