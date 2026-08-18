@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Plus, Shield, ChevronDown, ChevronRight, Check, Lock, Edit2, Trash2, Search, X } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import "../../styles/roles-page.css";
 const roles = [{
   id: "admin",
@@ -63,7 +64,9 @@ export default function RolesPage() {
   const [addRoleOpen, setAddRoleOpen]           = useState(false);
   const [addRoleName, setAddRoleName]           = useState("");
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
-  const [newRoleName, setNewRoleName] = useState("");
+  const [newRoleName, setNewRoleName]           = useState("");
+  const [deleteRoleDialog, setDeleteRoleDialog] = useState(false);
+  const [roleToDelete, setRoleToDelete]         = useState(null);
   const toggleModule = key => setExpandedModules(p => p.includes(key) ? p.filter(k => k !== key) : [...p, key]);
   const toggleAll = () => {
     if (allExpanded) setExpandedModules([]);else setExpandedModules(permissionModules.map(m => m.key));
@@ -87,9 +90,16 @@ export default function RolesPage() {
     setAddRoleOpen(false);
     setAddRoleName("");
   };
-  const handleDeleteRole = roleId => {
-    // Implementar lógica de excluir
-    console.log("Excluir cargo:", roleId);
+  const handleDeleteRole = role => {
+    setRoleToDelete(role);
+    setDeleteRoleDialog(true);
+  };
+  const confirmDeleteRole = () => {
+    if (roleToDelete) {
+      console.log("Excluir cargo:", roleToDelete.id);
+    }
+    setDeleteRoleDialog(false);
+    setRoleToDelete(null);
   };
   const handleClearAllPermissions = () => {
     const clearedPerms = {};
@@ -159,7 +169,7 @@ export default function RolesPage() {
                 <button onClick={e => { e.stopPropagation(); setSelectedRole(role.id); setNewRoleName(role.name); setRenameDialogOpen(true); }} className="roles-icon-btn" title="Renomear cargo">
                   <Edit2 size={13} className="roles-icon-btn__icon" />
                 </button>
-                <button onClick={e => { e.stopPropagation(); handleDeleteRole(role.id); }} className="roles-icon-btn roles-icon-btn--danger" title="Excluir cargo">
+                <button onClick={e => { e.stopPropagation(); handleDeleteRole(role); }} className="roles-icon-btn roles-icon-btn--danger" title="Excluir cargo">
                   <Trash2 size={13} className="roles-icon-btn__icon--danger" />
                 </button>
               </div>
@@ -276,6 +286,21 @@ export default function RolesPage() {
             </div>
           </div>
         </div>}
+
+      <Dialog open={deleteRoleDialog} onOpenChange={setDeleteRoleDialog}>
+        <DialogContent className="roles-delete-dialog">
+          <DialogHeader>
+            <DialogTitle className="roles-delete-dialog__title">Excluir cargo?</DialogTitle>
+          </DialogHeader>
+          <p className="roles-delete-dialog__text">
+            {roleToDelete ? `Tem certeza que deseja excluir o cargo "${roleToDelete.name}"? Esta ação é irreversível.` : "Esta ação é irreversível. Todas as permissões vinculadas a este cargo serão removidas permanentemente."}
+          </p>
+          <DialogFooter className="roles-delete-dialog__footer">
+            <button className="roles-delete-dialog__btn roles-delete-dialog__btn--outline" onClick={() => setDeleteRoleDialog(false)}>Cancelar</button>
+            <button className="roles-delete-dialog__btn roles-delete-dialog__btn--danger" onClick={confirmDeleteRole}>Excluir</button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>;
 }
 
