@@ -60,6 +60,8 @@ export default function RolesPage() {
   const [selectedRole, setSelectedRole] = useState("admin");
   const [checkedPerms, setCheckedPerms] = useState(defaultPerms);
   const [saved, setSaved] = useState(false);
+  const [addRoleOpen, setAddRoleOpen]           = useState(false);
+  const [addRoleName, setAddRoleName]           = useState("");
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [newRoleName, setNewRoleName] = useState("");
   const toggleModule = key => setExpandedModules(p => p.includes(key) ? p.filter(k => k !== key) : [...p, key]);
@@ -79,6 +81,11 @@ export default function RolesPage() {
     // Implementar lógica de renomear
     setRenameDialogOpen(false);
     setNewRoleName("");
+  };
+  const handleAddRole = () => {
+    if (!addRoleName.trim()) return;
+    setAddRoleOpen(false);
+    setAddRoleName("");
   };
   const handleDeleteRole = roleId => {
     // Implementar lógica de excluir
@@ -116,7 +123,9 @@ export default function RolesPage() {
             <Shield size={15} className="roles-card__title-icon" />
             Cargos
           </h2>
-          <button className="roles-add-button">
+          <button
+            onClick={() => { setAddRoleName(""); setAddRoleOpen(true); }}
+            className="roles-add-button">
             <Plus size={13} />
             Adicionar cargo
           </button>
@@ -216,6 +225,46 @@ export default function RolesPage() {
       <button onClick={handleSave} className={`roles-save-btn ${saved ? "roles-save-btn--saved" : ""}`}>
         {saved ? "✓ Permissões salvas!" : "Salvar permissões"}
       </button>
+
+      {addRoleOpen && (
+        <div className="roles-add-modal-overlay">
+          <div className="roles-add-modal">
+            <h3 className="roles-add-modal__title">
+              Novo Cargo
+            </h3>
+            <p className="roles-add-modal__subtitle">Informe o nome do cargo a ser criado.</p>
+
+            <label className="roles-add-modal__label">
+              Nome do cargo
+            </label>
+            <input
+              type="text"
+              autoFocus
+              value={addRoleName}
+              onChange={e => setAddRoleName(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") handleAddRole(); }}
+              className="roles-add-modal__input"
+              placeholder="Ex.: Estagiário, Sócio..."
+            />
+
+            <div className="roles-add-modal__actions">
+              <button
+                onClick={() => { setAddRoleOpen(false); setAddRoleName(""); }}
+                className="roles-add-modal__btn roles-add-modal__btn--cancel"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleAddRole}
+                disabled={!addRoleName.trim()}
+                className="roles-add-modal__btn roles-add-modal__btn--confirm"
+              >
+                Criar cargo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}  
 
       {renameDialogOpen && <div className="roles-dialog-overlay">
           <div className="roles-dialog">
