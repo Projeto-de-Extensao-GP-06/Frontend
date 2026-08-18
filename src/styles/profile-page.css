@@ -135,7 +135,7 @@
 }
 
 .profile-field {
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .profile-field:last-of-type {
@@ -151,44 +151,71 @@
   letter-spacing: 0.06em;
 }
 
-.profile-field__value-box {
+.profile-field__input {
+  width: 100%;
   padding: 0.75rem 1rem;
   border: 1px solid #e4e8f2;
   border-radius: 0.75rem;
   background: #f4f6fa;
+  color: #1e293b;
+  font-size: 0.875rem;
+  font-family: inherit;
+  outline: none;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
 }
 
-.profile-field__value-box--row {
+.profile-field__input:focus {
+  background: #fff;
+  border-color: #0f2357;
+  box-shadow: 0 0 0 3px rgba(15, 35, 87, 0.1);
+}
+
+.profile-feedback {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.625rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
 }
 
-.profile-field__value {
-  margin: 0;
-  color: #374151;
+.profile-feedback--success {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.profile-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  margin-top: 0.75rem;
+}
+
+.profile-save-email-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  height: 2.75rem;
+  border: 1px solid #0f2357;
+  border-radius: 0.75rem;
+  background: #0f2357;
+  color: #fff;
   font-size: 0.875rem;
-}
-
-.profile-field__password {
-  margin: 0;
-  color: #374151;
-  font-size: 0.875rem;
-  letter-spacing: 0.2em;
-}
-
-.profile-field__toggle {
-  flex-shrink: 0;
-  margin-left: 0.75rem;
-  border: 0;
-  background: none;
-  color: #9ca3af;
+  font-weight: 600;
   cursor: pointer;
-  transition: color 0.2s ease;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(15, 35, 87, 0.15);
 }
 
-.profile-field__toggle:hover {
-  color: #0f2357;
+.profile-save-email-btn:hover {
+  background: #1a3a7a;
+  border-color: #1a3a7a;
 }
 
 .profile-change-password-btn {
@@ -197,21 +224,21 @@
   justify-content: center;
   gap: 0.5rem;
   width: 100%;
-  height: 2.75rem;
-  margin-top: 1.25rem;
-  border: 0;
+  height: 3.5rem;
+  border: 1px solid #e4e8f2;
   border-radius: 0.75rem;
-  background: #0f2357;
-  color: #fff;
+  background: #f8fafc;
+  color: #0f2357;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s ease;
-  box-shadow: 0 4px 12px rgba(15, 35, 87, 0.2);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+  margin-top: 0.3rem;
 }
 
 .profile-change-password-btn:hover {
-  background: #1a3a7a;
+  background: #eef1f8;
+  border-color: #ccd5e6;
 }
 
 .profile-role-row {
@@ -321,6 +348,19 @@
   color: #6b7280;
   font-size: 0.875rem;
   text-align: center;
+}
+
+.profile-dialog__icon-wrap--blue {
+  background: #eef2ff;
+}
+
+.profile-dialog__icon-wrap--blue .profile-dialog__icon {
+  color: #0f2357;
+}
+
+.profile-dialog__highlight {
+  color: #0f2357;
+  word-break: break-all;
 }
 
 .profile-dialog__footer {
