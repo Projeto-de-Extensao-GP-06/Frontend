@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate, Navigate } from "react-router";
-import { ArrowLeft, Shield, Trash2 } from "lucide-react";
+import { ArrowLeft, Mail, Shield, Trash2 } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
 import { mockUsers } from "../data/mockData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
@@ -76,8 +76,10 @@ function UserDetail({ user }) {
       <div className="user-detail-content">
         {/* Informações e Gerenciamento */}
         <div className="user-detail-card">
-          <h3 className="user-detail-card-title">Informações e Acesso</h3>
-
+          <h3 className="user-detail-card-title">
+            <Mail size={14} className="user-card__title-icon" />
+            Informações e Acesso
+          </h3>
           <div className="user-detail-field">
             <label className="user-detail-label">E-mail</label>
             <input

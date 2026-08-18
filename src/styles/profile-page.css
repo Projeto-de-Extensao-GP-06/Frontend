@@ -111,6 +111,7 @@
 }
 
 .profile-card {
+  margin-top: 0.5rem;
   padding: 1.25rem;
   border: 1px solid #e8ecf4;
   border-radius: 1.25rem;
