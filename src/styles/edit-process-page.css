@@ -341,6 +341,45 @@
 .edit-process-dialog {
   max-width: 340px;
   border-radius: 1.25rem;
+  border-color: #e8ecf4;
+}
+
+.edit-process-dialog__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+}
+
+.edit-process-dialog__icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  background: #fef3c7;
+}
+
+.edit-process-dialog__icon {
+  color: #f59e0b;
+}
+
+.edit-process-dialog__icon-wrap--blue {
+  background: #eef2ff;
+}
+
+.edit-process-dialog__icon-wrap--blue .edit-process-dialog__icon {
+  color: #0f2357;
+}
+
+.edit-process-dialog__icon-wrap--red {
+  background: #fee2e2;
+}
+
+.edit-process-dialog__icon-wrap--red .edit-process-dialog__icon {
+  color: #dc2626;
 }
 
 .edit-process-dialog-title {
@@ -350,15 +389,22 @@
 
 .edit-process-dialog-text {
   margin: 0;
+  padding: 0.5rem 0.5rem;
   color: #6b7280;
   font-size: 0.875rem;
   text-align: center;
+}
+
+.edit-process-dialog__highlight {
+  color: #0f2357;
+  word-break: break-all;
 }
 
 .edit-process-dialog-footer {
   display: flex;
   flex-direction: row;
   gap: 0.75rem;
+  padding-top: 0.5rem;
 }
 
 .edit-process-dialog-button {
@@ -367,6 +413,24 @@
 
 .edit-process-dialog-button--outline {
   border: 1px solid #e5e7eb;
+}
+
+.edit-process-dialog-button--primary {
+  background: #0f2357;
+  color: #fff;
+}
+
+.edit-process-dialog-button--primary:hover {
+  background: #1a3a7a;
+}
+
+.edit-process-dialog-button--warn {
+  background: #f59e0b;
+  color: #fff;
+}
+
+.edit-process-dialog-button--warn:hover {
+  background: #d97706;
 }
 
 .edit-process-dialog-button--danger {

@@ -714,12 +714,50 @@
   cursor: not-allowed;
 }
 
-/* ── Delete confirmation dialog ── */
+/* ── Delete and Confirm dialogs ── */
 
 .roles-delete-dialog {
   max-width: 340px;
   border-radius: 1.25rem;
   border-color: #e8ecf4;
+}
+
+.roles-delete-dialog__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+}
+
+.roles-delete-dialog__icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  background: #fef3c7;
+}
+
+.roles-delete-dialog__icon {
+  color: #f59e0b;
+}
+
+.roles-delete-dialog__icon-wrap--blue {
+  background: #eef2ff;
+}
+
+.roles-delete-dialog__icon-wrap--blue .roles-delete-dialog__icon {
+  color: #0f2357;
+}
+
+.roles-delete-dialog__icon-wrap--red {
+  background: #fee2e2;
+}
+
+.roles-delete-dialog__icon-wrap--red .roles-delete-dialog__icon {
+  color: #dc2626;
 }
 
 .roles-delete-dialog__title {
@@ -732,13 +770,19 @@
   color: #6b7280;
   font-size: 0.875rem;
   text-align: center;
-  padding: 0 0.5rem;
+  padding: 0.5rem 0.5rem;
+}
+
+.roles-delete-dialog__highlight {
+  color: #0f2357;
+  word-break: break-all;
 }
 
 .roles-delete-dialog__footer {
   display: flex;
   flex-direction: row;
   gap: 0.75rem;
+  padding-top: 0.5rem;
 }
 
 .roles-delete-dialog__btn {
@@ -761,14 +805,27 @@
   background: #f4f6fa;
 }
 
+.roles-delete-dialog__btn--primary {
+  border: 0;
+  background: #0f2357;
+  color: #fff;
+  font-weight: 600;
+}
+
+.roles-delete-dialog__btn--primary:hover {
+  background: #1a3a7a;
+}
+
 .roles-delete-dialog__btn--danger {
   border: 0;
   background: #dc2626;
   color: #fff;
+  font-weight: 600;
 }
 
 .roles-delete-dialog__btn--danger:hover {
   background: #b91c1c;
 }
+
 
 

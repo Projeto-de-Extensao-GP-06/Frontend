@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Shield, ChevronDown, ChevronRight, Check, Lock, Edit2, Trash2, Search, X, Save } from "lucide-react";
+import { Plus, Shield, ChevronDown, ChevronRight, Check, Lock, Edit2, Trash2, Search, X, Save, CheckCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import "../../styles/roles-page.css";
 const roles = [{
@@ -47,14 +47,37 @@ const permissionModules = [{
   permissions: ["Criar", "Editar", "Excluir"]
 }, {
   key: "documento",
-  label: "Documento",
+  label: "Documentos",
   icon: "📄",
   permissions: ["Criar", "Editar", "Excluir", "Download"]
 }];
-const defaultPerms = {};
-permissionModules.forEach(m => m.permissions.forEach(p => {
-  defaultPerms[`${m.key}-${p}`] = true;
-}));
+const defaultPerms = {
+  "processo-Criar": true,
+  "processo-Editar": true,
+  "processo-Excluir": true,
+  "processo-Visualizar": true,
+  "solicitacao-Visualizar": true,
+  "solicitacao-Aceitar": true,
+  "solicitacao-Negar": true,
+  "cliente-Criar": true,
+  "cliente-Editar": true,
+  "cliente-Excluir": true,
+  "cliente-Visualizar": true,
+  "cargo-Criar": true,
+  "cargo-Editar": true,
+  "cargo-Excluir": true,
+  "usuario-Criar": true,
+  "usuario-Editar": true,
+  "usuario-Excluir": true,
+  "usuario-Visualizar": true,
+  "contato-Criar": true,
+  "contato-Editar": true,
+  "contato-Excluir": true,
+  "documento-Criar": true,
+  "documento-Editar": true,
+  "documento-Excluir": true,
+  "documento-Download": true
+};
 export default function RolesPage() {
   useEffect(() => {
     document.title = "Cargos e Permissões";
@@ -65,6 +88,7 @@ export default function RolesPage() {
   const [selectedRole, setSelectedRole] = useState("admin");
   const [checkedPerms, setCheckedPerms] = useState(defaultPerms);
   const [saved, setSaved] = useState(false);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [addRoleOpen, setAddRoleOpen]           = useState(false);
   const [addRoleName, setAddRoleName]           = useState("");
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
@@ -241,7 +265,7 @@ export default function RolesPage() {
         })}
       </div>
 
-      <button onClick={handleSave} className={`roles-save-btn ${saved ? "roles-save-btn--saved" : ""}`}>
+      <button onClick={() => setSaveDialogOpen(true)} className={`roles-save-btn ${saved ? "roles-save-btn--saved" : ""}`}>
         {saved ? "✓ Permissões salvas!" : <><Save size={15} />Salvar permissões</>}
       </button>
 
@@ -296,13 +320,55 @@ export default function RolesPage() {
           </div>
         </div>}
 
+      {/* ── Modal Salvar Permissões ── */}
+      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+        <DialogContent className="roles-delete-dialog">
+          <DialogHeader>
+            <div className="roles-delete-dialog__header">
+              <div className="roles-delete-dialog__icon-wrap roles-delete-dialog__icon-wrap--blue">
+                <CheckCircle size={24} className="roles-delete-dialog__icon" />
+              </div>
+              <DialogTitle className="roles-delete-dialog__title">
+                Confirmar alterações de permissões
+              </DialogTitle>
+            </div>
+          </DialogHeader>
+          <p className="roles-delete-dialog__text">
+            Deseja salvar as alterações de permissões para o cargo <strong className="roles-delete-dialog__highlight">{roles.find(r => r.id === selectedRole)?.name || selectedRole}</strong>?
+          </p>
+          <DialogFooter className="roles-delete-dialog__footer">
+            <button
+              className="roles-delete-dialog__btn roles-delete-dialog__btn--outline"
+              onClick={() => setSaveDialogOpen(false)}
+            >
+              Cancelar
+            </button>
+            <button
+              className="roles-delete-dialog__btn roles-delete-dialog__btn--primary"
+              onClick={() => {
+                setSaveDialogOpen(false);
+                handleSave();
+              }}
+            >
+              Confirmar
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Modal Excluir Cargo ── */}
       <Dialog open={deleteRoleDialog} onOpenChange={setDeleteRoleDialog}>
         <DialogContent className="roles-delete-dialog">
           <DialogHeader>
-            <DialogTitle className="roles-delete-dialog__title">Excluir cargo?</DialogTitle>
+            <div className="roles-delete-dialog__header">
+              <div className="roles-delete-dialog__icon-wrap roles-delete-dialog__icon-wrap--red">
+                <Trash2 size={24} className="roles-delete-dialog__icon" />
+              </div>
+              <DialogTitle className="roles-delete-dialog__title">Excluir cargo?</DialogTitle>
+            </div>
           </DialogHeader>
           <p className="roles-delete-dialog__text">
-            {roleToDelete ? `Tem certeza que deseja excluir o cargo "${roleToDelete.name}"? Esta ação é irreversível.` : "Esta ação é irreversível. Todas as permissões vinculadas a este cargo serão removidas permanentemente."}
+            {roleToDelete ? <>Tem certeza que deseja excluir o cargo <strong className="roles-delete-dialog__highlight">"{roleToDelete.name}"</strong>? Esta ação é irreversível.</> : "Esta ação é irreversível. Todas as permissões vinculadas a este cargo serão removidas permanentemente."}
           </p>
           <DialogFooter className="roles-delete-dialog__footer">
             <button className="roles-delete-dialog__btn roles-delete-dialog__btn--outline" onClick={() => setDeleteRoleDialog(false)}>Cancelar</button>

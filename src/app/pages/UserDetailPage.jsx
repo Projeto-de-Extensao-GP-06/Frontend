@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Navigate } from "react-router";
-import { ArrowLeft, Mail, Shield, Trash2, Save } from "lucide-react";
+import { ArrowLeft, Mail, Shield, Trash2, Save, CheckCircle } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
 import { mockUsers } from "../data/mockData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
@@ -22,6 +22,7 @@ export default function UserDetailPage() {
 function UserDetail({ user }) {
   const navigate = useNavigate();
   const [deleteDialog, setDeleteDialog] = useState(false);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [email, setEmail] = useState(user.email || "");
   const [status, setStatus] = useState(user.status);
   const [role, setRole] = useState(user.role);
@@ -121,7 +122,7 @@ function UserDetail({ user }) {
           </div>
 
           <button
-            onClick={handleSave}
+            onClick={() => setSaveDialogOpen(true)}
             className={`user-detail-btn-save ${
               saved ? "is-saved" : ""
             }`}
@@ -147,16 +148,57 @@ function UserDetail({ user }) {
         </button>
       </div>
 
+      {/* ── Modal Salvar Alterações ── */}
+      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+        <DialogContent className="user-detail-dialog">
+          <DialogHeader>
+            <div className="user-detail-dialog__header">
+              <div className="user-detail-dialog__icon-wrap user-detail-dialog__icon-wrap--blue">
+                <CheckCircle size={24} className="user-detail-dialog__icon" />
+              </div>
+              <DialogTitle className="user-detail-dialog-title">
+                Confirmar alterações do usuário
+              </DialogTitle>
+            </div>
+          </DialogHeader>
+          <p className="user-detail-dialog-text">
+            Deseja salvar as alterações no cadastro de <strong className="user-detail-dialog__highlight">{user.name}</strong>?
+          </p>
+          <DialogFooter className="user-detail-dialog-actions">
+            <button
+              className="user-detail-dialog-btn-cancel"
+              onClick={() => setSaveDialogOpen(false)}
+            >
+              Cancelar
+            </button>
+            <button
+              className="user-detail-dialog-btn-primary"
+              onClick={() => {
+                setSaveDialogOpen(false);
+                handleSave();
+              }}
+            >
+              Confirmar
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* ── Modal Excluir ── */}
       <Dialog open={deleteDialog} onOpenChange={setDeleteDialog}>
         <DialogContent className="user-detail-dialog">
           <DialogHeader>
-            <DialogTitle className="user-detail-dialog-title">
-              Excluir usuário?
-            </DialogTitle>
+            <div className="user-detail-dialog__header">
+              <div className="user-detail-dialog__icon-wrap user-detail-dialog__icon-wrap--red">
+                <Trash2 size={24} className="user-detail-dialog__icon" />
+              </div>
+              <DialogTitle className="user-detail-dialog-title">
+                Excluir usuário?
+              </DialogTitle>
+            </div>
           </DialogHeader>
           <p className="user-detail-dialog-text">
-            {user.name} será removido do sistema permanentemente.
+            <strong className="user-detail-dialog__highlight">{user.name}</strong> será removido do sistema permanentemente.
           </p>
           <DialogFooter className="user-detail-dialog-actions">
             <button

@@ -319,6 +319,84 @@
   background: #1a3a7a;
 }
 
+.edit-client-dialog {
+  max-width: 340px;
+  border-radius: 1.25rem;
+  border-color: #e8ecf4;
+}
+
+.edit-client-dialog__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+}
+
+.edit-client-dialog__icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  background: #fef3c7;
+}
+
+.edit-client-dialog__icon {
+  color: #f59e0b;
+}
+
+.edit-client-dialog__icon-wrap--blue {
+  background: #eef2ff;
+}
+
+.edit-client-dialog__icon-wrap--blue .edit-client-dialog__icon {
+  color: #0f2357;
+}
+
+.edit-client-dialog-title {
+  color: #0f2357;
+  text-align: center;
+}
+
+.edit-client-dialog-text {
+  margin: 0;
+  padding: 0.5rem 0.5rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.edit-client-dialog__highlight {
+  color: #0f2357;
+  word-break: break-all;
+}
+
+.edit-client-dialog-footer {
+  display: flex;
+  flex-direction: row;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+}
+
+.edit-client-dialog-button {
+  flex: 1;
+}
+
+.edit-client-dialog-button--outline {
+  border: 1px solid #e5e7eb;
+}
+
+.edit-client-dialog-button--primary {
+  background: #0f2357;
+  color: #fff;
+}
+
+.edit-client-dialog-button--primary:hover {
+  background: #1a3a7a;
+}
+
 @media (min-width: 640px) {
   .edit-client-page {
     padding-inline: 1.5rem;

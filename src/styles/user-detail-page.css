@@ -263,6 +263,44 @@
   font-family: 'DM Sans', sans-serif;
 }
 
+.user-detail-dialog__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+}
+
+.user-detail-dialog__icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  background: #fef3c7;
+}
+
+.user-detail-dialog__icon {
+  color: #f59e0b;
+}
+
+.user-detail-dialog__icon-wrap--blue {
+  background: #eef2ff;
+}
+
+.user-detail-dialog__icon-wrap--blue .user-detail-dialog__icon {
+  color: #0f2357;
+}
+
+.user-detail-dialog__icon-wrap--red {
+  background: #fee2e2;
+}
+
+.user-detail-dialog__icon-wrap--red .user-detail-dialog__icon {
+  color: #dc2626;
+}
+
 .user-detail-dialog-title {
   color: #0f2357;
   text-align: center;
@@ -271,16 +309,22 @@
 }
 
 .user-detail-dialog-text {
-  margin: 0.5rem 0 1.25rem;
+  margin: 0;
   color: #6b7280;
   font-size: 0.875rem;
   text-align: center;
-  padding: 0 0.5rem;
+  padding: 0.5rem 0.5rem;
+}
+
+.user-detail-dialog__highlight {
+  color: #0f2357;
+  word-break: break-all;
 }
 
 .user-detail-dialog-actions {
   display: flex;
   gap: 0.75rem;
+  padding-top: 0.5rem;
 }
 
 .user-detail-dialog-btn-cancel {
@@ -300,6 +344,23 @@
   background: #f4f6fa;
 }
 
+.user-detail-dialog-btn-primary {
+  flex: 1;
+  height: 2.75rem;
+  border: none;
+  border-radius: 0.75rem;
+  background: #0f2357;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.user-detail-dialog-btn-primary:hover {
+  background: #1a3a7a;
+}
+
 .user-detail-dialog-btn-confirm {
   flex: 1;
   height: 2.75rem;
@@ -316,6 +377,7 @@
 .user-detail-dialog-btn-confirm:hover {
   background: #b91c1c;
 }
+
 
 
 

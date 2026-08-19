@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router";
-import { ArrowLeft, Plus, X, Trash2, Save, Search, Users, RefreshCw } from "lucide-react";
+import { ArrowLeft, Plus, X, Trash2, Save, Search, Users, RefreshCw, CheckCircle, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -53,6 +53,8 @@ export default function EditProcessPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [deleteDialog, setDeleteDialog] = useState(false);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
   const process = mockProcesses.find((p) => p.id === id);
 
   const initialClient = process ? mockClients.find((c) => c.id === process.clientId) || null : null;
@@ -297,14 +299,14 @@ export default function EditProcessPage() {
           <Button variant="outline" onClick={() => navigate(`/app/processos/${id}`)} className="edit-process-button edit-process-button--outline">
             Cancelar
           </Button>
-          <Button onClick={() => navigate(`/app/processos/${id}`)} className="edit-process-button edit-process-button--primary">
+          <Button onClick={() => setSaveDialogOpen(true)} className="edit-process-button edit-process-button--primary">
             <Save size={15} />
             Salvar Alterações
           </Button>
         </div>
 
         <div className="edit-process-actions-row">
-          <Button className="edit-process-button edit-process-button--warn" onClick={() => navigate(`/app/processos/${id}`)}>
+          <Button className="edit-process-button edit-process-button--warn" onClick={() => setDeactivateDialogOpen(true)}>
             Desativar Processo
           </Button>
           <Button onClick={() => setDeleteDialog(true)} className="edit-process-button edit-process-button--danger">
@@ -314,10 +316,68 @@ export default function EditProcessPage() {
         </div>
       </div>
 
+      {/* Modal de confirmação de alteração do processo */}
+      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+        <DialogContent className="edit-process-dialog">
+          <DialogHeader>
+            <div className="edit-process-dialog__header">
+              <div className="edit-process-dialog__icon-wrap edit-process-dialog__icon-wrap--blue">
+                <CheckCircle size={24} className="edit-process-dialog__icon" />
+              </div>
+              <DialogTitle className="edit-process-dialog-title">Confirmar alterações do processo</DialogTitle>
+            </div>
+          </DialogHeader>
+          <p className="edit-process-dialog-text">
+            Deseja salvar as alterações realizadas no processo <strong className="edit-process-dialog__highlight">{process?.cnj || id}</strong>?
+          </p>
+          <DialogFooter className="edit-process-dialog-footer">
+            <Button variant="outline" className="edit-process-dialog-button edit-process-dialog-button--outline" onClick={() => setSaveDialogOpen(false)}>Cancelar</Button>
+            <Button className="edit-process-dialog-button edit-process-dialog-button--primary" onClick={() => {
+              setSaveDialogOpen(false);
+              navigate(`/app/processos/${id}`);
+            }}>
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de confirmação de desativação do processo */}
+      <Dialog open={deactivateDialogOpen} onOpenChange={setDeactivateDialogOpen}>
+        <DialogContent className="edit-process-dialog">
+          <DialogHeader>
+            <div className="edit-process-dialog__header">
+              <div className="edit-process-dialog__icon-wrap">
+                <AlertTriangle size={24} className="edit-process-dialog__icon" />
+              </div>
+              <DialogTitle className="edit-process-dialog-title">Desativar processo?</DialogTitle>
+            </div>
+          </DialogHeader>
+          <p className="edit-process-dialog-text">
+            O processo será marcado como inativo no sistema. Deseja continuar?
+          </p>
+          <DialogFooter className="edit-process-dialog-footer">
+            <Button variant="outline" className="edit-process-dialog-button edit-process-dialog-button--outline" onClick={() => setDeactivateDialogOpen(false)}>Cancelar</Button>
+            <Button className="edit-process-dialog-button edit-process-dialog-button--warn" onClick={() => {
+              setDeactivateDialogOpen(false);
+              navigate(`/app/processos/${id}`);
+            }}>
+              Desativar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de confirmação de exclusão do processo */}
       <Dialog open={deleteDialog} onOpenChange={setDeleteDialog}>
         <DialogContent className="edit-process-dialog">
           <DialogHeader>
-            <DialogTitle className="edit-process-dialog-title">Excluir processo?</DialogTitle>
+            <div className="edit-process-dialog__header">
+              <div className="edit-process-dialog__icon-wrap edit-process-dialog__icon-wrap--red">
+                <Trash2 size={24} className="edit-process-dialog__icon" />
+              </div>
+              <DialogTitle className="edit-process-dialog-title">Excluir processo?</DialogTitle>
+            </div>
           </DialogHeader>
           <p className="edit-process-dialog-text">
             Esta ação é irreversível. Todos os dados serão removidos permanentemente.
@@ -325,9 +385,9 @@ export default function EditProcessPage() {
           <DialogFooter className="edit-process-dialog-footer">
             <Button variant="outline" className="edit-process-dialog-button edit-process-dialog-button--outline" onClick={() => setDeleteDialog(false)}>Cancelar</Button>
             <Button className="edit-process-dialog-button edit-process-dialog-button--danger" onClick={() => {
-            setDeleteDialog(false);
-            navigate("/app/inicio");
-          }}>
+              setDeleteDialog(false);
+              navigate("/app/inicio");
+            }}>
               Excluir
             </Button>
           </DialogFooter>

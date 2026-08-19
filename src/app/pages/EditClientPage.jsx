@@ -1,9 +1,10 @@
 import { useNavigate, useParams } from "react-router";
-import { ArrowLeft, Save, Building2, User, Plus, X } from "lucide-react";
+import { ArrowLeft, Save, Building2, User, Plus, X, CheckCircle } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { mockClients, brazilStates } from "../data/mockData";
 import "../../styles/edit-client-page.css";
 
@@ -57,6 +58,7 @@ export default function EditClientPage() {
   } = useParams();
   const navigate = useNavigate();
   const [tab, setTab] = useState("dados");
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const client = mockClients.find(c => c.id === id);
 
   const [cpf, setCpf] = useState(() => (client?.cpf ? maskCPF(client.cpf) : ""));
@@ -305,11 +307,37 @@ export default function EditClientPage() {
         <Button variant="outline" onClick={() => navigate(`/app/clientes/${id}`)} className="edit-client-button edit-client-button--outline">
           Cancelar
         </Button>
-        <Button onClick={() => navigate(`/app/clientes/${id}`)} className="edit-client-button edit-client-button--primary">
+        <Button onClick={() => setSaveDialogOpen(true)} className="edit-client-button edit-client-button--primary">
           <Save size={15} />
           Salvar alterações
         </Button>
       </div>
+
+      {/* Modal de confirmação de alteração do cliente */}
+      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+        <DialogContent className="edit-client-dialog">
+          <DialogHeader>
+            <div className="edit-client-dialog__header">
+              <div className="edit-client-dialog__icon-wrap edit-client-dialog__icon-wrap--blue">
+                <CheckCircle size={24} className="edit-client-dialog__icon" />
+              </div>
+              <DialogTitle className="edit-client-dialog-title">Confirmar alterações do cliente</DialogTitle>
+            </div>
+          </DialogHeader>
+          <p className="edit-client-dialog-text">
+            Deseja salvar as alterações realizadas no cadastro de <strong className="edit-client-dialog__highlight">{client?.name || id}</strong>?
+          </p>
+          <DialogFooter className="edit-client-dialog-footer">
+            <Button variant="outline" className="edit-client-dialog-button edit-client-dialog-button--outline" onClick={() => setSaveDialogOpen(false)}>Cancelar</Button>
+            <Button className="edit-client-dialog-button edit-client-dialog-button--primary" onClick={() => {
+              setSaveDialogOpen(false);
+              navigate(`/app/clientes/${id}`);
+            }}>
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>;
 }
 function Field({
