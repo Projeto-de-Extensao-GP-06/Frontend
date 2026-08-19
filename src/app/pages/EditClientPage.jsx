@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router";
-import { ArrowLeft, Check, Building2, User, Plus, X } from "lucide-react";
+import { ArrowLeft, Save, Building2, User, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -306,7 +306,7 @@ export default function EditClientPage() {
           Cancelar
         </Button>
         <Button onClick={() => navigate(`/app/clientes/${id}`)} className="edit-client-button edit-client-button--primary">
-          <Check size={16} />
+          <Save size={15} />
           Salvar alterações
         </Button>
       </div>

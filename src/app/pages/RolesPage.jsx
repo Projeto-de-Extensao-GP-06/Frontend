@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Shield, ChevronDown, ChevronRight, Check, Lock, Edit2, Trash2, Search, X } from "lucide-react";
+import { Plus, Shield, ChevronDown, ChevronRight, Check, Lock, Edit2, Trash2, Search, X, Save } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import "../../styles/roles-page.css";
 const roles = [{
@@ -242,7 +242,7 @@ export default function RolesPage() {
       </div>
 
       <button onClick={handleSave} className={`roles-save-btn ${saved ? "roles-save-btn--saved" : ""}`}>
-        {saved ? "✓ Permissões salvas!" : "Salvar permissões"}
+        {saved ? "✓ Permissões salvas!" : <><Save size={15} />Salvar permissões</>}
       </button>
 
       {addRoleOpen && (

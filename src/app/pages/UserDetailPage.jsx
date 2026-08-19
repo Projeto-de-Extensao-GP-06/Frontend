@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Navigate } from "react-router";
-import { ArrowLeft, Mail, Shield, Trash2 } from "lucide-react";
+import { ArrowLeft, Mail, Shield, Trash2, Save } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
 import { mockUsers } from "../data/mockData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
@@ -126,7 +126,14 @@ function UserDetail({ user }) {
               saved ? "is-saved" : ""
             }`}
           >
-            {saved ? "✓ Salvo com sucesso" : "Salvar alterações"}
+            {saved ? (
+              "✓ Salvo com sucesso"
+            ) : (
+              <>
+                <Save size={15} />
+                Salvar alterações
+              </>
+            )}
           </button>
         </div>
 

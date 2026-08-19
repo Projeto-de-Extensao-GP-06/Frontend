@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { ArrowLeft, ArrowRight, Check, Plus, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, User, Plus, X } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -309,7 +309,7 @@ export default function NewClientWizardPage() {
       <div className="edit-client-actions">
         <Button variant="outline" onClick={() => navigate("/app/clientes")} className="edit-client-button edit-client-button--outline">Cancelar</Button>
         <Button onClick={handleNext} className="edit-client-button edit-client-button--primary">
-          {isLastStep ? <><Check size={16} />Criar cliente</> : <>Próximo<ArrowRight size={16} /></>}
+          {isLastStep ? <><User size={16} />Criar cliente</> : <>Próximo<ArrowRight size={16} /></>}
         </Button>
       </div>
     </div>;

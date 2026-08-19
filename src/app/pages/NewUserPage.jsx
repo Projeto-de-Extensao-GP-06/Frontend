@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, User } from "lucide-react";
 import "../../styles/new-user-page.css";
 
 export default function NewUserPage() {
@@ -76,6 +76,7 @@ export default function NewUserPage() {
           onClick={() => navigate("/app/usuarios")}
           className="new-user-btn-submit"
         >
+          <User size={15} />
           Criar usuário
         </button>
       </div>
