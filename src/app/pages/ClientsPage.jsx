@@ -5,6 +5,18 @@ import { StatusBadge } from "../components/StatusBadge";
 import { mockClients } from "../data/mockData";
 import "../../styles/clients-page.css";
 
+const TYPE_OPTS = [
+  { value: "todos", label: "Todos" },
+  { value: "PF", label: "Pessoa Física" },
+  { value: "PJ", label: "Pessoa Jurídica" },
+];
+
+const STATUS_OPTS = [
+  { value: "todos", label: "Todos" },
+  { value: "ativo", label: "Ativo" },
+  { value: "inativo", label: "Inativo" },
+];
+
 export default function ClientsPage() {
   useEffect(() => {
     document.title = "Clientes";
@@ -13,7 +25,10 @@ export default function ClientsPage() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("todos");
   const [statusFilter, setStatusFilter] = useState("todos");
+  const [sortBy, setSortBy] = useState("nome_asc");
+  const [page, setPage] = useState(1);
   const navigate = useNavigate();
+
   const filtered = mockClients.filter(c => {
     const term = search.toLowerCase();
     const doc = c.type === "PF" ? c.cpf : c.cnpj;
@@ -22,6 +37,17 @@ export default function ClientsPage() {
     const matchStatus = statusFilter === "todos" || c.status === statusFilter;
     return matchSearch && matchType && matchStatus;
   });
+
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortBy === "nome_asc") {
+      return a.name.localeCompare(b.name, "pt");
+    }
+    if (sortBy === "nome_desc") {
+      return b.name.localeCompare(a.name, "pt");
+    }
+    return 0;
+  });
+
   const hasActiveFilters = search !== "" || typeFilter !== "todos" || statusFilter !== "todos";
   const clearFilters = () => {
     setSearch("");
@@ -29,11 +55,12 @@ export default function ClientsPage() {
     setStatusFilter("todos");
     setPage(1);
   };
+
   const PAGE_SIZE = 6;
-  const [page, setPage] = useState(1);
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
-  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const paginated = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
   return <div className="clients-page">
       {/* ── Header ── */}
       <div className="clients-header">
@@ -57,7 +84,16 @@ export default function ClientsPage() {
         <div className="clients-search-row">
           <div className="clients-search-wrap">
             <Search size={16} className="clients-search-icon" />
-            <input type="text" placeholder="Buscar por nome, e-mail ou CPF/CNPJ..." value={search} onChange={e => setSearch(e.target.value)} className="clients-search-input" />
+            <input
+              type="text"
+              placeholder="Buscar por nome, e-mail ou CPF/CNPJ..."
+              value={search}
+              onChange={e => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              className="clients-search-input"
+            />
           </div>
           <button className="clients-search-button">
             Buscar
@@ -67,47 +103,84 @@ export default function ClientsPage() {
         {/* Divider */}
         <div className="clients-divider" />
 
-        {/* Filter controls */}
-        <div className="clients-filters-grid">
-          {/* Type filter */}
-          <div>
-            <p className="clients-filter-label">
-              Tipo de pessoa
-            </p>
-            <div className="clients-filter-group">
-              {["todos", "PF", "PJ"].map(t => <button key={t} onClick={() => setTypeFilter(t)} className={`clients-filter-pill ${typeFilter === t ? "is-active" : ""}`}>
-                  {t === "todos" ? "Todos" : t === "PF" ? "Física" : "Jurídica"}
-                </button>)}
-            </div>
+        {/* Filters row */}
+        <div className="clients-filter-row">
+          <div className="clients-filter-group-left">
+            <span className="clients-filter-label">
+              Filtros
+            </span>
+
+            <FilterSelect
+              label="Tipo"
+              value={typeFilter}
+              onChange={val => {
+                setTypeFilter(val);
+                setPage(1);
+              }}
+            >
+              {TYPE_OPTS.map(o => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </FilterSelect>
+
+            <FilterSelect
+              label="Status"
+              value={statusFilter}
+              onChange={val => {
+                setStatusFilter(val);
+                setPage(1);
+              }}
+            >
+              {STATUS_OPTS.map(o => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </FilterSelect>
+
+            {hasActiveFilters && (
+              <button onClick={clearFilters} className="clients-clear-button">
+                <X size={11} />
+                Limpar filtros
+              </button>
+            )}
           </div>
 
-          {/* Status filter */}
-          <div>
-            <p className="clients-filter-label">
-              Status
-            </p>
-            <div className="clients-filter-group">
-              {["todos", "ativo", "inativo"].map(s => <button key={s} onClick={() => setStatusFilter(s)} className={`clients-filter-pill ${statusFilter === s ? "is-active" : ""}`}>
-                  {s === "todos" ? "Todos" : s.charAt(0).toUpperCase() + s.slice(1)}
-                </button>)}
-            </div>
+          <div className="clients-sort-wrap">
+            <span className="clients-sort-label">Ordenar:</span>
+            <select
+              value={sortBy}
+              onChange={e => {
+                setSortBy(e.target.value);
+                setPage(1);
+              }}
+              className="clients-sort-select"
+            >
+              <option value="nome_asc">Nome (A → Z)</option>
+              <option value="nome_desc">Nome (Z → A)</option>
+            </select>
           </div>
         </div>
       </div>
 
-      {/* ── Results count + clear ── */}
+      {/* ── Results count ── */}
       <div className="clients-results-row">
         <p className="clients-results-count">
-          {filtered.length === mockClients.length ? `${filtered.length} clientes` : `${filtered.length} de ${mockClients.length} clientes`}
+          {sorted.length === mockClients.length
+            ? `${sorted.length} clientes`
+            : `${sorted.length} de ${mockClients.length} clientes`}
         </p>
-        {hasActiveFilters && <button onClick={clearFilters} className="clients-clear-filters">
-            <X size={11} />
-            Limpar filtros
-          </button>}
+        {sorted.length > 0 && (
+          <p className="clients-results-tip">
+            Clique em um cliente para ver detalhes
+          </p>
+        )}
       </div>
 
       {/* ── Client grid / empty state ── */}
-      {filtered.length === 0 ? <div className="clients-empty-state">
+      {sorted.length === 0 ? <div className="clients-empty-state">
           <div className="clients-empty-icon-wrap">
             <Users size={24} className="clients-empty-icon" />
           </div>
@@ -125,6 +198,28 @@ export default function ClientsPage() {
         </div>}
       <PaginationBar page={safePage} total={totalPages} onPage={setPage} />
     </div>;
+}
+
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  children
+}) {
+  return (
+    <div className="clients-filter-select">
+      <span className="clients-filter-select-label">
+        {label}:
+      </span>
+      <select
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        className="clients-filter-select-input"
+      >
+        {children}
+      </select>
+    </div>
+  );
 }
 function PaginationBar({ page, total, onPage }) {
   if (total <= 1) return null;
