@@ -307,6 +307,7 @@ export default function EditProcessPage() {
 
         <div className="edit-process-actions-row">
           <Button className="edit-process-button edit-process-button--warn" onClick={() => setDeactivateDialogOpen(true)}>
+            <AlertTriangle size={15} className="edit-process-dialog__icon" />
             Desativar Processo
           </Button>
           <Button onClick={() => setDeleteDialog(true)} className="edit-process-button edit-process-button--danger">
