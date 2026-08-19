@@ -208,9 +208,9 @@ export default function ProcessDetailPage() {
             <h3 className="proc-card__title"><FileText size={14} className="proc-card__title-icon" />Documentos</h3>
           </div>
           {process.documents.length === 0
-            ? <div className="proc-doc-empty">
-                <FileText size={22} className="proc-doc-empty__icon" />
-                <p className="proc-doc-empty__text">Nenhum documento anexado</p>
+            ? <div className="proc-doc-empty" onClick={() => navigate(`/app/processos/${id}/editar`)}>
+                <Plus size={20} className="proc-doc-add__icon" />
+                <p className="proc-doc-empty__text">Adicionar arquivo</p>
               </div>
             : <div className="proc-doc-grid">
                 {process.documents.map(doc => {
@@ -223,7 +223,7 @@ export default function ProcessDetailPage() {
                 })}
                 <div className="proc-doc-add" onClick={() => navigate(`/app/processos/${id}/editar`)}>
                   <Plus size={20} className="proc-doc-add__icon" />
-                  <p className="proc-doc-add__label">Adicionar Arquivo</p>
+                  <p className="proc-doc-add__label">Adicionar arquivo</p>
                 </div>
               </div>}
         </div>

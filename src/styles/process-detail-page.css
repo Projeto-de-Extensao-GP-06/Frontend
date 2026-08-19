@@ -407,6 +407,14 @@
   border: 2px dashed #e4e8f2;
   border-radius: 0.75rem;
   text-align: center;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.proc-doc-empty:hover {
+  border-color: rgba(15, 35, 87, 0.4);
+  background: #f4f6fa;
 }
 
 .proc-doc-empty__icon {
