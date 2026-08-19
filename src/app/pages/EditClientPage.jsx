@@ -6,6 +6,44 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { mockClients, brazilStates } from "../data/mockData";
 import "../../styles/edit-client-page.css";
+
+const maskCPF = (value) => {
+  if (!value) return "";
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+  if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+};
+
+const maskCNPJ = (value) => {
+  if (!value) return "";
+  const digits = value.replace(/\D/g, "").slice(0, 14);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 5) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
+  if (digits.length <= 8) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
+  if (digits.length <= 12) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+};
+
+const maskRG = (value) => {
+  if (!value) return "";
+  const cleaned = value.replace(/[^0-9a-zA-Z]/g, "").slice(0, 9).toUpperCase();
+  if (cleaned.length <= 2) return cleaned;
+  if (cleaned.length <= 5) return `${cleaned.slice(0, 2)}.${cleaned.slice(2)}`;
+  if (cleaned.length <= 8) return `${cleaned.slice(0, 2)}.${cleaned.slice(2, 5)}.${cleaned.slice(5)}`;
+  return `${cleaned.slice(0, 2)}.${cleaned.slice(2, 5)}.${cleaned.slice(5, 8)}-${cleaned.slice(8)}`;
+};
+
+const maskPhone = (value) => {
+  if (!value) return "";
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 2) return digits.length > 0 ? `(${digits}` : "";
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+};
+
 export default function EditClientPage() {
   const {
     id
@@ -13,6 +51,22 @@ export default function EditClientPage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState("dados");
   const client = mockClients.find(c => c.id === id);
+
+  const [cpf, setCpf] = useState(() => (client?.cpf ? maskCPF(client.cpf) : ""));
+  const [rg, setRg] = useState(() => (client?.rg ? maskRG(client.rg) : ""));
+  const [cnpj, setCnpj] = useState(() => (client?.cnpj ? maskCNPJ(client.cnpj) : ""));
+  const [phone, setPhone] = useState(() => (client?.phone ? maskPhone(client.phone) : ""));
+  const [contacts, setContacts] = useState(() =>
+    client?.contacts?.map(c => ({
+      ...c,
+      phone: c.phone ? maskPhone(c.phone) : ""
+    })) ?? []
+  );
+
+  const handleContactPhoneChange = (index, value) => {
+    setContacts(prev => prev.map((c, i) => i === index ? { ...c, phone: maskPhone(value) } : c));
+  };
+
   if (!client) {
     return <div className="edit-client-page edit-client-page--empty">
         <p className="edit-client-empty-text">Cliente não encontrado.</p>
@@ -73,14 +127,41 @@ export default function EditClientPage() {
       {/* Tab Content */}
       {tab === "dados" && <div className="edit-client-section">
           {isPF ? <>
-              <Field label="CPF" defaultValue={pf.cpf} mono />
-              <Field label="RG" defaultValue={pf.rg} mono />
+              <Field
+                label="CPF"
+                value={cpf}
+                onChange={(e) => setCpf(maskCPF(e.target.value))}
+                placeholder="000.000.000-00"
+                maxLength={14}
+                mono
+              />
+              <Field
+                label="RG"
+                value={rg}
+                onChange={(e) => setRg(maskRG(e.target.value))}
+                placeholder="00.000.000-0"
+                maxLength={12}
+                mono
+              />
               <Field label="Nome Completo" defaultValue={pf.name} />
               <Field label="E-mail" defaultValue={pf.email} type="email" />
-              <Field label="Telefone" defaultValue={pf.phone} />
+              <Field
+                label="Telefone"
+                value={phone}
+                onChange={(e) => setPhone(maskPhone(e.target.value))}
+                placeholder="(00) 00000-0000"
+                maxLength={15}
+              />
               <Field label="Profissão" defaultValue={pf.profession} />
             </> : <>
-              <Field label="CNPJ" defaultValue={pj.cnpj} mono />
+              <Field
+                label="CNPJ"
+                value={cnpj}
+                onChange={(e) => setCnpj(maskCNPJ(e.target.value))}
+                placeholder="00.000.000/0000-00"
+                maxLength={18}
+                mono
+              />
               <Field label="Nome / Razão Social" defaultValue={pj.name} />
               <Field label="E-mail" defaultValue={pj.email} type="email" />
             </>}
@@ -108,16 +189,22 @@ export default function EditClientPage() {
         </div>}
 
       {tab === "contatos" && <div className="edit-client-section edit-client-section--contacts">
-          {client.contacts.length === 0 ? <div className="edit-client-empty-card">
+          {contacts.length === 0 ? <div className="edit-client-empty-card">
               <p className="edit-client-empty-text">Nenhum contato cadastrado</p>
-            </div> : client.contacts.map((contact, i) => <div key={contact.id} className="edit-client-contact-card">
-                {contact.isPrimary && <div className="edit-client-primary-row">
+            </div> : contacts.map((contact, i) => <div key={contact.id} className="edit-client-contact-card">
+                {!isPF && contact.isPrimary && <div className="edit-client-primary-row">
                     <div className="edit-client-primary-dot" />
                     <span className="edit-client-primary-label">Contato Principal</span>
                   </div>}
                 <Field label="Nome" defaultValue={contact.name} />
                 <Field label="E-mail" defaultValue={contact.email} type="email" />
-                <Field label="Telefone" defaultValue={contact.phone} />
+                <Field
+                  label="Telefone"
+                  value={contact.phone}
+                  onChange={(e) => handleContactPhoneChange(i, e.target.value)}
+                  placeholder="(00) 00000-0000"
+                  maxLength={15}
+                />
                 <Field label="Profissão" defaultValue={contact.profession} />
               </div>)}
           <button className="edit-client-add-contact-button">
@@ -139,14 +226,28 @@ export default function EditClientPage() {
 }
 function Field({
   label,
+  value,
   defaultValue,
+  onChange,
   type = "text",
-  mono = false
+  mono = false,
+  placeholder,
+  maxLength,
+  ...props
 }) {
   return <div className="edit-client-field">
       <Label className="edit-client-label">
         {label}
       </Label>
-      <Input type={type} defaultValue={defaultValue} className={`edit-client-input ${mono ? "edit-client-input--mono" : ""}`} />
+      <Input
+        type={type}
+        value={value}
+        defaultValue={defaultValue}
+        onChange={onChange}
+        placeholder={placeholder}
+        maxLength={maxLength}
+        className={`edit-client-input ${mono ? "edit-client-input--mono" : ""}`}
+        {...props}
+      />
     </div>;
 }

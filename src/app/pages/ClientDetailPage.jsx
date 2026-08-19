@@ -62,9 +62,9 @@ export default function ClientDetailPage() {
         <div className="client-detail-info-list">
           <InfoRow label={isPF ? "CPF" : "CNPJ"} value={isPF ? pf.cpf : pj.cnpj} mono />
           {isPF && <InfoRow label="RG" value={pf.rg} mono />}
-          <InfoRow label="E-mail" value={client.email} icon={<Mail size={13} />} />
-          {isPF && <InfoRow label="Telefone" value={pf.phone} icon={<Phone size={13} />} />}
-          {isPF && <InfoRow label="Profissão" value={pf.profession} icon={<Briefcase size={13} />} />}
+          {isPF && <InfoRow label="E-mail" value={pf.email || client.contacts?.find(c => c.isPrimary)?.email} icon={<Mail size={13} />} />}
+          {isPF && <InfoRow label="Telefone" value={pf.phone || client.contacts?.find(c => c.isPrimary)?.phone} icon={<Phone size={13} />} />}
+          {isPF && <InfoRow label="Profissão" value={pf.profession || client.contacts?.find(c => c.isPrimary)?.profession} icon={<Briefcase size={13} />} />}
         </div>
 
         {/* Edit button */}
@@ -108,7 +108,7 @@ export default function ClientDetailPage() {
 
         {client.contacts.length === 0 ? <p className="client-detail-empty-inline">Nenhum contato adicionado</p> : <div className="client-detail-contact-list">
             {client.contacts.map((contact, i) => <div key={contact.id} className={`client-detail-contact-item ${i > 0 ? "client-detail-contact-item--separated" : ""}`}>
-                {contact.isPrimary && <span className="client-detail-primary-tag">Principal</span>}
+                {!isPF && contact.isPrimary && <span className="client-detail-primary-tag">Principal</span>}
                 <div className="client-detail-info-list client-detail-info-list--compact">
                   <InfoRow label="Nome" value={contact.name} />
                   <InfoRow label="E-mail" value={contact.email} icon={<Mail size={13} />} />

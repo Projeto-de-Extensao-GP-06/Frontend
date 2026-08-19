@@ -17,7 +17,7 @@ export default function ClientsPage() {
   const filtered = mockClients.filter(c => {
     const term = search.toLowerCase();
     const doc = c.type === "PF" ? c.cpf : c.cnpj;
-    const matchSearch = !search || c.name.toLowerCase().includes(term) || c.email.toLowerCase().includes(term) || doc.includes(term);
+    const matchSearch = !search || c.name.toLowerCase().includes(term) || c.contacts?.some(ct => ct.email?.toLowerCase().includes(term)) || (doc && doc.includes(term));
     const matchType = typeFilter === "todos" || c.type === typeFilter;
     const matchStatus = statusFilter === "todos" || c.status === statusFilter;
     return matchSearch && matchType && matchStatus;
@@ -177,6 +177,8 @@ function ClientCard({
 }) {
   const isPF = client.type === "PF";
   const doc = isPF ? client.cpf : client.cnpj;
+  const primaryContact = client.contacts?.find(c => c.isPrimary) || client.contacts?.[0];
+  const primaryEmail = (isPF ? (client.email || primaryContact?.email) : primaryContact?.email) || "—";
   return <div onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === "Enter" && onClick()} className="client-card">
       {/* Card body */}
       <div className="client-card-body">
@@ -205,7 +207,7 @@ function ClientCard({
 
       {/* Footer row */}
       <div className="client-card-footer">
-        <p className="client-card-email">{client.email}</p>
+        <p className="client-card-email">{primaryEmail}</p>
         <StatusBadge status={client.status} />
       </div>
     </div>;
