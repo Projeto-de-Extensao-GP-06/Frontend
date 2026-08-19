@@ -113,12 +113,6 @@ export default function ClientDetailPage() {
           {isPF && <InfoRow label="Telefone" value={pf.phone || contacts.find(c => c.isPrimary)?.phone} icon={<Phone size={13} />} />}
           {isPF && <InfoRow label="Profissão" value={pf.profession || contacts.find(c => c.isPrimary)?.profession} icon={<Briefcase size={13} />} />}
         </div>
-
-        {/* Edit button */}
-        <Button onClick={() => navigate(`/app/clientes/${id}/editar`)} variant="outline" className="client-detail-outline-button">
-          <Pencil size={14} />
-          Editar dados
-        </Button>
       </div>
 
       {/* Address */}
@@ -199,11 +193,15 @@ export default function ClientDetailPage() {
           </div>}
       </div>
 
-      {/* Delete */}
-      <Button onClick={() => setDeleteDialog(true)} className="client-detail-delete-button">
-        <Trash2 size={15} />
-        Excluir Cliente
-      </Button>
+      {/* Actions */}
+      <div className="client-detail-actions">
+        <button onClick={() => navigate(`/app/clientes/${id}/editar`)} className="client-detail-actions__btn client-detail-actions__btn--primary">
+          <Pencil size={15} />Editar Cliente
+        </button>
+        <button onClick={() => setDeleteDialog(true)} className="client-detail-actions__btn client-detail-actions__btn--danger">
+          <Trash2 size={15} />Excluir
+        </button>
+      </div>
 
       {/* Delete Dialog */}
       <Dialog open={deleteDialog} onOpenChange={setDeleteDialog}>
