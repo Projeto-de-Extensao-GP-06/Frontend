@@ -44,6 +44,13 @@ const maskPhone = (value) => {
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 };
 
+const maskCEP = (value) => {
+  if (!value) return "";
+  const digits = value.replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 5) return digits;
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+};
+
 export default function EditClientPage() {
   const {
     id
@@ -56,6 +63,7 @@ export default function EditClientPage() {
   const [rg, setRg] = useState(() => (client?.rg ? maskRG(client.rg) : ""));
   const [cnpj, setCnpj] = useState(() => (client?.cnpj ? maskCNPJ(client.cnpj) : ""));
   const [phone, setPhone] = useState(() => (client?.phone ? maskPhone(client.phone) : ""));
+  const [cep, setCep] = useState(() => (client?.address?.cep ? maskCEP(client.address.cep) : ""));
   const [contacts, setContacts] = useState(() =>
     client?.contacts?.map(c => ({
       ...c,
@@ -168,7 +176,14 @@ export default function EditClientPage() {
         </div>}
 
       {tab === "endereco" && <div className="edit-client-section">
-          <Field label="CEP" defaultValue={client.address.cep} mono />
+          <Field
+            label="CEP"
+            value={cep}
+            onChange={(e) => setCep(maskCEP(e.target.value))}
+            placeholder="00000-000"
+            maxLength={9}
+            mono
+          />
           <Field label="Logradouro" defaultValue={client.address.logradouro} />
           <div className="edit-client-grid edit-client-grid--2">
             <Field label="Número" defaultValue={client.address.numero} />

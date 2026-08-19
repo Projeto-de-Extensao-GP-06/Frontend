@@ -37,6 +37,51 @@ function StepIndicator({ steps, current }) {
         </div>)}
     </div>;
 }
+
+const maskCPF = (value) => {
+  if (!value) return "";
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+  if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+};
+
+const maskCNPJ = (value) => {
+  if (!value) return "";
+  const digits = value.replace(/\D/g, "").slice(0, 14);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 5) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
+  if (digits.length <= 8) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
+  if (digits.length <= 12) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+};
+
+const maskRG = (value) => {
+  if (!value) return "";
+  const cleaned = value.replace(/[^0-9a-zA-Z]/g, "").slice(0, 9).toUpperCase();
+  if (cleaned.length <= 2) return cleaned;
+  if (cleaned.length <= 5) return `${cleaned.slice(0, 2)}.${cleaned.slice(2)}`;
+  if (cleaned.length <= 8) return `${cleaned.slice(0, 2)}.${cleaned.slice(2, 5)}.${cleaned.slice(5)}`;
+  return `${cleaned.slice(0, 2)}.${cleaned.slice(2, 5)}.${cleaned.slice(5, 8)}-${cleaned.slice(8)}`;
+};
+
+const maskPhone = (value) => {
+  if (!value) return "";
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 2) return digits.length > 0 ? `(${digits}` : "";
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+};
+
+const maskCEP = (value) => {
+  if (!value) return "";
+  const digits = value.replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 5) return digits;
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+};
+
 export default function NewClientWizardPage() {
   useEffect(() => {
     document.title = "Novo Cliente";
@@ -45,9 +90,31 @@ export default function NewClientWizardPage() {
   const navigate = useNavigate();
   const [clientType, setClientType] = useState(null);
   const [step, setStep] = useState(0);
+  const [cpf, setCpf] = useState("");
+  const [rg, setRg] = useState("");
+  const [cnpj, setCnpj] = useState("");
+  const [phone, setPhone] = useState("");
+  const [pfPhone, setPfPhone] = useState("");
+  const [pjPrimaryPhone, setPjPrimaryPhone] = useState("");
+  const [cep, setCep] = useState("");
   const [extraContacts, setExtraContacts] = useState([]);
+  const [extraPhones, setExtraPhones] = useState({});
   const steps = clientType === "PF" ? pfSteps : clientType === "PJ" ? pjSteps : [];
   const isLastStep = step === steps.length - 1;
+
+  const handleExtraPhoneChange = (id, value) => {
+    setExtraPhones(prev => ({ ...prev, [id]: maskPhone(value) }));
+  };
+
+  const handleRemoveExtraContact = (id) => {
+    setExtraContacts(prev => prev.filter(i => i !== id));
+    setExtraPhones(prev => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  };
+
   if (!clientType) {
     return <div className="wizard-page">
         <button onClick={() => navigate("/app/clientes")} className="edit-client-breadcrumb">
@@ -88,6 +155,14 @@ export default function NewClientWizardPage() {
   const handleBack = () => {
     if (step === 0) {
       setClientType(null);
+      setCpf("");
+      setRg("");
+      setCnpj("");
+      setPfPhone("");
+      setPjPrimaryPhone("");
+      setCep("");
+      setExtraContacts([]);
+      setExtraPhones({});
     } else {
       setStep(s => s - 1);
     }
@@ -110,16 +185,59 @@ export default function NewClientWizardPage() {
 
       <div className="edit-client-section">
         {clientType === "PF" && step === 0 && <>
-            <FormField label="CPF" placeholder="000.000.000-00" mono />
-            <FormField label="RG" placeholder="00.000.000-0" mono />
+            <FormField
+              label="CPF"
+              value={cpf}
+              onChange={(e) => setCpf(maskCPF(e.target.value))}
+              placeholder="000.000.000-00"
+              maxLength={14}
+              mono
+            />
+            <FormField
+              label="RG"
+              value={rg}
+              onChange={(e) => setRg(maskRG(e.target.value))}
+              placeholder="00.000.000-0"
+              maxLength={12}
+              mono
+            />
             <FormField label="Nome Completo" placeholder="Nome do cliente" />
             <FormField label="E-mail" placeholder="email@exemplo.com" type="email" />
-            <FormField label="Telefone" placeholder="(00) 00000-0000" />
+            <FormField
+              label="Telefone"
+              value={pfPhone}
+              onChange={(e) => setPfPhone(maskPhone(e.target.value))}
+              placeholder="(00) 00000-0000"
+              maxLength={15}
+            />
             <FormField label="Profissão" placeholder="Ex: Engenheiro, Médico..." />
-            <button className="edit-client-add-contact-button"><Plus size={15} />Add outro contato</button>
+            {extraContacts.map(id => <div key={id} className="wizard-extra-contact">
+                <div className="wizard-extra-contact__header">
+                  <p className="wizard-extra-contact__label">Contato adicional</p>
+                  <button onClick={() => handleRemoveExtraContact(id)} className="wizard-extra-contact__remove"><X size={15} /></button>
+                </div>
+                <FormField label="Nome" placeholder="Nome do contato" />
+                <FormField label="E-mail" placeholder="email@empresa.com" type="email" />
+                <FormField
+                  label="Telefone"
+                  value={extraPhones[id] || ""}
+                  onChange={(e) => handleExtraPhoneChange(id, e.target.value)}
+                  placeholder="(00) 00000-0000"
+                  maxLength={15}
+                />
+                <FormField label="Profissão / Cargo" placeholder="Ex: Gerente..." />
+              </div>)}
+            <button onClick={() => setExtraContacts(prev => [...prev, Date.now()])} className="edit-client-add-contact-button">+ Adicionar outro contato</button>
           </>}
         {clientType === "PF" && step === 1 && <>
-            <FormField label="CEP" placeholder="00000-000" mono />
+            <FormField
+              label="CEP"
+              value={cep}
+              onChange={(e) => setCep(maskCEP(e.target.value))}
+              placeholder="00000-000"
+              maxLength={9}
+              mono
+            />
             <FormField label="Logradouro" placeholder="Rua, Avenida..." />
             <div className="edit-client-grid edit-client-grid--2"><FormField label="Número" placeholder="00" /><FormField label="Complemento" placeholder="Apto, Sala..." /></div>
             <FormField label="Bairro" placeholder="Bairro" />
@@ -129,11 +247,25 @@ export default function NewClientWizardPage() {
             </div>
           </>}
         {clientType === "PJ" && step === 0 && <>
-            <FormField label="CNPJ" placeholder="00.000.000/0000-00" mono />
+            <FormField
+              label="CNPJ"
+              value={cnpj}
+              onChange={(e) => setCnpj(maskCNPJ(e.target.value))}
+              placeholder="00.000.000/0000-00"
+              maxLength={18}
+              mono
+            />
             <FormField label="Nome / Razão Social" placeholder="Nome da empresa" />
           </>}
         {clientType === "PJ" && step === 1 && <>
-            <FormField label="CEP" placeholder="00000-000" mono />
+            <FormField
+              label="CEP"
+              value={cep}
+              onChange={(e) => setCep(maskCEP(e.target.value))}
+              placeholder="00000-000"
+              maxLength={9}
+              mono
+            />
             <FormField label="Logradouro" placeholder="Rua, Avenida..." />
             <div className="edit-client-grid edit-client-grid--2"><FormField label="Número" placeholder="00" /><FormField label="Complemento" placeholder="Sala, Andar..." /></div>
             <FormField label="Bairro" placeholder="Bairro" />
@@ -146,19 +278,31 @@ export default function NewClientWizardPage() {
             <div className="wizard-contact-primary"><p className="wizard-contact-primary__label">Contato Principal</p></div>
             <FormField label="Nome" placeholder="Nome do contato" />
             <FormField label="E-mail" placeholder="email@empresa.com" type="email" />
-            <FormField label="Telefone" placeholder="(00) 00000-0000" />
+            <FormField
+              label="Telefone"
+              value={pjPrimaryPhone}
+              onChange={(e) => setPjPrimaryPhone(maskPhone(e.target.value))}
+              placeholder="(00) 00000-0000"
+              maxLength={15}
+            />
             <FormField label="Profissão / Cargo" placeholder="Ex: Diretor, Gerente..." />
             {extraContacts.map(id => <div key={id} className="wizard-extra-contact">
                 <div className="wizard-extra-contact__header">
                   <p className="wizard-extra-contact__label">Contato adicional</p>
-                  <button onClick={() => setExtraContacts(prev => prev.filter(i => i !== id))} className="wizard-extra-contact__remove"><X size={15} /></button>
+                  <button onClick={() => handleRemoveExtraContact(id)} className="wizard-extra-contact__remove"><X size={15} /></button>
                 </div>
                 <FormField label="Nome" placeholder="Nome do contato" />
                 <FormField label="E-mail" placeholder="email@empresa.com" type="email" />
-                <FormField label="Telefone" placeholder="(00) 00000-0000" />
+                <FormField
+                  label="Telefone"
+                  value={extraPhones[id] || ""}
+                  onChange={(e) => handleExtraPhoneChange(id, e.target.value)}
+                  placeholder="(00) 00000-0000"
+                  maxLength={15}
+                />
                 <FormField label="Profissão / Cargo" placeholder="Ex: Gerente..." />
               </div>)}
-            <button onClick={() => setExtraContacts(prev => [...prev, Date.now()])} className="edit-client-add-contact-button"><Plus size={15} />Add outro contato</button>
+            <button onClick={() => setExtraContacts(prev => [...prev, Date.now()])} className="edit-client-add-contact-button">+ Adicionar outro contato</button>
           </>}
       </div>
 
@@ -170,9 +314,17 @@ export default function NewClientWizardPage() {
       </div>
     </div>;
 }
-function FormField({ label, placeholder, type = "text", mono = false }) {
+function FormField({ label, placeholder, type = "text", mono = false, value, onChange, maxLength, ...props }) {
   return <div className="edit-client-field">
       <Label className="edit-client-label">{label}</Label>
-      <Input type={type} placeholder={placeholder} className={`edit-client-input ${mono ? "edit-client-input--mono" : ""}`} />
+      <Input
+        type={type}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        maxLength={maxLength}
+        className={`edit-client-input ${mono ? "edit-client-input--mono" : ""}`}
+        {...props}
+      />
     </div>;
 }
