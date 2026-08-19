@@ -99,6 +99,8 @@ export default function EditClientPage() {
   };
 
   const handleRemoveContact = (index) => {
+    const contact = contacts[index];
+    if (!isPF && contact?.isPrimary) return;
     setContacts(prev => prev.filter((_, i) => i !== index));
   };
 
@@ -249,15 +251,17 @@ export default function EditClientPage() {
                         : "Contato adicional"}
                     </span>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveContact(i)}
-                    className="edit-client-contact-remove"
-                    title="Remover contato"
-                    aria-label="Remover contato"
-                  >
-                    <X size={15} />
-                  </button>
+                  {(isPF || !contact.isPrimary) && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveContact(i)}
+                      className="edit-client-contact-remove"
+                      title="Remover contato"
+                      aria-label="Remover contato"
+                    >
+                      <X size={15} />
+                    </button>
+                  )}
                 </div>
                 <Field
                   label="Nome"
