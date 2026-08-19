@@ -28,7 +28,7 @@ const areas = [{
 }];
 const steps = [{
   num: "01",
-  title: "Envie sua dúvida",
+  title: "Envie seu caso",
   desc: "Preencha o formulário com sua situação e entraremos em contato."
 }, {
   num: "02",
@@ -121,7 +121,7 @@ export default function PublicSitePage() {
           <p className="site-hero__subtitle">Advocacia</p>
           <p className="site-hero__desc">Atendimento jurídico com segurança e confidencialidade. Seu direito, nossa prioridade.</p>
           <div className="site-hero__actions">
-            <Button onClick={() => scrollTo("contato")} className="site-hero__cta">Enviar minha dúvida</Button>
+            <Button onClick={() => scrollTo("contato")} className="site-hero__cta">Entrar em contato</Button>
             <button onClick={() => scrollTo("como-funciona")} className="site-hero__link">Como funciona?</button>
           </div>
         </div>
@@ -182,15 +182,15 @@ export default function PublicSitePage() {
         <div className="site-section__inner">
           <div className="site-section__head">
             <p className="site-section__kicker">Fale conosco</p>
-            <h2 className="site-section__title">Envie sua Dúvida</h2>
-            <p className="site-section__sub">Preencha o formulário e retornaremos em até 24h</p>
+            <h2 className="site-section__title">Envie seu caso</h2>
+            <p className="site-section__sub">Preencha o formulário e envie seu caso para nossa equipe</p>
           </div>
           <div className="site-contact-card">
             <form className="site-contact-form">
               <div className="site-contact-grid">
                 <div className="site-contact-grid__full"><Label className="site-contact-label">Nome Completo *</Label><Input className="site-contact-input" placeholder="Seu nome" /></div>
                 <div><Label className="site-contact-label">E-mail *</Label><Input type="email" className="site-contact-input" placeholder="seu@email.com" /></div>
-                <div><Label className="site-contact-label">Telefone *</Label><Input className="site-contact-input" placeholder="(11) 9xxxx-xxxx" /></div>
+                <div><Label className="site-contact-label">Telefone *</Label><Input className="site-contact-input" placeholder="(xx) 9xxxx-xxxx" /></div>
                 <div><Label className="site-contact-label">Estado *</Label>
                   <select className="site-contact-select">
                     <option value="">Selecione...</option>
@@ -199,7 +199,7 @@ export default function PublicSitePage() {
                     <option>GO</option><option>DF</option>
                   </select>
                 </div>
-                <div><Label className="site-contact-label">N° do Processo</Label><Input className="site-contact-input site-contact-input--mono" placeholder="Opcional" /></div>
+                <div><Label className="site-contact-label">N° do Processo (CNJ)</Label><Input className="site-contact-input site-contact-input--mono" placeholder="Opcional" /></div>
                 <div className="site-contact-grid__full"><Label className="site-contact-label">Descreva sua Situação *</Label><Textarea className="site-contact-textarea" placeholder="Descreva brevemente o seu caso..." /></div>
               </div>
               <div className="site-contact-privacy">
@@ -209,7 +209,7 @@ export default function PublicSitePage() {
                 </label>
               </div>
               <Button type="submit" disabled={!accepted} className="site-contact-submit">
-                <Send size={16} />Enviar Dúvida
+                <Send size={16} />Enviar caso
               </Button>
             </form>
           </div>
