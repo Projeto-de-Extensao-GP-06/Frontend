@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Shield, ChevronDown, ChevronRight, Check, Lock, Edit2, Trash2, Search, X } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import "../../styles/roles-page.css";
 const roles = [{
   id: "admin",
@@ -55,13 +56,21 @@ permissionModules.forEach(m => m.permissions.forEach(p => {
   defaultPerms[`${m.key}-${p}`] = true;
 }));
 export default function RolesPage() {
+  useEffect(() => {
+    document.title = "Cargos e Permissões";
+  }, []);
+
   const [expandedModules, setExpandedModules] = useState(["processo"]);
   const [allExpanded, setAllExpanded] = useState(false);
   const [selectedRole, setSelectedRole] = useState("admin");
   const [checkedPerms, setCheckedPerms] = useState(defaultPerms);
   const [saved, setSaved] = useState(false);
+  const [addRoleOpen, setAddRoleOpen]           = useState(false);
+  const [addRoleName, setAddRoleName]           = useState("");
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
-  const [newRoleName, setNewRoleName] = useState("");
+  const [newRoleName, setNewRoleName]           = useState("");
+  const [deleteRoleDialog, setDeleteRoleDialog] = useState(false);
+  const [roleToDelete, setRoleToDelete]         = useState(null);
   const toggleModule = key => setExpandedModules(p => p.includes(key) ? p.filter(k => k !== key) : [...p, key]);
   const toggleAll = () => {
     if (allExpanded) setExpandedModules([]);else setExpandedModules(permissionModules.map(m => m.key));
@@ -80,9 +89,21 @@ export default function RolesPage() {
     setRenameDialogOpen(false);
     setNewRoleName("");
   };
-  const handleDeleteRole = roleId => {
-    // Implementar lógica de excluir
-    console.log("Excluir cargo:", roleId);
+  const handleAddRole = () => {
+    if (!addRoleName.trim()) return;
+    setAddRoleOpen(false);
+    setAddRoleName("");
+  };
+  const handleDeleteRole = role => {
+    setRoleToDelete(role);
+    setDeleteRoleDialog(true);
+  };
+  const confirmDeleteRole = () => {
+    if (roleToDelete) {
+      console.log("Excluir cargo:", roleToDelete.id);
+    }
+    setDeleteRoleDialog(false);
+    setRoleToDelete(null);
   };
   const handleClearAllPermissions = () => {
     const clearedPerms = {};
@@ -116,23 +137,30 @@ export default function RolesPage() {
             <Shield size={15} className="roles-card__title-icon" />
             Cargos
           </h2>
-          <button className="roles-add-button">
+          <button
+            onClick={() => { setAddRoleName(""); setAddRoleOpen(true); }}
+            className="roles-add-button">
             <Plus size={13} />
             Adicionar cargo
           </button>
         </div>
 
         {/* Busca de cargos */}
-        <div className="roles-search-wrap">
-          <Search size={14} className="roles-search-icon" />
-          <input
-            type="text"
-            placeholder="Buscar cargo..."
-            value={roleSearch}
-            onChange={e => { setRoleSearch(e.target.value); setRolePage(1); }}
-            className="roles-search-input"
-          />
-          {roleSearch && <button onClick={() => { setRoleSearch(""); setRolePage(1); }} className="roles-search-clear"><X size={12} /></button>}
+        <div className="roles-search-row">
+          <div className="roles-search-wrap">
+            <Search size={14} className="roles-search-icon" />
+            <input
+              type="text"
+              placeholder="Buscar cargo..."
+              value={roleSearch}
+              onChange={e => { setRoleSearch(e.target.value); setRolePage(1); }}
+              className="roles-search-input"
+            />
+            {roleSearch && <button type="button" onClick={() => { setRoleSearch(""); setRolePage(1); }} className="roles-search-clear"><X size={12} /></button>}
+          </div>
+          <button type="button" onClick={() => setRolePage(1)} className="roles-search-btn">
+            Buscar
+          </button>
         </div>
 
         <div className="roles-list">
@@ -150,7 +178,7 @@ export default function RolesPage() {
                 <button onClick={e => { e.stopPropagation(); setSelectedRole(role.id); setNewRoleName(role.name); setRenameDialogOpen(true); }} className="roles-icon-btn" title="Renomear cargo">
                   <Edit2 size={13} className="roles-icon-btn__icon" />
                 </button>
-                <button onClick={e => { e.stopPropagation(); handleDeleteRole(role.id); }} className="roles-icon-btn roles-icon-btn--danger" title="Excluir cargo">
+                <button onClick={e => { e.stopPropagation(); handleDeleteRole(role); }} className="roles-icon-btn roles-icon-btn--danger" title="Excluir cargo">
                   <Trash2 size={13} className="roles-icon-btn__icon--danger" />
                 </button>
               </div>
@@ -217,6 +245,46 @@ export default function RolesPage() {
         {saved ? "✓ Permissões salvas!" : "Salvar permissões"}
       </button>
 
+      {addRoleOpen && (
+        <div className="roles-add-modal-overlay">
+          <div className="roles-add-modal">
+            <h3 className="roles-add-modal__title">
+              Novo Cargo
+            </h3>
+            <p className="roles-add-modal__subtitle">Informe o nome do cargo a ser criado.</p>
+
+            <label className="roles-add-modal__label">
+              Nome do cargo
+            </label>
+            <input
+              type="text"
+              autoFocus
+              value={addRoleName}
+              onChange={e => setAddRoleName(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") handleAddRole(); }}
+              className="roles-add-modal__input"
+              placeholder="Ex.: Estagiário, Sócio..."
+            />
+
+            <div className="roles-add-modal__actions">
+              <button
+                onClick={() => { setAddRoleOpen(false); setAddRoleName(""); }}
+                className="roles-add-modal__btn roles-add-modal__btn--cancel"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleAddRole}
+                disabled={!addRoleName.trim()}
+                className="roles-add-modal__btn roles-add-modal__btn--confirm"
+              >
+                Criar cargo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}  
+
       {renameDialogOpen && <div className="roles-dialog-overlay">
           <div className="roles-dialog">
             <h3 className="roles-dialog__title">Renomear cargo</h3>
@@ -227,18 +295,66 @@ export default function RolesPage() {
             </div>
           </div>
         </div>}
+
+      <Dialog open={deleteRoleDialog} onOpenChange={setDeleteRoleDialog}>
+        <DialogContent className="roles-delete-dialog">
+          <DialogHeader>
+            <DialogTitle className="roles-delete-dialog__title">Excluir cargo?</DialogTitle>
+          </DialogHeader>
+          <p className="roles-delete-dialog__text">
+            {roleToDelete ? `Tem certeza que deseja excluir o cargo "${roleToDelete.name}"? Esta ação é irreversível.` : "Esta ação é irreversível. Todas as permissões vinculadas a este cargo serão removidas permanentemente."}
+          </p>
+          <DialogFooter className="roles-delete-dialog__footer">
+            <button className="roles-delete-dialog__btn roles-delete-dialog__btn--outline" onClick={() => setDeleteRoleDialog(false)}>Cancelar</button>
+            <button className="roles-delete-dialog__btn roles-delete-dialog__btn--danger" onClick={confirmDeleteRole}>Excluir</button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>;
 }
 
 function PaginationBar({ page, total, onPage }) {
   if (total <= 1) return null;
+
+  const MAX_VISIBLE_PAGES = 10;
+  const currentBlock = Math.floor((page - 1) / MAX_VISIBLE_PAGES);
+  const startPage = currentBlock * MAX_VISIBLE_PAGES + 1;
+  const endPage = Math.min(startPage + MAX_VISIBLE_PAGES - 1, total);
+
+  const pages = [];
+  for (let i = startPage; i <= endPage; i++) {
+    pages.push(i);
+  }
+
   return (
     <div className="pagination">
-      <button className="pagination__btn" onClick={() => onPage(page - 1)} disabled={page === 1}>‹</button>
-      {Array.from({ length: total }, (_, i) => (
-        <button key={i} className={`pagination__page ${page === i + 1 ? "is-active" : ""}`} onClick={() => onPage(i + 1)}>{i + 1}</button>
+      <button
+        className="pagination__btn"
+        onClick={() => onPage(page - 1)}
+        disabled={page === 1}
+        aria-label="Página anterior"
+      >
+        ‹
+      </button>
+
+      {pages.map((p) => (
+        <button
+          key={p}
+          className={`pagination__page ${page === p ? "is-active" : ""}`}
+          onClick={() => onPage(p)}
+        >
+          {p}
+        </button>
       ))}
-      <button className="pagination__btn" onClick={() => onPage(page + 1)} disabled={page === total}>›</button>
+
+      <button
+        className="pagination__btn"
+        onClick={() => onPage(page + 1)}
+        disabled={page === total}
+        aria-label="Próxima página"
+      >
+        ›
+      </button>
     </div>
   );
 }

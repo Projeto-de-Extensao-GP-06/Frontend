@@ -1,16 +1,23 @@
+import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
 import { ArrowLeft, Mail, Phone, Calendar, FileText, Check, X, User } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { StatusBadge } from "../components/StatusBadge";
 import { mockRequests } from "../data/mockData";
 import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import "../../styles/request-detail-page.css";
 export default function RequestDetailPage() {
+  useEffect(() => {
+    document.title = `Solicitação - ${request.name}`;
+  }, []);
+
   const {
     id
   } = useParams();
   const navigate = useNavigate();
   const [status, setStatus] = useState("pending");
+  const [denyDialog, setDenyDialog] = useState(false);
   const request = mockRequests.find(r => r.id === id);
   if (!request) {
     return <div className="req-detail-empty">
@@ -54,10 +61,6 @@ export default function RequestDetailPage() {
             <Calendar size={14} className="req-detail-info-row__icon" />
             <span className="req-detail-info-row__value">Solicitado em {request.createdAt}</span>
           </div>
-          {request.processNumber && <div className="req-detail-info-row">
-              <FileText size={14} className="req-detail-info-row__icon" />
-              <span className="req-detail-info-row__value req-detail-info-row__value--mono">{request.processNumber}</span>
-            </div>}
         </div>
       </div>
 
@@ -67,6 +70,7 @@ export default function RequestDetailPage() {
             <h3 className="req-detail-process-header__title">Informações do Processo</h3>
           </div>
           <div className="req-detail-proc-grid">
+            {request.processNumber && <div><p className="req-detail-proc-label">Número CNJ</p><p className="req-detail-proc-value">{request.processNumber}</p></div>}
             {request.filingDate && <div><p className="req-detail-proc-label">Data ajuizamento</p><p className="req-detail-proc-value">{request.filingDate}</p></div>}
             {request.instance && <div><p className="req-detail-proc-label">Instância</p><p className="req-detail-proc-value">{request.instance}</p></div>}
             {request.secrecyLevel && <div><p className="req-detail-proc-label">Nível de Sigilo</p><p className="req-detail-proc-value">{request.secrecyLevel}</p></div>}
@@ -85,12 +89,25 @@ export default function RequestDetailPage() {
         ? <div className="req-detail-actions">
             <p className="req-detail-actions__label">Análise desta solicitação:</p>
             <Button onClick={() => setStatus("accepted")} className="req-detail-actions__btn req-detail-actions__btn--accept"><Check size={16} />Aceitar Solicitação</Button>
-            <Button onClick={() => setStatus("denied")} className="req-detail-actions__btn req-detail-actions__btn--deny"><X size={16} />Negar Solicitação</Button>
+            <Button onClick={() => setDenyDialog(true)} className="req-detail-actions__btn req-detail-actions__btn--deny"><X size={16} />Negar Solicitação</Button>
           </div>
         : <div className={`req-detail-result ${status === "accepted" || request.status === "aceita" ? "req-detail-result--accepted" : "req-detail-result--denied"}`}>
             {status === "accepted" || request.status === "aceita"
               ? <><Check size={18} className="req-detail-result__icon req-detail-result__icon--accepted" /><div><p className="req-detail-result__title req-detail-result__title--accepted">Solicitação aceita</p><p className="req-detail-result__sub req-detail-result__sub--accepted">O cliente será contatado em breve.</p></div></>
               : <><X size={18} className="req-detail-result__icon req-detail-result__icon--denied" /><div><p className="req-detail-result__title req-detail-result__title--denied">Solicitação negada</p><p className="req-detail-result__sub req-detail-result__sub--denied">A solicitação foi recusada.</p></div></>}
           </div>}
+
+      <Dialog open={denyDialog} onOpenChange={setDenyDialog}>
+        <DialogContent className="req-dialog">
+          <DialogHeader>
+            <DialogTitle className="req-dialog__title">Negar solicitação?</DialogTitle>
+          </DialogHeader>
+          <p className="req-dialog__text">Esta ação é irreversível. A solicitação será recusada permanentemente.</p>
+          <DialogFooter className="req-dialog__footer">
+            <button className="req-dialog__btn req-dialog__btn--outline" onClick={() => setDenyDialog(false)}>Cancelar</button>
+            <button className="req-dialog__btn req-dialog__btn--danger" onClick={() => { setDenyDialog(false); setStatus("denied"); }}>Negar</button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>;
 }

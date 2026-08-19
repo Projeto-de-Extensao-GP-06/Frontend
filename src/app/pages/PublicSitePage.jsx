@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, Link } from "react-router";
 import { Menu, X, Instagram, MessageCircle, Linkedin, Phone, Mail, ChevronRight, CheckCircle, Send, FileText, Shield, Home, Briefcase, Users, Eye, Languages, Sun, Moon } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -28,7 +28,7 @@ const areas = [{
 }];
 const steps = [{
   num: "01",
-  title: "Envie sua dúvida",
+  title: "Envie seu caso",
   desc: "Preencha o formulário com sua situação e entraremos em contato."
 }, {
   num: "02",
@@ -40,6 +40,10 @@ const steps = [{
   desc: "Retornamos com orientações claras e próximos passos personalizados."
 }];
 export default function PublicSitePage() {
+  useEffect(() => {
+    document.title = "Thauany Bezerra Advogada";
+  }, []);
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [accessibilityMenuOpen, setAccessibilityMenuOpen] = useState(false);
@@ -117,7 +121,7 @@ export default function PublicSitePage() {
           <p className="site-hero__subtitle">Advocacia</p>
           <p className="site-hero__desc">Atendimento jurídico com segurança e confidencialidade. Seu direito, nossa prioridade.</p>
           <div className="site-hero__actions">
-            <Button onClick={() => scrollTo("contato")} className="site-hero__cta">Enviar minha dúvida</Button>
+            <Button onClick={() => scrollTo("contato")} className="site-hero__cta">Entrar em contato</Button>
             <button onClick={() => scrollTo("como-funciona")} className="site-hero__link">Como funciona?</button>
           </div>
         </div>
@@ -178,15 +182,15 @@ export default function PublicSitePage() {
         <div className="site-section__inner">
           <div className="site-section__head">
             <p className="site-section__kicker">Fale conosco</p>
-            <h2 className="site-section__title">Envie sua Dúvida</h2>
-            <p className="site-section__sub">Preencha o formulário e retornaremos em até 24h</p>
+            <h2 className="site-section__title">Envie seu caso</h2>
+            <p className="site-section__sub">Preencha o formulário e envie seu caso para nossa equipe</p>
           </div>
           <div className="site-contact-card">
             <form className="site-contact-form">
               <div className="site-contact-grid">
                 <div className="site-contact-grid__full"><Label className="site-contact-label">Nome Completo *</Label><Input className="site-contact-input" placeholder="Seu nome" /></div>
                 <div><Label className="site-contact-label">E-mail *</Label><Input type="email" className="site-contact-input" placeholder="seu@email.com" /></div>
-                <div><Label className="site-contact-label">Telefone *</Label><Input className="site-contact-input" placeholder="(11) 9xxxx-xxxx" /></div>
+                <div><Label className="site-contact-label">Telefone *</Label><Input className="site-contact-input" placeholder="(xx) 9xxxx-xxxx" /></div>
                 <div><Label className="site-contact-label">Estado *</Label>
                   <select className="site-contact-select">
                     <option value="">Selecione...</option>
@@ -195,17 +199,17 @@ export default function PublicSitePage() {
                     <option>GO</option><option>DF</option>
                   </select>
                 </div>
-                <div><Label className="site-contact-label">N° do Processo</Label><Input className="site-contact-input site-contact-input--mono" placeholder="Opcional" /></div>
+                <div><Label className="site-contact-label">N° do Processo (CNJ)</Label><Input className="site-contact-input site-contact-input--mono" placeholder="Opcional" /></div>
                 <div className="site-contact-grid__full"><Label className="site-contact-label">Descreva sua Situação *</Label><Textarea className="site-contact-textarea" placeholder="Descreva brevemente o seu caso..." /></div>
               </div>
               <div className="site-contact-privacy">
                 <Checkbox id="privacy" checked={accepted} onCheckedChange={v => setAccepted(!!v)} className="site-contact-checkbox" />
                 <label htmlFor="privacy" className="site-contact-privacy__label">
-                  Li e aceito as <a href="/politica-de-privacidade" className="site-contact-privacy__link">Políticas de privacidade</a> e <a href="/termos-de-uso" className="site-contact-privacy__link">Termos de uso</a>
+                  Li e aceito as <Link to="/politica-de-privacidade" className="site-contact-privacy__link">Políticas de privacidade</Link> e <Link to="/termos-de-uso" className="site-contact-privacy__link">Termos de uso</Link>
                 </label>
               </div>
               <Button type="submit" disabled={!accepted} className="site-contact-submit">
-                <Send size={16} />Enviar Dúvida
+                <Send size={16} />Enviar caso
               </Button>
             </form>
           </div>
@@ -226,8 +230,8 @@ export default function PublicSitePage() {
           </div>
           <div className="site-footer__legal">
             <div className="site-footer__legal-links">
-              <a href="/politica-de-privacidade" className="site-footer__legal-link">Políticas de privacidade</a>
-              <a href="/termos-de-uso" className="site-footer__legal-link">Termos de uso</a>
+              <Link to="/politica-de-privacidade" className="site-footer__legal-link">Políticas de privacidade</Link>
+              <Link to="/termos-de-uso" className="site-footer__legal-link">Termos de uso</Link>
             </div>
             <p className="site-footer__copy">© 2026 Thauany Bezerra Advocacia. Todos os direitos reservados.</p>
           </div>

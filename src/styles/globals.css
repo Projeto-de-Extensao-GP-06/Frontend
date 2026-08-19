@@ -2,8 +2,14 @@
   box-sizing: border-box;
 }
 
-input, textarea, select {
+body {
+  font-family: "DM Sans", sans-serif;
+  color: #1a2237;
+}
+
+input, textarea, select, button {
   box-sizing: border-box;
+  font-family: inherit;
 }
 
 /* ── Shared pagination ── */

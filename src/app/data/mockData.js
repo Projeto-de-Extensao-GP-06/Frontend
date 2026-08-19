@@ -109,6 +109,7 @@ export const mockProcesses = [{
   priority: "alta",
   tribunal: "TJSP",
   hearingDate: "15/08/2026",
+  hearingTime: "14:30",
   filingDate: "03/01/2024",
   instance: "1ª Instância",
   secrecyLevel: "Segredo de Justiça",
@@ -171,6 +172,7 @@ export const mockProcesses = [{
   priority: "média",
   tribunal: "TJSP",
   hearingDate: "22/09/2026",
+  hearingTime: "10:00",
   filingDate: "14/06/2023",
   instance: "2ª Instância",
   secrecyLevel: "Público",
@@ -218,6 +220,7 @@ export const mockProcesses = [{
   priority: "baixa",
   tribunal: "TJRJ",
   hearingDate: "10/10/2026",
+  hearingTime: "15:30",
   filingDate: "22/02/2024",
   instance: "1ª Instância",
   secrecyLevel: "Público",
@@ -336,28 +339,24 @@ export const mockUsers = [{
   id: "u1",
   name: "Thauany Bezerra",
   email: "thauany@thauanybezerra.adv.br",
-  cpf: "111.222.333-44",
   role: "Administrador",
   status: "ativo"
 }, {
   id: "u2",
   name: "Carolina Almeida",
   email: "carolina@thauanybezerra.adv.br",
-  cpf: "222.333.444-55",
   role: "Assistente",
   status: "ativo"
 }, {
   id: "u3",
   name: "Rafael Monteiro",
   email: "rafael@thauanybezerra.adv.br",
-  cpf: "333.444.555-66",
   role: "Advogado",
   status: "ativo"
 }, {
   id: "u4",
   name: "Isabela Corrêa",
   email: "isabela@thauanybezerra.adv.br",
-  cpf: "444.555.666-77",
   role: "Assistente",
   status: "inativo"
 }];

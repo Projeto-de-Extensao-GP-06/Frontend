@@ -1,13 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { Eye, EyeOff, Mail, Key, Shield, CheckCircle, AlertCircle } from "lucide-react";
+import { Mail, Key, Shield, CheckCircle, AlertCircle, Check } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { Button } from "../components/ui/button";
 import "../../styles/profile-page.css";
+
 export default function ProfilePage() {
-  const [showPass, setShowPass] = useState(false);
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  useEffect(() => {
+    document.title = "Perfil";
+  }, []);
+
+  const [email, setEmail] = useState("thauany@thauanybezerra.adv.br");
+  const [emailSaved, setEmailSaved] = useState(false);
+  const [confirmPassDialogOpen, setConfirmPassDialogOpen] = useState(false);
+  const [confirmEmailDialogOpen, setConfirmEmailDialogOpen] = useState(false);
   const navigate = useNavigate();
+
+  const handleOpenEmailDialog = (e) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setConfirmEmailDialogOpen(true);
+  };
+
+  const handleConfirmEmailChange = () => {
+    setConfirmEmailDialogOpen(false);
+    setEmailSaved(true);
+    setTimeout(() => {
+      setEmailSaved(false);
+    }, 3500);
+  };
+
   return <div className="profile-page">
 
       {/* ── Navy Hero ── */}
@@ -22,7 +44,7 @@ export default function ProfilePage() {
             </div>
             <div className="profile-hero__copy">
               <h1 className="profile-hero__name">Thauany Bezerra</h1>
-              <p className="profile-hero__role">Admin Advogada</p>
+              <p className="profile-hero__role">Administrador</p>
               <div className="profile-hero__status">
                 <div className="profile-hero__status-dot" />
                 <span className="profile-hero__status-label">Ativo</span>
@@ -39,25 +61,45 @@ export default function ProfilePage() {
             <Mail size={14} className="profile-card__title-icon" />
             Informações da conta
           </h3>
-          <div className="profile-field">
-            <p className="profile-field__label">E-mail</p>
-            <div className="profile-field__value-box">
-              <p className="profile-field__value">thauany@thauanybezerra.adv.br</p>
+          <form onSubmit={handleOpenEmailDialog}>
+            <div className="profile-field">
+              <label htmlFor="profile-email-input" className="profile-field__label">E-mail</label>
+              <input
+                id="profile-email-input"
+                type="email"
+                className="profile-field__input"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (emailSaved) setEmailSaved(false);
+                }}
+                placeholder="seu.email@exemplo.adv.br"
+                required
+              />
             </div>
-          </div>
-          <div className="profile-field">
-            <p className="profile-field__label">Senha</p>
-            <div className="profile-field__value-box profile-field__value-box--row">
-              <p className="profile-field__password">{showPass ? "MinhaS3nh@" : "••••••••••"}</p>
-              <button onClick={() => setShowPass(!showPass)} className="profile-field__toggle">
-                {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+
+            {emailSaved && (
+              <div className="profile-feedback profile-feedback--success">
+                <CheckCircle size={15} />
+                <span>E-mail atualizado com sucesso!</span>
+              </div>
+            )}
+
+            <div className="profile-card__actions">
+              <button type="submit" className="profile-save-email-btn">
+                <Check size={15} />
+                Confirmar mudança de e-mail
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmPassDialogOpen(true)}
+                className="profile-change-password-btn"
+              >
+                <Key size={15} />
+                Alterar senha
               </button>
             </div>
-          </div>
-          <button onClick={() => setConfirmDialogOpen(true)} className="profile-change-password-btn">
-            <Key size={15} />
-            Alterar senha
-          </button>
+          </form>
         </div>
 
         <div className="profile-card">
@@ -83,7 +125,29 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+      {/* Modal de confirmação de alteração de e-mail */}
+      <Dialog open={confirmEmailDialogOpen} onOpenChange={setConfirmEmailDialogOpen}>
+        <DialogContent className="profile-dialog">
+          <DialogHeader>
+            <div className="profile-dialog__header">
+              <div className="profile-dialog__icon-wrap profile-dialog__icon-wrap--blue">
+                <Mail size={24} className="profile-dialog__icon" />
+              </div>
+              <DialogTitle className="profile-dialog__title">Confirmar alteração de e-mail</DialogTitle>
+            </div>
+          </DialogHeader>
+          <p className="profile-dialog__text">
+            Tem certeza de que deseja alterar seu e-mail para <strong className="profile-dialog__highlight">{email}</strong>?
+          </p>
+          <DialogFooter className="profile-dialog__footer">
+            <Button variant="outline" className="edit-process-dialog-button edit-process-dialog-button--outline" onClick={() => setConfirmEmailDialogOpen(false)}>Cancelar</Button>
+            <Button className="edit-process-button edit-process-button--primary" style={{flex:1}} onClick={handleConfirmEmailChange}>Confirmar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de confirmação de alteração de senha */}
+      <Dialog open={confirmPassDialogOpen} onOpenChange={setConfirmPassDialogOpen}>
         <DialogContent className="profile-dialog">
           <DialogHeader>
             <div className="profile-dialog__header">
@@ -97,8 +161,8 @@ export default function ProfilePage() {
             Você será redirecionado para a tela de alteração de senha e será desconectado do sistema. Deseja continuar?
           </p>
           <DialogFooter className="profile-dialog__footer">
-            <Button variant="outline" className="edit-process-dialog-button edit-process-dialog-button--outline" onClick={() => setConfirmDialogOpen(false)}>Cancelar</Button>
-            <Button className="edit-process-button edit-process-button--primary" style={{flex:1}} onClick={() => { setConfirmDialogOpen(false); navigate("/redefinir-senha"); }}>Continuar</Button>
+            <Button variant="outline" className="edit-process-dialog-button edit-process-dialog-button--outline" onClick={() => setConfirmPassDialogOpen(false)}>Cancelar</Button>
+            <Button className="edit-process-button edit-process-button--primary" style={{flex:1}} onClick={() => { setConfirmPassDialogOpen(false); navigate("/redefinir-senha?mode=redefinir"); }}>Continuar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

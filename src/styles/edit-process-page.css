@@ -110,6 +110,29 @@
   font-family: "JetBrains Mono", monospace;
 }
 
+.edit-process-input[type="date"],
+.edit-process-input[type="time"] {
+  color-scheme: light;
+  cursor: text;
+  font-size: 0.875rem;
+  padding-inline: 0.75rem;
+}
+
+.edit-process-input[type="date"]::-webkit-calendar-picker-indicator,
+.edit-process-input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.55;
+  padding: 0.2rem;
+  border-radius: 0.25rem;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+}
+
+.edit-process-input[type="date"]::-webkit-calendar-picker-indicator:hover,
+.edit-process-input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 0.95;
+  transform: scale(1.08);
+}
+
 .edit-process-textarea {
   min-height: 6.25rem;
   resize: none;
@@ -123,6 +146,12 @@
 
 .edit-process-grid--2 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.edit-process-datetime-group {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 0.5rem;
 }
 
 .edit-process-observation-list {

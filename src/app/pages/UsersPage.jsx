@@ -1,76 +1,105 @@
-import { useState } from "react";
-import { Plus, Mail, Shield, Trash2, ChevronRight, ArrowLeft, UserCog, Search, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router";
+import { Plus, Shield, ChevronRight, UserCog, Search, X } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
 import { mockUsers } from "../data/mockData";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import "../../styles/users-page.css";
 
-/* Unique initials-based avatar colors */
-const avatarPalette = [{
-  bg: "user-avatar--blue",
-  text: "user-avatar-text--blue"
-}, {
-  bg: "user-avatar--gold",
-  text: "user-avatar-text--gold"
-}, {
-  bg: "user-avatar--green",
-  text: "user-avatar-text--green"
-}, {
-  bg: "user-avatar--amber",
-  text: "user-avatar-text--amber"
-}];
-function UserAvatar({
-  name,
-  size = "md"
-}) {
-  const initials = name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
-  const idx = name.charCodeAt(0) % avatarPalette.length;
-  const {
-    bg,
-    text
-  } = avatarPalette[idx];
-  return <div className={`user-avatar ${size === "lg" ? "is-lg" : size === "sm" ? "is-sm" : "is-md"} ${bg}`}>
-      <span className={`user-avatar-initials ${text}`}>{initials}</span>
-    </div>;
-}
-export default function UsersPage() {
-  const [showNewUser, setShowNewUser] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState("az");
-  if (showNewUser) return <NewUserForm onBack={() => setShowNewUser(false)} />;
-  if (selectedUser) return <UserDetail user={selectedUser} onBack={() => setSelectedUser(null)} />;
+const STATUS_OPTS = [
+  { value: "Todos", label: "Todos" },
+  { value: "ativo", label: "Ativo" },
+  { value: "inativo", label: "Inativo" },
+];
 
-  const bySearch = search.trim() === ""
-    ? mockUsers
-    : mockUsers.filter(u =>
-        u.name.toLowerCase().includes(search.toLowerCase()) ||
-        u.email.toLowerCase().includes(search.toLowerCase()) ||
-        u.role.toLowerCase().includes(search.toLowerCase())
-      );
-  const filtered = [...bySearch].sort((a, b) => {
+/* Unique initials-based avatar colors */
+const avatarPalette = [
+  { bg: "user-avatar--blue", text: "user-avatar-text--blue" },
+  { bg: "user-avatar--gold", text: "user-avatar-text--gold" },
+  { bg: "user-avatar--green", text: "user-avatar-text--green" },
+  { bg: "user-avatar--amber", text: "user-avatar-text--amber" },
+];
+
+function UserAvatar({ name, size = "md" }) {
+  const initials = name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+  const idx = name.charCodeAt(0) % avatarPalette.length;
+  const { bg, text } = avatarPalette[idx];
+  return (
+    <div className={`user-avatar ${size === "lg" ? "is-lg" : size === "sm" ? "is-sm" : "is-md"} ${bg}`}>
+      <span className={`user-avatar-initials ${text}`}>{initials}</span>
+    </div>
+  );
+}
+
+function FilterSelect({ label, value, onChange, children }) {
+  return (
+    <div className="users-filter-select">
+      <span className="users-filter-select-label">{label}:</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="users-filter-select-input"
+      >
+        {children}
+      </select>
+    </div>
+  );
+}
+
+export default function UsersPage() {
+  useEffect(() => {
+    document.title = "Usuários";
+  }, []);
+
+  const [search, setSearch] = useState("");
+  const [filterRole, setFilterRole] = useState("Todos");
+  const [filterStatus, setFilterStatus] = useState("Todos");
+  const [sortBy, setSortBy] = useState("az");
+  const [page, setPage] = useState(1);
+  const navigate = useNavigate();
+
+  const roleOptions = ["Todos", ...Array.from(new Set(mockUsers.map((u) => u.role)))];
+
+  const filtered = mockUsers.filter((u) => {
+    const q = search.toLowerCase().trim();
+    const matchQ =
+      !search ||
+      u.name.toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q);
+    const matchRole = filterRole === "Todos" || u.role === filterRole;
+    const matchStatus = filterStatus === "Todos" || u.status === filterStatus;
+    return matchQ && matchRole && matchStatus;
+  });
+
+  const sorted = [...filtered].sort((a, b) => {
     if (sortBy === "az") return a.name.localeCompare(b.name, "pt");
     if (sortBy === "za") return b.name.localeCompare(a.name, "pt");
-    if (sortBy === "ativos") return a.status === b.status ? 0 : a.status === "ativo" ? -1 : 1;
     return 0;
   });
-  const hasSearch = search.trim() !== "";
-  const PAGE_SIZE = 6;
-  const [page, setPage] = useState(1);
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const safePage = Math.min(page, totalPages);
-  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
-  return <div className="users-page">
 
+  const hasActiveFilters =
+    search.trim() !== "" || filterRole !== "Todos" || filterStatus !== "Todos";
+
+  const clearFilters = () => {
+    setSearch("");
+    setFilterRole("Todos");
+    setFilterStatus("Todos");
+    setPage(1);
+  };
+
+  const PAGE_SIZE = 6;
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginated = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  return (
+    <div className="users-page">
       {/* ── Header ── */}
       <div className="users-header">
         <div>
           <p className="page-kicker">SGPJ</p>
-          <h1 className="page-title">
-            Usuários
-          </h1>
+          <h1 className="page-title">Usuários</h1>
         </div>
-        <button onClick={() => setShowNewUser(true)} className="users-new-button">
+        <button onClick={() => navigate("/app/usuarios/novo")} className="users-new-button">
           <Plus size={16} />
           Novo Usuário
         </button>
@@ -93,59 +122,129 @@ export default function UsersPage() {
           </div>
           <div className="users-summary-copy">
             <p className="users-summary-value users-summary-value--success">
-              {mockUsers.filter(u => u.status === "ativo").length}
+              {mockUsers.filter((u) => u.status === "ativo").length}
             </p>
             <p className="users-summary-label">Ativos</p>
           </div>
         </div>
       </div>
 
-      {/* ── Search + sort panel ── */}
-      <div className="users-filter-panel">
+      {/* ── Search + Filters panel ── */}
+      <div className="users-panel">
+        {/* Search row */}
         <div className="users-search-row">
           <div className="users-search-wrap">
-            <Search size={15} className="users-search-icon" />
+            <Search size={16} className="users-search-icon" />
             <input
               type="text"
-              placeholder="Buscar por nome, e-mail ou cargo..."
+              placeholder="Pesquisar por nome ou e-mail..."
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
               className="users-search-input"
             />
-            {hasSearch && (
-              <button onClick={() => setSearch("")} className="users-search-clear">
-                <X size={13} />
+          </div>
+          <button className="users-search-button">Buscar</button>
+        </div>
+
+        {/* Divider */}
+        <div className="users-divider" />
+
+        {/* Filters row */}
+        <div className="users-filter-row">
+          <div className="users-filter-group-left">
+            <span className="users-filter-label">Filtros</span>
+
+            <FilterSelect
+              label="Cargo"
+              value={filterRole}
+              onChange={(val) => {
+                setFilterRole(val);
+                setPage(1);
+              }}
+            >
+              {roleOptions.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </FilterSelect>
+
+            <FilterSelect
+              label="Status"
+              value={filterStatus}
+              onChange={(val) => {
+                setFilterStatus(val);
+                setPage(1);
+              }}
+            >
+              {STATUS_OPTS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </FilterSelect>
+
+            {hasActiveFilters && (
+              <button onClick={clearFilters} className="users-clear-button">
+                <X size={11} />
+                Limpar filtros
               </button>
             )}
           </div>
+
           <div className="users-sort-wrap">
             <span className="users-sort-label">Ordenar:</span>
-            <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="users-sort-select">
-              <option value="az">Nome A→Z</option>
-              <option value="za">Nome Z→A</option>
-              <option value="ativos">Ativos primeiro</option>
+            <select
+              value={sortBy}
+              onChange={(e) => {
+                setSortBy(e.target.value);
+                setPage(1);
+              }}
+              className="users-sort-select"
+            >
+              <option value="az">Nome (A → Z)</option>
+              <option value="za">Nome (Z → A)</option>
             </select>
           </div>
         </div>
       </div>
 
       {/* ── Results count ── */}
-      {filtered.length > 0 && (
+      <div className="users-results-row">
         <p className="users-results-count">
-          {filtered.length} {filtered.length === 1 ? "usuário" : "usuários"}
-          {hasSearch && " encontrados"}
+          {filtered.length === mockUsers.length
+            ? `${filtered.length} usuários`
+            : `${filtered.length} de ${mockUsers.length} usuários`}
         </p>
-      )}
+        {filtered.length > 0 && (
+          <p className="users-results-tip">
+            Clique em um usuário para ver detalhes
+          </p>
+        )}
+      </div>
 
       {/* ── User grid ── */}
       <div className="users-grid">
-        {filtered.length === 0
-          ? <div className="users-empty">
-              <UserCog size={28} className="users-empty__icon" />
-              <p className="users-empty__text">Nenhum usuário encontrado</p>
-            </div>
-          : paginated.map(user => (
-            <div key={user.id} className="user-row" onClick={() => setSelectedUser(user)}>
+        {filtered.length === 0 ? (
+          <div className="users-empty">
+            <UserCog size={28} className="users-empty__icon" />
+            <p className="users-empty__text">Nenhum usuário encontrado</p>
+            {hasActiveFilters && (
+              <button onClick={clearFilters} className="users-clear-button" style={{ marginTop: "0.5rem" }}>
+                Limpar filtros
+              </button>
+            )}
+          </div>
+        ) : (
+          paginated.map((user) => (
+            <div
+              key={user.id}
+              className="user-row"
+              onClick={() => navigate(`/app/usuarios/${user.id}`)}
+            >
               <div className="user-row-main">
                 <UserAvatar name={user.name} />
                 <div className="user-row-copy">
@@ -162,199 +261,57 @@ export default function UsersPage() {
                 </span>
               </div>
             </div>
-          ))}
+          ))
+        )}
       </div>
       <PaginationBar page={safePage} total={totalPages} onPage={setPage} />
-    </div>;
-}
-
-function PaginationBar({ page, total, onPage }) {
-  if (total <= 1) return null;
-  return (
-    <div className="pagination">
-      <button className="pagination__btn" onClick={() => onPage(page - 1)} disabled={page === 1}>‹</button>
-      {Array.from({ length: total }, (_, i) => (
-        <button key={i} className={`pagination__page ${page === i + 1 ? "is-active" : ""}`} onClick={() => onPage(i + 1)}>{i + 1}</button>
-      ))}
-      <button className="pagination__btn" onClick={() => onPage(page + 1)} disabled={page === total}>›</button>
     </div>
   );
 }
 
-/* ── New User Form ── */
-function NewUserForm({
-  onBack
-}) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState("Administrador");
-  return <div className="users-form-page">
-      <button onClick={onBack} className="back-link">
-        <ArrowLeft size={14} />
-        Usuários
+function PaginationBar({ page, total, onPage }) {
+  if (total <= 1) return null;
+
+  const MAX_VISIBLE_PAGES = 10;
+  const currentBlock = Math.floor((page - 1) / MAX_VISIBLE_PAGES);
+  const startPage = currentBlock * MAX_VISIBLE_PAGES + 1;
+  const endPage = Math.min(startPage + MAX_VISIBLE_PAGES - 1, total);
+
+  const pages = [];
+  for (let i = startPage; i <= endPage; i++) {
+    pages.push(i);
+  }
+
+  return (
+    <div className="pagination">
+      <button
+        className="pagination__btn"
+        onClick={() => onPage(page - 1)}
+        disabled={page === 1}
+        aria-label="Página anterior"
+      >
+        ‹
       </button>
 
-      <div className="users-form-header">
-        <p className="page-kicker">Usuários › Novo</p>
-        <h1 className="page-title page-title--sm">
-          Novo Usuário
-        </h1>
-        <p className="users-form-subtitle">Preencha os dados para criar o acesso:</p>
-      </div>
-
-      <div className="users-form-card">
-        <div className="users-field">
-          <label className="users-label">Nome Completo</label>
-          <input value={name} onChange={e => setName(e.target.value)} className="users-input" placeholder="Nome do usuário" />
-        </div>
-        <div className="users-field">
-          <label className="users-label">E-mail</label>
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="users-input" placeholder="email@escritório.com" />
-        </div>
-        <div className="users-field">
-          <label className="users-label">Cargo</label>
-          <select value={role} onChange={e => setRole(e.target.value)} className="users-input">
-            <option>Administrador</option>
-            <option>Advogado</option>
-            <option>Assistente</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="users-form-actions">
-        <button onClick={onBack} className="users-secondary-button">
-          Cancelar
+      {pages.map((p) => (
+        <button
+          key={p}
+          className={`pagination__page ${page === p ? "is-active" : ""}`}
+          onClick={() => onPage(p)}
+        >
+          {p}
         </button>
-        <button onClick={onBack} className="users-primary-button">
-          Criar usuário
-        </button>
-      </div>
-    </div>;
+      ))}
+
+      <button
+        className="pagination__btn"
+        onClick={() => onPage(page + 1)}
+        disabled={page === total}
+        aria-label="Próxima página"
+      >
+        ›
+      </button>
+    </div>
+  );
 }
 
-/* ── User Detail ── */
-function UserDetail({
-  user,
-  onBack
-}) {
-  const [deleteDialog, setDeleteDialog] = useState(false);
-  const [status, setStatus] = useState(user.status);
-  const [role, setRole] = useState(user.role);
-  const [saved, setSaved] = useState(false);
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
-  return <div className="users-detail-page">
-
-      {/* ── Navy hero ── */}
-      <div className="users-detail-hero">
-        <button onClick={onBack} className="users-detail-back">
-          <ArrowLeft size={13} />
-          Usuários
-        </button>
-
-        <div className="users-detail-orb" />
-
-        <div className="users-detail-head">
-          <div className="users-detail-avatar">
-            <span className="users-detail-initials">
-              {user.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
-            </span>
-          </div>
-          <div className="users-detail-copy">
-            <h1 className="users-detail-name">
-              {user.name}
-            </h1>
-            <div className="users-detail-status-row">
-              <StatusBadge status={user.status} />
-              <span className="users-detail-role">
-                <Shield size={10} className="users-detail-role-icon" />
-                {user.role}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Content ── */}
-      <div className="users-detail-content">
-
-        {/* Contact info */}
-        <div className="users-card">
-          <h3 className="users-card-title">Informações</h3>
-          <div className="users-info-list">
-            <div className="users-info-row">
-              <div className="users-info-icon-wrap">
-                <Mail size={13} className="users-info-icon" />
-              </div>
-              <span className="users-info-text">{user.email}</span>
-            </div>
-            <div className="users-info-row">
-              <div className="users-info-icon-wrap">
-                <Shield size={13} className="users-info-icon" />
-              </div>
-              <span className="users-info-mono">
-                {user.cpf}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Manage access */}
-        <div className="users-card users-card--spaced">
-          <h3 className="users-card-title">Gerenciar acesso</h3>
-
-          <div className="users-field">
-            <label className="users-label">Status</label>
-            <select value={status} onChange={e => setStatus(e.target.value)} className="users-input">
-              <option value="ativo">Ativo</option>
-              <option value="inativo">Inativo</option>
-            </select>
-          </div>
-
-          <div className="users-field">
-            <label className="users-label">Cargo</label>
-            <select value={role} onChange={e => setRole(e.target.value)} className="users-input">
-              <option>Administrador</option>
-              <option>Advogado</option>
-              <option>Assistente</option>
-            </select>
-          </div>
-
-          <button onClick={handleSave} className={`users-primary-button users-primary-button--save ${saved ? "is-saved" : ""}`}>
-            {saved ? "✓ Salvo com sucesso" : "Salvar alterações"}
-          </button>
-        </div>
-
-        {/* Delete */}
-        <button onClick={() => setDeleteDialog(true)} className="users-danger-button">
-          <Trash2 size={14} />
-          Excluir Usuário
-        </button>
-      </div>
-
-      {/* ── Delete Dialog ── */}
-      <Dialog open={deleteDialog} onOpenChange={setDeleteDialog}>
-        <DialogContent className="users-dialog">
-          <DialogHeader>
-            <DialogTitle className="users-dialog-title">Excluir usuário?</DialogTitle>
-          </DialogHeader>
-          <p className="users-dialog-text">
-            {user.name} será removido do sistema permanentemente.
-          </p>
-          <DialogFooter className="users-dialog-actions">
-            <button className="users-secondary-button" onClick={() => setDeleteDialog(false)}>
-              Cancelar
-            </button>
-            <button className="users-danger-confirm" onClick={() => {
-            setDeleteDialog(false);
-            onBack();
-          }}>
-              Excluir
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>;
-}
