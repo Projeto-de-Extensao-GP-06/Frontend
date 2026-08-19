@@ -146,16 +146,21 @@ export default function RolesPage() {
         </div>
 
         {/* Busca de cargos */}
-        <div className="roles-search-wrap">
-          <Search size={14} className="roles-search-icon" />
-          <input
-            type="text"
-            placeholder="Buscar cargo..."
-            value={roleSearch}
-            onChange={e => { setRoleSearch(e.target.value); setRolePage(1); }}
-            className="roles-search-input"
-          />
-          {roleSearch && <button onClick={() => { setRoleSearch(""); setRolePage(1); }} className="roles-search-clear"><X size={12} /></button>}
+        <div className="roles-search-row">
+          <div className="roles-search-wrap">
+            <Search size={14} className="roles-search-icon" />
+            <input
+              type="text"
+              placeholder="Buscar cargo..."
+              value={roleSearch}
+              onChange={e => { setRoleSearch(e.target.value); setRolePage(1); }}
+              className="roles-search-input"
+            />
+            {roleSearch && <button type="button" onClick={() => { setRoleSearch(""); setRolePage(1); }} className="roles-search-clear"><X size={12} /></button>}
+          </div>
+          <button type="button" onClick={() => setRolePage(1)} className="roles-search-btn">
+            Buscar
+          </button>
         </div>
 
         <div className="roles-list">
