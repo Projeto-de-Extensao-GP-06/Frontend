@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router";
-import { Menu, X, Instagram, MessageCircle, Linkedin, Phone, Mail, ChevronRight, CheckCircle, Send, FileText, Shield, Home, Briefcase, Users, Eye, Languages, Sun, Moon } from "lucide-react";
+import { Menu, X, Instagram, MessageCircle, Linkedin, Phone, Mail, ChevronRight, CheckCircle, Send, FileText, Shield, Home, Briefcase, Users } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
@@ -46,32 +46,14 @@ export default function PublicSitePage() {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [accepted, setAccepted] = useState(false);
-  const [accessibilityMenuOpen, setAccessibilityMenuOpen] = useState(false);
-  const [highContrast, setHighContrast] = useState(false);
-  const [librasEnabled, setLibrasEnabled] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
   const navigate = useNavigate();
-  useEffect(() => {
-    if (highContrast) {
-      document.body.classList.add("high-contrast");
-    } else {
-      document.body.classList.remove("high-contrast");
-    }
-  }, [highContrast]);
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [darkMode]);
   const scrollTo = id => {
     document.getElementById(id)?.scrollIntoView({
       behavior: "smooth"
     });
     setMenuOpen(false);
   };
-  return <div className={`public-site ${highContrast ? "accessibility-high-contrast" : ""}`}>
+  return <div className="public-site">
 
       <header className="site-header">
         <div className="site-header__inner">
@@ -238,90 +220,5 @@ export default function PublicSitePage() {
         </div>
       </footer>
 
-      <div className="site-a11y">
-        {accessibilityMenuOpen && <div className="site-a11y__menu">
-            <div className="site-a11y__menu-header">
-              <div className="site-a11y__menu-header-left">
-                <div className="site-a11y__menu-icon-wrap">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <circle cx="12" cy="4.5" r="2.5" fill="white"/>
-                    <line x1="12" y1="7.5" x2="12" y2="16" stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
-                    <line x1="5" y1="11" x2="19" y2="11" stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
-                    <line x1="12" y1="16" x2="8" y2="22" stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
-                    <line x1="12" y1="16" x2="16" y2="22" stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
-                  </svg>
-                </div>
-                <h3 className="site-a11y__menu-title">Acessibilidade</h3>
-              </div>
-              <button onClick={() => setAccessibilityMenuOpen(false)} className="site-a11y__menu-close"><X size={16} /></button>
-            </div>
-
-            <div className="site-a11y__section">
-              <p className="site-a11y__section-label">Visão e Leitura</p>
-              <button onClick={() => setHighContrast(!highContrast)} className={`site-a11y__option ${highContrast ? "site-a11y__option--on" : ""}`}>
-                <div className="site-a11y__option-left">
-                  <Eye size={17} />
-                  <div>
-                    <span className="site-a11y__option-label">Alto contraste</span>
-                    <span className="site-a11y__option-hint">Aumenta o contraste visual</span>
-                  </div>
-                </div>
-                <div className={`site-a11y__toggle ${highContrast ? "site-a11y__toggle--on" : ""}`}>
-                  <div className={`site-a11y__toggle-knob ${highContrast ? "site-a11y__toggle-knob--on" : ""}`} />
-                </div>
-              </button>
-              <button onClick={() => setLibrasEnabled(!librasEnabled)} className={`site-a11y__option ${librasEnabled ? "site-a11y__option--on" : ""}`}>
-                <div className="site-a11y__option-left">
-                  <Languages size={17} />
-                  <div>
-                    <span className="site-a11y__option-label">Intérprete de Libras</span>
-                    <span className="site-a11y__option-hint">Ativa o widget VLibras</span>
-                  </div>
-                </div>
-                <div className={`site-a11y__toggle ${librasEnabled ? "site-a11y__toggle--on" : ""}`}>
-                  <div className={`site-a11y__toggle-knob ${librasEnabled ? "site-a11y__toggle-knob--on" : ""}`} />
-                </div>
-              </button>
-            </div>
-          </div>}
-
-        <button onClick={() => setAccessibilityMenuOpen(!accessibilityMenuOpen)} className={`site-a11y__fab ${accessibilityMenuOpen ? "site-a11y__fab--open" : ""}`} title="Acessibilidade" aria-label="Menu de acessibilidade">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <circle cx="12" cy="4.5" r="2.5" fill="currentColor"/>
-            <line x1="12" y1="7.5" x2="12" y2="16" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
-            <line x1="5" y1="11" x2="19" y2="11" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
-            <line x1="12" y1="16" x2="8" y2="22" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
-            <line x1="12" y1="16" x2="16" y2="22" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
-          </svg>
-          {(librasEnabled || highContrast) && <div className="site-a11y__fab-indicator" />}
-        </button>
-      </div>
-
-      {librasEnabled && <div className="site-libras">
-          <div className="site-libras__widget">
-            <div className="site-libras__header">
-              <div className="site-libras__header-left"><div className="site-libras__dot" /><span className="site-libras__brand">VLibras</span></div>
-              <button onClick={() => setLibrasEnabled(false)} className="site-libras__close"><X size={14} /></button>
-            </div>
-            <div className="site-libras__body">
-              <div className="site-libras__avatar">
-                <div className="site-libras__head">
-                  <div className="site-libras__eye site-libras__eye--left" />
-                  <div className="site-libras__eye site-libras__eye--right" />
-                  <div className="site-libras__nose" />
-                  <div className="site-libras__mouth" />
-                </div>
-                <div className="site-libras__neck" />
-                <div className="site-libras__body-torso">
-                  <div className="site-libras__arm site-libras__arm--left" />
-                  <div className="site-libras__arm site-libras__arm--right" style={{animationDelay:'0.3s'}} />
-                  <div className="site-libras__hand site-libras__hand--left" />
-                  <div className="site-libras__hand site-libras__hand--right" />
-                </div>
-              </div>
-              <p className="site-libras__caption">Interpretando...</p>
-            </div>
-          </div>
-        </div>}
     </div>;
 }
