@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router";
-import { Menu, X, Instagram, MessageCircle, Linkedin, Phone, Mail, ChevronRight, CheckCircle, Send, FileText, Shield, Home, Briefcase, Users, Eye, Languages, Sun, Moon } from "lucide-react";
+import { Menu, X, Instagram, MessageCircle, Linkedin, Phone, Mail, ChevronRight, CheckCircle, Send, FileText, Shield, Home, Briefcase, Users } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
@@ -46,15 +46,7 @@ export default function PublicSitePage() {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [accepted, setAccepted] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
   const navigate = useNavigate();
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [darkMode]);
   const scrollTo = id => {
     document.getElementById(id)?.scrollIntoView({
       behavior: "smooth"
