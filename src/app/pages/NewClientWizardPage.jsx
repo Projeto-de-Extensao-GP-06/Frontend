@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { ArrowLeft, ArrowRight, Check, Plus, X } from "lucide-react";
 import { Button } from "../components/ui/button";
@@ -38,6 +38,10 @@ function StepIndicator({ steps, current }) {
     </div>;
 }
 export default function NewClientWizardPage() {
+  useEffect(() => {
+    document.title = "Novo Cliente";
+  }, []);
+
   const navigate = useNavigate();
   const [clientType, setClientType] = useState(null);
   const [step, setStep] = useState(0);

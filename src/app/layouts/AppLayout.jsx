@@ -97,7 +97,7 @@ export default function AppLayout() {
               </div>
               <div className="app-drawer-profile-text">
                 <p className="app-drawer-name">Thauany</p>
-                <p className="app-drawer-role">Admin · Advogada</p>
+                <p className="app-drawer-role">Administrador</p>
               </div>
             </div>
           </div>

@@ -1,11 +1,21 @@
-import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams, useLocation } from "react-router";
 import { ArrowLeft, Scale } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import "../../styles/password-reset-page.css";
+
 export default function PasswordResetPage() {
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const isFirstAccess = searchParams.get("mode") === "primeiro-acesso" || location.state?.mode === "primeiro-acesso";
+  const title = isFirstAccess ? "Definir Senha" : "Redefinir Senha";
+
+  useEffect(() => {
+    document.title = title;
+  }, [title]);
+
   const [step, setStep] = useState("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -40,8 +50,12 @@ export default function PasswordResetPage() {
           </button>
 
           {step === "email" && <>
-              <h2 className="pwd-card__title">Redefinir senha</h2>
-              <p className="pwd-card__desc">Enviaremos um código de verificação em seu e-mail. Por favor, insira-o abaixo para redefinir a senha.</p>
+              <h2 className="pwd-card__title">{title}</h2>
+              <p className="pwd-card__desc">
+                {isFirstAccess
+                  ? "Enviaremos um código de verificação em seu e-mail. Por favor, insira-o abaixo para definir a senha."
+                  : "Enviaremos um código de verificação em seu e-mail. Por favor, insira-o abaixo para redefinir a senha."}
+              </p>
               <form onSubmit={handleEmailSubmit} className="pwd-form">
                 <div className="pwd-field">
                   <Label className="pwd-field__label">E-mail</Label>
@@ -75,7 +89,9 @@ export default function PasswordResetPage() {
                   <Label className="pwd-field__label">Confirmar senha</Label>
                   <Input type="password" placeholder="••••••••" value={confirmPass} onChange={e => setConfirmPass(e.target.value)} className="pwd-field__input" required />
                 </div>
-                <Button type="submit" className="pwd-submit">Redefinir senha</Button>
+                <Button type="submit" className="pwd-submit">
+                  {isFirstAccess ? "Definir senha" : "Redefinir senha"}
+                </Button>
               </form>
             </>}
         </div>

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { ArrowLeft, Scale } from "lucide-react";
 import { Link, useLocation } from "react-router";
 import "../../styles/legal-page.css";
@@ -36,6 +37,10 @@ export default function LegalPage() {
   const description = isPrivacy
     ? "Como a Thauany Bezerra Advocacia coleta, utiliza, armazena e protege dados pessoais."
     : "Regras para utilização do site e envio de informações para contato inicial.";
+
+  useEffect(() => {
+    document.title = title;
+  }, [title]);
 
   return <main className="legal-page">
     <header className="legal-page__header">

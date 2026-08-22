@@ -24,6 +24,7 @@
   border-radius: 1rem;
   background: #fff;
   color: #111827;
+  font-family: "DM Sans", sans-serif;
   box-shadow: 0 20px 50px rgba(15, 35, 87, 0.16);
   transform: translate(-50%, -50%);
   animation: dialog-pop-in 0.2s ease-out;

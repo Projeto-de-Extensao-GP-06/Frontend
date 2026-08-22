@@ -72,9 +72,42 @@
   color: #c9a96e;
 }
 
+.roles-search-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
 .roles-search-wrap {
   position: relative;
-  margin-bottom: 0.75rem;
+  flex: 1;
+}
+
+.roles-search-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.25rem;
+  padding: 0 0.875rem;
+  border: 0;
+  border-radius: 0.625rem;
+  background: #0f2357;
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  box-shadow: 0 1px 2px rgba(15, 35, 87, 0.15);
+}
+
+.roles-search-btn:hover {
+  background: #1a3a7a;
+}
+
+.roles-search-btn:active {
+  transform: scale(0.98);
 }
 
 .roles-search-icon {
@@ -568,3 +601,173 @@
 .roles-dialog__btn--confirm:hover {
   background: #1a3a7a;
 }
+
+/* ── Add role modal ── */
+
+.roles-add-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.roles-add-modal {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 24rem;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  font-family: "DM Sans", sans-serif;
+}
+
+.roles-add-modal__title {
+  margin: 0 0 0.25rem;
+  color: #0f2357;
+  font-family: "Playfair Display", serif;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.roles-add-modal__subtitle {
+  margin: 0 0 1.25rem;
+  color: #6b7280;
+  font-size: 0.75rem;
+}
+
+.roles-add-modal__label {
+  display: block;
+  margin-bottom: 0.375rem;
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.roles-add-modal__input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 2.75rem;
+  padding: 0 1rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid #e4e8f2;
+  border-radius: 0.75rem;
+  background: #f4f6fa;
+  color: #374151;
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.roles-add-modal__input::placeholder {
+  color: #9ca3af;
+}
+
+.roles-add-modal__input:focus {
+  border-color: #0f2357;
+}
+
+.roles-add-modal__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.roles-add-modal__btn {
+  flex: 1;
+  height: 2.75rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, opacity 0.2s ease, border-color 0.2s ease;
+}
+
+.roles-add-modal__btn--cancel {
+  border: 1px solid #e4e8f2;
+  background: #fff;
+  color: #374151;
+}
+
+.roles-add-modal__btn--cancel:hover {
+  background: #f4f6fa;
+}
+
+.roles-add-modal__btn--confirm {
+  border: 0;
+  background: #0f2357;
+  color: #fff;
+  box-shadow: 0 4px 6px -1px rgba(15, 35, 87, 0.2), 0 2px 4px -2px rgba(15, 35, 87, 0.2);
+}
+
+.roles-add-modal__btn--confirm:hover:not(:disabled) {
+  background: #1a3a7a;
+}
+
+.roles-add-modal__btn--confirm:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Delete confirmation dialog ── */
+
+.roles-delete-dialog {
+  max-width: 340px;
+  border-radius: 1.25rem;
+  border-color: #e8ecf4;
+}
+
+.roles-delete-dialog__title {
+  color: #0f2357;
+  text-align: center;
+}
+
+.roles-delete-dialog__text {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 0 0.5rem;
+}
+
+.roles-delete-dialog__footer {
+  display: flex;
+  flex-direction: row;
+  gap: 0.75rem;
+}
+
+.roles-delete-dialog__btn {
+  flex: 1;
+  height: 2.75rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.roles-delete-dialog__btn--outline {
+  border: 1px solid #e4e8f2;
+  background: #fff;
+  color: #374151;
+}
+
+.roles-delete-dialog__btn--outline:hover {
+  background: #f4f6fa;
+}
+
+.roles-delete-dialog__btn--danger {
+  border: 0;
+  background: #dc2626;
+  color: #fff;
+}
+
+.roles-delete-dialog__btn--danger:hover {
+  background: #b91c1c;
+}
+
+

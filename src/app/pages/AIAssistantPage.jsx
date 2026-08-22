@@ -8,6 +8,10 @@ const now = () => new Date().toLocaleTimeString("pt-BR", {
   minute: "2-digit"
 });
 export default function AIAssistantPage() {
+  useEffect(() => {
+    document.title = "Assistente de IA";
+  }, []);
+
   const [messages, setMessages] = useState([{
     id: "0",
     role: "assistant",

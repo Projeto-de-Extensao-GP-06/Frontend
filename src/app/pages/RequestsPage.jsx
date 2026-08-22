@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { ChevronRight, Mail, Calendar, Inbox, Search, X } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
@@ -17,37 +17,75 @@ const TABS = [{
   id: "negada",
   label: "Negadas"
 }];
-const EMPTY_MSG = {
-  todas: "Nenhuma solicitação recebida",
-  pendente: "Nenhuma solicitação pendente",
-  aceita: "Nenhuma solicitação aceita",
-  negada: "Nenhuma solicitação negada"
-};
+
 export default function RequestsPage() {
+  useEffect(() => {
+    document.title = "Solicitações";
+  }, []);
+
   const [activeTab, setActiveTab] = useState("todas");
   const [search, setSearch] = useState("");
+  const [filterState, setFilterState] = useState("Todos");
   const [sortBy, setSortBy] = useState("recente");
   const navigate = useNavigate();
-  const counts = {
-    todas: mockRequests.length,
-    pendente: mockRequests.filter(r => r.status === "pendente").length,
-    aceita: mockRequests.filter(r => r.status === "aceita").length,
-    negada: mockRequests.filter(r => r.status === "negada").length
-  };
-  const byTab = activeTab === "todas" ? mockRequests : mockRequests.filter(r => r.status === activeTab);
-  const bySearch = search.trim() === "" ? byTab : byTab.filter(r => r.name.toLowerCase().includes(search.toLowerCase()) || r.email.toLowerCase().includes(search.toLowerCase()) || r.state.toLowerCase().includes(search.toLowerCase()));
-  const filtered = [...bySearch].sort((a, b) => {
-    if (sortBy === "az") return a.name.localeCompare(b.name, "pt");
-    if (sortBy === "za") return b.name.localeCompare(a.name, "pt");
-    if (sortBy === "antigo") return a.createdAt.split("/").reverse().join("") > b.createdAt.split("/").reverse().join("") ? 1 : -1;
-    return a.createdAt.split("/").reverse().join("") < b.createdAt.split("/").reverse().join("") ? 1 : -1;
+
+  const stateOptions = ["Todos", ...Array.from(new Set(mockRequests.map(r => r.state)))];
+
+  const searchFiltered = mockRequests.filter(r => {
+    const q = search.trim().toLowerCase();
+    const cleanQ = q.replace(/[.\-/]/g, "");
+    const matchQ = !q ||
+      r.name.toLowerCase().includes(q) ||
+      r.email.toLowerCase().includes(q) ||
+      (r.processNumber && (
+        r.processNumber.toLowerCase().includes(q) ||
+        (cleanQ && r.processNumber.replace(/[.\-/]/g, "").includes(cleanQ))
+      ));
+    const matchState = filterState === "Todos" || r.state === filterState;
+    return matchQ && matchState;
   });
-  const hasSearch = search.trim() !== "";
+
+  const counts = {
+    todas: searchFiltered.length,
+    pendente: searchFiltered.filter(r => r.status === "pendente").length,
+    aceita: searchFiltered.filter(r => r.status === "aceita").length,
+    negada: searchFiltered.filter(r => r.status === "negada").length
+  };
+
+  const filtered = activeTab === "todas"
+    ? searchFiltered
+    : searchFiltered.filter(r => r.status === activeTab);
+
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortBy === "nome_asc" || sortBy === "az") return a.name.localeCompare(b.name, "pt");
+    if (sortBy === "nome_desc" || sortBy === "za") return b.name.localeCompare(a.name, "pt");
+    if (sortBy === "antigo") {
+      const [dayA, monthA, yearA] = a.createdAt.split("/");
+      const [dayB, monthB, yearB] = b.createdAt.split("/");
+      return new Date(`${yearA}-${monthA}-${dayA}`).getTime() - new Date(`${yearB}-${monthB}-${dayB}`).getTime();
+    }
+    if (sortBy === "recente") {
+      const [dayA, monthA, yearA] = a.createdAt.split("/");
+      const [dayB, monthB, yearB] = b.createdAt.split("/");
+      return new Date(`${yearB}-${monthB}-${dayB}`).getTime() - new Date(`${yearA}-${monthA}-${dayA}`).getTime();
+    }
+    return 0;
+  });
+
+  const hasActiveFilters = search !== "" || filterState !== "Todos" || activeTab !== "todas";
+  const clearFilters = () => {
+    setSearch("");
+    setFilterState("Todos");
+    setActiveTab("todas");
+    setPage(1);
+  };
+
   const PAGE_SIZE = 6;
   const [page, setPage] = useState(1);
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
-  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const paginated = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
   return <div className="requests-page">
       {/* ── Header ── */}
       <div className="requests-header">
@@ -64,7 +102,7 @@ export default function RequestsPage() {
         <div className="requests-tabs">
           {TABS.map(tab => {
           const isActive = activeTab === tab.id;
-          return <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`requests-tab ${isActive ? "is-active" : ""}`}>
+          return <button key={tab.id} onClick={() => { setActiveTab(tab.id); setPage(1); }} className={`requests-tab ${isActive ? "is-active" : ""}`}>
                 <span className="requests-tab-label">{tab.label}</span>
                 <span className={`requests-tab-count ${isActive ? "is-active" : ""}`}>
                   {counts[tab.id]}
@@ -75,66 +113,190 @@ export default function RequestsPage() {
         </div>
       </div>
 
-      {/* ── Search + sort panel ── */}
-      <div className="requests-filter-panel">
+      {/* ── Search + Filters panel ── */}
+      <div className="requests-panel">
+        {/* Search row */}
         <div className="requests-search-row">
           <div className="requests-search-wrap">
-            <Search size={15} className="requests-search-icon" />
+            <Search size={16} className="requests-search-icon" />
             <input
               type="text"
-              placeholder="Buscar por nome, e-mail ou estado..."
+              placeholder="Pesquisar por nome, e-mail ou número CNJ..."
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
               className="requests-search-input"
             />
-            {hasSearch && (
-              <button onClick={() => setSearch("")} className="requests-search-clear">
-                <X size={13} />
+          </div>
+          <button className="requests-search-button">
+            Buscar
+          </button>
+        </div>
+
+        {/* Divider */}
+        <div className="requests-divider" />
+
+        {/* Filters row */}
+        <div className="requests-filter-row">
+          <div className="requests-filter-group-left">
+            <span className="requests-filter-label">
+              Filtros
+            </span>
+
+            <FilterSelect
+              label="Estado"
+              value={filterState}
+              onChange={val => {
+                setFilterState(val);
+                setPage(1);
+              }}
+            >
+              {stateOptions.map(st => (
+                <option key={st} value={st}>
+                  {st}
+                </option>
+              ))}
+            </FilterSelect>
+
+            {hasActiveFilters && (
+              <button onClick={clearFilters} className="requests-clear-button">
+                <X size={11} />
+                Limpar filtros
               </button>
             )}
           </div>
+
           <div className="requests-sort-wrap">
             <span className="requests-sort-label">Ordenar:</span>
-            <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="requests-sort-select">
-              <option value="recente">Mais recente</option>
-              <option value="antigo">Mais antigo</option>
-              <option value="az">Nome A→Z</option>
-              <option value="za">Nome Z→A</option>
+            <select
+              value={sortBy}
+              onChange={e => {
+                setSortBy(e.target.value);
+                setPage(1);
+              }}
+              className="requests-sort-select"
+            >
+              <option value="recente">Data (Mais recente)</option>
+              <option value="antigo">Data (Mais antiga)</option>
+              <option value="nome_asc">Nome do solicitante (A → Z)</option>
+              <option value="nome_desc">Nome do solicitante (Z → A)</option>
             </select>
           </div>
         </div>
       </div>
 
       {/* ── Results count ── */}
-      {filtered.length > 0 && <p className="requests-results-count">
-          {filtered.length}{" "}
-          {filtered.length === 1 ? "solicitação" : "solicitações"}
-        </p>}
+      <div className="requests-results-row">
+        <p className="requests-results-count">
+          {sorted.length === mockRequests.length
+            ? `${sorted.length} solicitações`
+            : `${sorted.length} de ${mockRequests.length} solicitações`}
+        </p>
+        {sorted.length > 0 && (
+          <p className="requests-results-tip">
+            Clique em uma solicitação para ver detalhes
+          </p>
+        )}
+      </div>
 
       {/* ── List / empty state ── */}
-      {filtered.length === 0 ? <div className="requests-empty-state">
+      {sorted.length === 0 ? (
+        <div className="requests-empty-state">
           <div className="requests-empty-icon-wrap">
             <Inbox size={24} className="requests-empty-icon" />
           </div>
           <p className="requests-empty-title">
-            Nenhuma solicitação
+            Nenhuma solicitação encontrada
           </p>
-          <p className="requests-empty-text">{EMPTY_MSG[activeTab]}</p>
-        </div> : <div className="requests-grid">
-          {paginated.map(r => <RequestCard key={r.id} request={r} onClick={() => navigate(`/app/solicitacoes/${r.id}`)} />)}
-        </div>}
+          <p className="requests-empty-text">
+            Tente ajustar os filtros de busca
+          </p>
+          {hasActiveFilters && (
+            <button onClick={clearFilters} className="requests-empty-clear">
+              Limpar filtros
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="requests-grid">
+          {paginated.map(r => (
+            <RequestCard
+              key={r.id}
+              request={r}
+              onClick={() => navigate(`/app/solicitacoes/${r.id}`)}
+            />
+          ))}
+        </div>
+      )}
       <PaginationBar page={safePage} total={totalPages} onPage={setPage} />
     </div>;
 }
+
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  children
+}) {
+  return (
+    <div className="requests-filter-select">
+      <span className="requests-filter-select-label">
+        {label}:
+      </span>
+      <select
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        className="requests-filter-select-input"
+      >
+        {children}
+      </select>
+    </div>
+  );
+}
 function PaginationBar({ page, total, onPage }) {
   if (total <= 1) return null;
+
+  const MAX_VISIBLE_PAGES = 10;
+  const currentBlock = Math.floor((page - 1) / MAX_VISIBLE_PAGES);
+  const startPage = currentBlock * MAX_VISIBLE_PAGES + 1;
+  const endPage = Math.min(startPage + MAX_VISIBLE_PAGES - 1, total);
+
+  const pages = [];
+  for (let i = startPage; i <= endPage; i++) {
+    pages.push(i);
+  }
+
   return (
     <div className="pagination">
-      <button className="pagination__btn" onClick={() => onPage(page - 1)} disabled={page === 1}>‹</button>
-      {Array.from({ length: total }, (_, i) => (
-        <button key={i} className={`pagination__page ${page === i + 1 ? "is-active" : ""}`} onClick={() => onPage(i + 1)}>{i + 1}</button>
+      <button
+        className="pagination__btn"
+        onClick={() => onPage(page - 1)}
+        disabled={page === 1}
+        aria-label="Página anterior"
+      >
+        ‹
+      </button>
+
+      {pages.map((p) => (
+        <button
+          key={p}
+          className={`pagination__page ${page === p ? "is-active" : ""}`}
+          onClick={() => onPage(p)}
+        >
+          {p}
+        </button>
       ))}
-      <button className="pagination__btn" onClick={() => onPage(page + 1)} disabled={page === total}>›</button>
+
+      <button
+        className="pagination__btn"
+        onClick={() => onPage(page + 1)}
+        disabled={page === total}
+        aria-label="Próxima página"
+      >
+        ›
+      </button>
     </div>
   );
 }

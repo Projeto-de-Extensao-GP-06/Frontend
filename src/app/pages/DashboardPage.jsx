@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { Scale, MessageSquare, TrendingUp, ArrowUpRight, Zap, Users, Calendar, CalendarRange, X } from "lucide-react";
@@ -72,6 +72,10 @@ function CustomTip({
     </div>;
 }
 export default function DashboardPage() {
+  useEffect(() => {
+    document.title = "Dashboard";
+  }, []);
+
   const [periodMode, setPeriodMode] = useState("preset");
   const [preset, setPreset] = useState("Último mês");
   const [dateFrom, setDateFrom] = useState("");
