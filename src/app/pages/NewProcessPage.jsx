@@ -48,6 +48,15 @@ const maskCurrency = (value) => {
   }).format(numberValue);
 };
 
+const getDocBadgeClass = (type) => {
+  const t = (type || "").toUpperCase();
+  if (t === "PDF") return "edit-process-doc-badge--pdf";
+  if (["PNG", "JPG", "JPEG", "WEBP", "GIF", "SVG"].includes(t)) return "edit-process-doc-badge--img";
+  if (["DOC", "DOCX"].includes(t)) return "edit-process-doc-badge--doc";
+  if (["XLS", "XLSX", "CSV"].includes(t)) return "edit-process-doc-badge--sheet";
+  return "edit-process-doc-badge--generic";
+};
+
 export default function NewProcessPage() {
   useEffect(() => {
     document.title = "Novo Processo";
@@ -60,12 +69,40 @@ export default function NewProcessPage() {
   const [causeValue, setCauseValue] = useState("");
   const [hearingDate, setHearingDate] = useState("");
   const [observations, setObservations] = useState([""]);
+  const [documents, setDocuments] = useState([]);
 
   const addObs = () => setObservations((prev) => [...prev, ""]);
   const updateObs = (i, val) =>
     setObservations((prev) => prev.map((o, idx) => (idx === i ? val : o)));
   const removeObs = (i) =>
     setObservations((prev) => prev.filter((_, idx) => idx !== i));
+
+  const handleFileUpload = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    const formattedDate = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
+
+    const newDocs = files.map((file, index) => {
+      const parts = file.name.split(".");
+      const ext = parts.length > 1 ? parts.pop().toUpperCase() : "DOC";
+      return {
+        id: `d_${Date.now()}_${index}`,
+        name: file.name,
+        type: ext.length > 5 ? ext.slice(0, 4) : ext,
+        uploadedAt: formattedDate,
+      };
+    });
+
+    setDocuments((prev) => [...prev, ...newDocs]);
+    e.target.value = "";
+  };
+
+  const removeDoc = (docId) => {
+    setDocuments((prev) => prev.filter((d) => d.id !== docId));
+  };
 
   return (
     <div className="edit-process-page">
@@ -271,21 +308,40 @@ export default function NewProcessPage() {
         {/* Documents */}
         <div className="edit-process-field">
           <Label className="edit-process-label edit-process-label--spaced">Documentos</Label>
-          <div className="edit-process-doc-upload" style={{ minHeight: "7rem" }}>
-            <div className="edit-process-doc-upload-icon-wrap">
-              <FileText size={18} className="edit-process-doc-upload-icon" />
-            </div>
-            <p className="edit-process-doc-name">Carregar arquivo</p>
-            <p className="edit-process-doc-upload-text">Solte ou clique para selecionar</p>
-            <Button
-              type="button"
-              variant="outline"
-              className="edit-process-button edit-process-button--outline"
-              style={{ height: "2.25rem", marginTop: "0.25rem" }}
-            >
-              <Plus size={14} />
-              Adicionar Arquivo
-            </Button>
+          <div className="edit-process-doc-grid">
+            {documents.map((doc) => (
+              <div key={doc.id} className="edit-process-doc-card">
+                <button
+                  type="button"
+                  onClick={() => removeDoc(doc.id)}
+                  className="edit-process-remove-doc"
+                  title="Remover documento"
+                >
+                  <X size={13} />
+                </button>
+                <div className={`edit-process-doc-badge ${getDocBadgeClass(doc.type)}`}>
+                  {doc.type}
+                </div>
+                <p className="edit-process-doc-name" title={doc.name}>
+                  {doc.name}
+                </p>
+                {doc.uploadedAt && (
+                  <span className="edit-process-doc-date">{doc.uploadedAt}</span>
+                )}
+              </div>
+            ))}
+
+            <label htmlFor="new-process-file-upload" className="edit-process-doc-upload">
+              <input
+                id="new-process-file-upload"
+                type="file"
+                multiple
+                onChange={handleFileUpload}
+                className="edit-process-file-input-hidden"
+              />
+              <Plus size={18} className="edit-process-doc-upload-icon" />
+              <p className="edit-process-doc-upload-text">Adicionar Arquivo</p>
+            </label>
           </div>
         </div>
       </div>
