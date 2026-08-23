@@ -555,6 +555,17 @@
 
 .proc-actions__btn--danger:hover { background: #fee2e2; }
 
+.proc-actions__btn--reactivate {
+  border: 1px solid #a7f3d0;
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.proc-actions__btn--reactivate:hover {
+  background: #d1fae5;
+  color: #047857;
+}
+
 /* Dialog */
 
 .proc-dialog {
@@ -607,3 +618,11 @@
 }
 
 .proc-dialog__btn--danger:hover { background: #b91c1c; }
+
+.proc-dialog__btn--reactivate {
+  border: 0;
+  background: #059669;
+  color: #fff;
+}
+
+.proc-dialog__btn--reactivate:hover { background: #047857; }

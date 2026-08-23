@@ -245,6 +245,8 @@ export const mockProcesses = [{
   clientName: "João Paulo Ferreira",
   phase: "Penhora",
   status: "encerrado",
+  closedAt: "20/08/2023 16:00",
+  closedBy: "Thauany Bezerra",
   priority: "baixa",
   tribunal: "TJSP",
   hearingDate: "—",

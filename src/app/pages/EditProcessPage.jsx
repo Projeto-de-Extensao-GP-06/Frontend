@@ -55,6 +55,7 @@ export default function EditProcessPage() {
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
+  const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const process = mockProcesses.find((p) => p.id === id);
 
   const initialClient = process ? mockClients.find((c) => c.id === process.clientId) || null : null;
@@ -77,6 +78,17 @@ export default function EditProcessPage() {
         <p className="edit-process-empty-text">Processo não encontrado.</p>
         <Button onClick={() => navigate("/app/inicio")} className="edit-process-empty-button">
           Voltar
+        </Button>
+      </div>
+    );
+  }
+
+  if (process.status !== "ativo") {
+    return (
+      <div className="edit-process-page edit-process-page--empty">
+        <p className="edit-process-empty-text">Somente processos ativos podem ser editados.</p>
+        <Button onClick={() => navigate(`/app/processos/${id}`)} className="edit-process-empty-button">
+          Voltar ao Processo
         </Button>
       </div>
     );
@@ -296,8 +308,9 @@ export default function EditProcessPage() {
       {/* Actions */}
       <div className="edit-process-actions">
         <div className="edit-process-actions-row">
-          <Button variant="outline" onClick={() => navigate(`/app/processos/${id}`)} className="edit-process-button edit-process-button--outline">
-            Cancelar
+          <Button variant="outline" onClick={() => setCloseDialogOpen(true)} className="edit-process-button edit-process-button--outline">
+            <CheckCircle size={15} />
+            Encerrar Processo
           </Button>
           <Button onClick={() => setSaveDialogOpen(true)} className="edit-process-button edit-process-button--primary">
             <Save size={15} />
@@ -313,6 +326,12 @@ export default function EditProcessPage() {
           <Button onClick={() => setDeleteDialog(true)} className="edit-process-button edit-process-button--danger">
             <Trash2 size={14} />
             Excluir Processo
+          </Button>
+        </div>
+
+        <div className="edit-process-actions-row">
+          <Button variant="outline" onClick={() => navigate(`/app/processos/${id}`)} className="edit-process-button edit-process-button--outline">
+            Cancelar
           </Button>
         </div>
       </div>
@@ -343,6 +362,49 @@ export default function EditProcessPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Modal de confirmação de encerramento do processo */}
+      <Dialog open={closeDialogOpen} onOpenChange={setCloseDialogOpen}>
+        <DialogContent className="edit-process-dialog">
+          <DialogHeader>
+            <div className="edit-process-dialog__header">
+              <div className="edit-process-dialog__icon-wrap edit-process-dialog__icon-wrap--blue">
+                <CheckCircle size={24} className="edit-process-dialog__icon" />
+              </div>
+              <DialogTitle className="edit-process-dialog-title">Encerrar processo?</DialogTitle>
+            </div>
+          </DialogHeader>
+          <p className="edit-process-dialog-text">
+            O processo será marcado como encerrado e inativo no sistema. Deseja continuar?
+          </p>
+          <DialogFooter className="edit-process-dialog-footer">
+            <Button variant="outline" className="edit-process-dialog-button edit-process-dialog-button--outline" onClick={() => setCloseDialogOpen(false)}>Cancelar</Button>
+            <Button className="edit-process-dialog-button edit-process-dialog-button--primary" onClick={() => {
+              if (process) {
+                const now = new Date();
+                const pad = (n) => String(n).padStart(2, "0");
+                const formattedDate = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+                process.status = "encerrado";
+                process.closedAt = formattedDate;
+                process.closedBy = process.responsible || "Thauany Bezerra";
+                if (!process.history) {
+                  process.history = [];
+                }
+                process.history.push({
+                  id: `h_${Date.now()}`,
+                  type: "fechamento",
+                  description: "Fechamento do processo",
+                  timestamp: `${pad(now.getHours())}:${pad(now.getMinutes())} ${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`,
+                });
+              }
+              setCloseDialogOpen(false);
+              navigate(`/app/processos/${id}`);
+            }}>
+              Encerrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Modal de confirmação de desativação do processo */}
       <Dialog open={deactivateDialogOpen} onOpenChange={setDeactivateDialogOpen}>
         <DialogContent className="edit-process-dialog">
@@ -360,6 +422,9 @@ export default function EditProcessPage() {
           <DialogFooter className="edit-process-dialog-footer">
             <Button variant="outline" className="edit-process-dialog-button edit-process-dialog-button--outline" onClick={() => setDeactivateDialogOpen(false)}>Cancelar</Button>
             <Button className="edit-process-dialog-button edit-process-dialog-button--warn" onClick={() => {
+              if (process) {
+                process.status = "inativo";
+              }
               setDeactivateDialogOpen(false);
               navigate(`/app/processos/${id}`);
             }}>
