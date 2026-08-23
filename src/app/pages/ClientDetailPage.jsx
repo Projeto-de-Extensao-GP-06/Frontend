@@ -5,18 +5,11 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { StatusBadge, PriorityBadge, PhaseBadge } from "../components/StatusBadge";
+import { InfoRow } from "../components/InfoRow";
+import { maskPhone } from "../utils/masks";
 import { mockClients, mockProcesses } from "../data/mockData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import "../../styles/client-detail-page.css";
-
-const maskPhone = (value) => {
-  if (!value) return "";
-  const digits = value.replace(/\D/g, "").slice(0, 11);
-  if (digits.length <= 2) return digits.length > 0 ? `(${digits}` : "";
-  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-  if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
-  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
-};
 
 export default function ClientDetailPage() {
   useEffect(() => {
@@ -297,21 +290,5 @@ export default function ClientDetailPage() {
           </form>
         </DialogContent>
       </Dialog>
-    </div>;
-}
-function InfoRow({
-  label,
-  value,
-  mono = false,
-  icon
-}) {
-  return <div className="client-detail-info-row">
-      {icon && <span className="client-detail-info-icon">{icon}</span>}
-      <div className="client-detail-info-body">
-        <p className="client-detail-info-label">{label}</p>
-        <p className={`client-detail-info-value ${mono ? "client-detail-info-value--mono" : ""}`}>
-          {value}
-        </p>
-      </div>
     </div>;
 }

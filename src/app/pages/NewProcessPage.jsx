@@ -8,54 +8,10 @@ import { Textarea } from "../components/ui/textarea";
 import { ClientCard } from "../components/ClientCard";
 import { SelectClientModal } from "../components/SelectClientModal";
 import { phases, tribunals } from "../data/mockData";
+import { maskCNJ, maskCurrency } from "../utils/masks";
+import { getDocBadgeClass } from "../utils/document";
 import "../../styles/edit-process-page.css";
 import "../../styles/select-client-modal.css";
-
-const maskDate = (value) => {
-  const digits = value.replace(/\D/g, "").slice(0, 8);
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
-};
-
-const maskCNJ = (value) => {
-  if (!value) return "";
-  const digits = value.replace(/\D/g, "").slice(0, 20);
-  if (digits.length <= 7) return digits;
-  if (digits.length <= 9) return `${digits.slice(0, 7)}-${digits.slice(7)}`;
-  if (digits.length <= 13) return `${digits.slice(0, 7)}-${digits.slice(7, 9)}.${digits.slice(9)}`;
-  if (digits.length <= 14) return `${digits.slice(0, 7)}-${digits.slice(7, 9)}.${digits.slice(9, 13)}.${digits.slice(13)}`;
-  if (digits.length <= 16) return `${digits.slice(0, 7)}-${digits.slice(7, 9)}.${digits.slice(9, 13)}.${digits.slice(13, 14)}.${digits.slice(14)}`;
-  return `${digits.slice(0, 7)}-${digits.slice(7, 9)}.${digits.slice(9, 13)}.${digits.slice(13, 14)}.${digits.slice(14, 16)}.${digits.slice(16)}`;
-};
-
-const maskCurrency = (value) => {
-  if (value === null || value === undefined || value === "") return "";
-  if (typeof value === "number") {
-    const safeNumber = Math.min(value, 9999999999999.99);
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(safeNumber);
-  }
-  // DECIMAL(15,2): máx. 15 dígitos no total (13 inteiros + 2 decimais)
-  const digits = value.toString().replace(/\D/g, "").slice(0, 15);
-  if (!digits) return "";
-  const numberValue = Number(digits) / 100;
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(numberValue);
-};
-
-const getDocBadgeClass = (type) => {
-  const t = (type || "").toUpperCase();
-  if (t === "PDF") return "edit-process-doc-badge--pdf";
-  if (["PNG", "JPG", "JPEG", "WEBP", "GIF", "SVG"].includes(t)) return "edit-process-doc-badge--img";
-  if (["DOC", "DOCX"].includes(t)) return "edit-process-doc-badge--doc";
-  if (["XLS", "XLSX", "CSV"].includes(t)) return "edit-process-doc-badge--sheet";
-  return "edit-process-doc-badge--generic";
-};
 
 export default function NewProcessPage() {
   useEffect(() => {
@@ -252,11 +208,9 @@ export default function NewProcessPage() {
             <Label className="edit-process-label">Data e hora da audiência (opcional)</Label>
             <div className="edit-process-datetime-group">
               <Input
-                type="text"
+                type="date"
                 value={hearingDate}
-                onChange={(e) => setHearingDate(maskDate(e.target.value))}
-                placeholder="dd/mm/yyyy"
-                maxLength={10}
+                onChange={(e) => setHearingDate(e.target.value)}
                 className="edit-process-input edit-process-input--mono"
               />
               <Input
