@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Navigate } from "react-router";
 import { ArrowLeft, Mail, Shield, AlertTriangle, Save, CheckCircle, RefreshCw } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
+import { getInitials } from "../components/UserAvatar";
 import { mockUsers } from "../data/mockData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import "../../styles/user-detail-page.css";
@@ -36,14 +37,7 @@ function UserDetail({ user }) {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const initials = user.name
-    ? user.name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase()
-    : "";
+  const initials = getInitials(user.name);
 
   return (
     <div className="user-detail-page">

@@ -3,6 +3,8 @@ import { useNavigate, useParams } from "react-router";
 import { ArrowLeft, Pencil, Trash2, FileText, Clock, Plus, ChevronRight, Calendar, User, Building, Scale, AlertTriangle, Flag, RotateCcw, Check, X, CloudUpload } from "lucide-react";
 import { mockProcesses } from "../data/mockData";
 import { StatusBadge, PriorityBadge, PhaseBadge } from "../components/StatusBadge";
+import { InfoRow } from "../components/InfoRow";
+import { getDocVariant } from "../utils/document";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import "../../styles/process-detail-page.css";
 
@@ -19,23 +21,6 @@ const historyDotClass = {
   observacao: "proc-timeline__dot--observacao",
   arquivo: "proc-timeline__dot--arquivo"
 };
-
-const getDocVariant = (type) => {
-  const t = (type || "").toUpperCase();
-  if (t === "PDF") return "pdf";
-  if (["PNG", "JPG", "JPEG", "WEBP", "GIF", "SVG"].includes(t)) return "img";
-  if (["DOC", "DOCX"].includes(t)) return "doc";
-  if (["XLS", "XLSX", "CSV"].includes(t)) return "sheet";
-  return "other";
-};
-
-/* ─ sub-components ─ */
-function InfoRow({ label, value, mono = false }) {
-  return <div>
-      <p className="proc-info-row__label">{label}</p>
-      <p className={`proc-info-row__value ${mono ? "proc-info-row__value--mono" : ""}`}>{value}</p>
-    </div>;
-}
 export default function ProcessDetailPage() {
   const {
     id
@@ -215,23 +200,23 @@ export default function ProcessDetailPage() {
       <div className="proc-content">
         <div className="proc-card">
           <div className="proc-grid">
-            <InfoRow label="Fase" value={process.phase} />
-            <InfoRow label="Tribunal" value={process.tribunal} />
-            <InfoRow label="Data ajuizamento" value={process.filingDate} />
-            <InfoRow label="Instância" value={process.instance} />
-            <InfoRow label="Nível de Sigilo" value={process.secrecyLevel} />
-            <InfoRow label="Classe processual" value={process.processualClass} />
+            <InfoRow label="Fase" value={process.phase} variant="proc" />
+            <InfoRow label="Tribunal" value={process.tribunal} variant="proc" />
+            <InfoRow label="Data ajuizamento" value={process.filingDate} variant="proc" />
+            <InfoRow label="Instância" value={process.instance} variant="proc" />
+            <InfoRow label="Nível de Sigilo" value={process.secrecyLevel} variant="proc" />
+            <InfoRow label="Classe processual" value={process.processualClass} variant="proc" />
           </div>
           <div className="proc-grid proc-grid--bordered">
-            <div className="proc-grid__full"><InfoRow label="Órgão Julgador" value={process.judgingBody} /></div>
-            <InfoRow label="Sistema do Tribunal" value={process.tribunalSystem} />
-            <InfoRow label="Responsável" value={process.responsible} />
-            <InfoRow label="Valor da causa" value={fmt(process.value)} mono />
-            <InfoRow label="Data da audiência" value={process.hearingDate && process.hearingDate !== "—" ? `${process.hearingDate}${process.hearingTime ? ` às ${process.hearingTime}` : ""}` : "Não definida"} />
+            <div className="proc-grid__full"><InfoRow label="Órgão Julgador" value={process.judgingBody} variant="proc" /></div>
+            <InfoRow label="Sistema do Tribunal" value={process.tribunalSystem} variant="proc" />
+            <InfoRow label="Responsável" value={process.responsible} variant="proc" />
+            <InfoRow label="Valor da causa" value={fmt(process.value)} mono variant="proc" />
+            <InfoRow label="Data da audiência" value={process.hearingDate && process.hearingDate !== "—" ? `${process.hearingDate}${process.hearingTime ? ` às ${process.hearingTime}` : ""}` : "Não definida"} variant="proc" />
             {isClosed && (
               <>
-                <InfoRow label="Encerrado em" value={closedAt} />
-                <InfoRow label="Encerrado por" value={closedBy} />
+                <InfoRow label="Encerrado em" value={closedAt} variant="proc" />
+                <InfoRow label="Encerrado por" value={closedBy} variant="proc" />
               </>
             )}
           </div>

@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { Plus, Search, Building2, User, ChevronRight, Users, X } from "lucide-react";
-import { StatusBadge } from "../components/StatusBadge";
+import { Plus, Search, Users, X } from "lucide-react";
+import { ClientCard } from "../components/ClientCard";
+import { FilterSelect } from "../components/FilterSelect";
+import { PaginationBar } from "../components/PaginationBar";
 import { mockClients } from "../data/mockData";
 import "../../styles/clients-page.css";
 
@@ -111,6 +113,7 @@ export default function ClientsPage() {
             </span>
 
             <FilterSelect
+              prefix="clients"
               label="Tipo"
               value={typeFilter}
               onChange={val => {
@@ -126,6 +129,7 @@ export default function ClientsPage() {
             </FilterSelect>
 
             <FilterSelect
+              prefix="clients"
               label="Status"
               value={statusFilter}
               onChange={val => {
@@ -197,113 +201,5 @@ export default function ClientsPage() {
           {paginated.map(client => <ClientCard key={client.id} client={client} onClick={() => navigate(`/app/clientes/${client.id}`)} />)}
         </div>}
       <PaginationBar page={safePage} total={totalPages} onPage={setPage} />
-    </div>;
-}
-
-function FilterSelect({
-  label,
-  value,
-  onChange,
-  children
-}) {
-  return (
-    <div className="clients-filter-select">
-      <span className="clients-filter-select-label">
-        {label}:
-      </span>
-      <select
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        className="clients-filter-select-input"
-      >
-        {children}
-      </select>
-    </div>
-  );
-}
-function PaginationBar({ page, total, onPage }) {
-  if (total <= 1) return null;
-
-  const MAX_VISIBLE_PAGES = 10;
-  const currentBlock = Math.floor((page - 1) / MAX_VISIBLE_PAGES);
-  const startPage = currentBlock * MAX_VISIBLE_PAGES + 1;
-  const endPage = Math.min(startPage + MAX_VISIBLE_PAGES - 1, total);
-
-  const pages = [];
-  for (let i = startPage; i <= endPage; i++) {
-    pages.push(i);
-  }
-
-  return (
-    <div className="pagination">
-      <button
-        className="pagination__btn"
-        onClick={() => onPage(page - 1)}
-        disabled={page === 1}
-        aria-label="Página anterior"
-      >
-        ‹
-      </button>
-
-      {pages.map((p) => (
-        <button
-          key={p}
-          className={`pagination__page ${page === p ? "is-active" : ""}`}
-          onClick={() => onPage(p)}
-        >
-          {p}
-        </button>
-      ))}
-
-      <button
-        className="pagination__btn"
-        onClick={() => onPage(page + 1)}
-        disabled={page === total}
-        aria-label="Próxima página"
-      >
-        ›
-      </button>
-    </div>
-  );
-}
-function ClientCard({
-  client,
-  onClick
-}) {
-  const isPF = client.type === "PF";
-  const doc = isPF ? client.cpf : client.cnpj;
-  const primaryContact = client.contacts?.find(c => c.isPrimary) || client.contacts?.[0];
-  const primaryEmail = (isPF ? (client.email || primaryContact?.email) : primaryContact?.email) || "—";
-  return <div onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === "Enter" && onClick()} className="client-card">
-      {/* Card body */}
-      <div className="client-card-body">
-        {/* Avatar */}
-        <div className={`client-card-avatar ${isPF ? "is-pf" : "is-pj"}`}>
-          {isPF ? <User size={18} className="client-card-avatar-icon is-pf" /> : <Building2 size={18} className="client-card-avatar-icon is-pj" />}
-        </div>
-
-        {/* Info */}
-        <div className="client-card-info">
-          <div className="client-card-title-row">
-            <p className="client-card-name">
-              {client.name}
-            </p>
-            <span className={`client-card-type ${isPF ? "is-pf" : "is-pj"}`}>
-              {client.type}
-            </span>
-          </div>
-          <p className="client-card-doc">
-            {doc}
-          </p>
-        </div>
-
-        <ChevronRight size={15} className="client-card-chevron" />
-      </div>
-
-      {/* Footer row */}
-      <div className="client-card-footer">
-        <p className="client-card-email">{primaryEmail}</p>
-        <StatusBadge status={client.status} />
-      </div>
     </div>;
 }

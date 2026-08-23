@@ -3,6 +3,8 @@ import { useNavigate } from "react-router";
 import { Plus, Search, Scale, Calendar, ChevronRight, FileText, Zap, TrendingUp, Clock, X, BarChart3 } from "lucide-react";
 import { StatusBadge, PriorityBadge, PhaseBadge } from "../components/StatusBadge";
 import { CalendarEventModal } from "../components/CalendarEventModal";
+import { FilterSelect } from "../components/FilterSelect";
+import { PaginationBar } from "../components/PaginationBar";
 import { mockProcesses, mockRequests } from "../data/mockData";
 import "../../styles/home-page.css";
 const STATUS_OPTS = [{
@@ -183,25 +185,25 @@ export default function HomePage() {
               Filtros
             </span>
 
-            <FilterSelect label="Status" value={filterStatus} onChange={setFilterStatus}>
+            <FilterSelect prefix="home" label="Status" value={filterStatus} onChange={setFilterStatus}>
               {STATUS_OPTS.map(o => <option key={o.value} value={o.value}>
                   {o.label}
                 </option>)}
             </FilterSelect>
 
-            <FilterSelect label="Fase" value={filterPhase} onChange={setFilterPhase}>
+            <FilterSelect prefix="home" label="Fase" value={filterPhase} onChange={setFilterPhase}>
               {PHASE_OPTS.map(p => <option key={p} value={p}>
                   {p === "Todas" ? "Todas" : p}
                 </option>)}
             </FilterSelect>
 
-            <FilterSelect label="Prioridade" value={filterPriority} onChange={setFilterPriority}>
+            <FilterSelect prefix="home" label="Prioridade" value={filterPriority} onChange={setFilterPriority}>
               {PRIORITY_OPTS.map(o => <option key={o.value} value={o.value}>
                   {o.label}
                 </option>)}
             </FilterSelect>
 
-            <FilterSelect label="Tribunal" value={filterTribunal} onChange={setFilterTribunal}>
+            <FilterSelect prefix="home" label="Tribunal" value={filterTribunal} onChange={setFilterTribunal}>
               {tribunalOptions.map(t => <option key={t} value={t}>
                   {t}
                 </option>)}
@@ -297,66 +299,7 @@ function MetricCard({
       </div>
     </div>;
 }
-function FilterSelect({
-  label,
-  value,
-  onChange,
-  children
-}) {
-  return <div className="home-filter-select">
-      <span className="home-filter-select-label">
-        {label}:
-      </span>
-      <select value={value} onChange={e => onChange(e.target.value)} className="home-filter-select-input">
-        {children}
-      </select>
-    </div>;
-}
-function PaginationBar({ page, total, onPage }) {
-  if (total <= 1) return null;
 
-  const MAX_VISIBLE_PAGES = 10;
-  const currentBlock = Math.floor((page - 1) / MAX_VISIBLE_PAGES);
-  const startPage = currentBlock * MAX_VISIBLE_PAGES + 1;
-  const endPage = Math.min(startPage + MAX_VISIBLE_PAGES - 1, total);
-
-  const pages = [];
-  for (let i = startPage; i <= endPage; i++) {
-    pages.push(i);
-  }
-
-  return (
-    <div className="pagination">
-      <button
-        className="pagination__btn"
-        onClick={() => onPage(page - 1)}
-        disabled={page === 1}
-        aria-label="Página anterior"
-      >
-        ‹
-      </button>
-
-      {pages.map((p) => (
-        <button
-          key={p}
-          className={`pagination__page ${page === p ? "is-active" : ""}`}
-          onClick={() => onPage(p)}
-        >
-          {p}
-        </button>
-      ))}
-
-      <button
-        className="pagination__btn"
-        onClick={() => onPage(page + 1)}
-        disabled={page === total}
-        aria-label="Próxima página"
-      >
-        ›
-      </button>
-    </div>
-  );
-}
 function ProcessCard({
   process,
   onClick

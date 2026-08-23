@@ -9,53 +9,18 @@ import { ClientCard } from "../components/ClientCard";
 import { SelectClientModal } from "../components/SelectClientModal";
 import { mockProcesses, mockClients, phases, tribunals } from "../data/mockData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
+import { maskCNJ, maskCurrency } from "../utils/masks";
+import { getDocBadgeClass } from "../utils/document";
 import "../../styles/edit-process-page.css";
 import "../../styles/select-client-modal.css";
 
-const maskDate = (value) => {
-  const digits = value.replace(/\D/g, "").slice(0, 8);
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
-};
-
-const maskCNJ = (value) => {
-  if (!value) return "";
-  const digits = value.replace(/\D/g, "").slice(0, 20);
-  if (digits.length <= 7) return digits;
-  if (digits.length <= 9) return `${digits.slice(0, 7)}-${digits.slice(7)}`;
-  if (digits.length <= 13) return `${digits.slice(0, 7)}-${digits.slice(7, 9)}.${digits.slice(9)}`;
-  if (digits.length <= 14) return `${digits.slice(0, 7)}-${digits.slice(7, 9)}.${digits.slice(9, 13)}.${digits.slice(13)}`;
-  if (digits.length <= 16) return `${digits.slice(0, 7)}-${digits.slice(7, 9)}.${digits.slice(9, 13)}.${digits.slice(13, 14)}.${digits.slice(14)}`;
-  return `${digits.slice(0, 7)}-${digits.slice(7, 9)}.${digits.slice(9, 13)}.${digits.slice(13, 14)}.${digits.slice(14, 16)}.${digits.slice(16)}`;
-};
-
-const maskCurrency = (value) => {
-  if (value === null || value === undefined || value === "") return "";
-  if (typeof value === "number") {
-    const safeNumber = Math.min(value, 9999999999999.99);
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(safeNumber);
+const formatDateForInput = (val) => {
+  if (!val || val === "—") return "";
+  if (val.includes("/")) {
+    const [d, m, y] = val.split("/");
+    return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
   }
-  // DECIMAL(15,2): máx. 15 dígitos no total (13 inteiros + 2 decimais)
-  const digits = value.toString().replace(/\D/g, "").slice(0, 15);
-  if (!digits) return "";
-  const numberValue = Number(digits) / 100;
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(numberValue);
-};
-
-const getDocBadgeClass = (type) => {
-  const t = (type || "").toUpperCase();
-  if (t === "PDF") return "edit-process-doc-badge--pdf";
-  if (["PNG", "JPG", "JPEG", "WEBP", "GIF", "SVG"].includes(t)) return "edit-process-doc-badge--img";
-  if (["DOC", "DOCX"].includes(t)) return "edit-process-doc-badge--doc";
-  if (["XLS", "XLSX", "CSV"].includes(t)) return "edit-process-doc-badge--sheet";
-  return "edit-process-doc-badge--generic";
+  return val;
 };
 
 export default function EditProcessPage() {
@@ -74,8 +39,8 @@ export default function EditProcessPage() {
   const [causeValue, setCauseValue] = useState(
     process?.value !== undefined && process?.value !== null ? maskCurrency(process.value) : ""
   );
-  const [hearingDate, setHearingDate] = useState(
-    process && process.hearingDate !== "—" ? process.hearingDate : ""
+  const [hearingDate, setHearingDate] = useState(() =>
+    process && process.hearingDate !== "—" ? formatDateForInput(process.hearingDate) : ""
   );
   const [observations, setObservations] = useState(
     process?.observations ? process.observations.map((o) => o.text) : [""]
@@ -283,11 +248,9 @@ export default function EditProcessPage() {
             <Label className="edit-process-label">Data e hora da audiência</Label>
             <div className="edit-process-datetime-group">
               <Input
-                type="text"
+                type="date"
                 value={hearingDate}
-                onChange={(e) => setHearingDate(maskDate(e.target.value))}
-                placeholder="dd/mm/yyyy"
-                maxLength={10}
+                onChange={(e) => setHearingDate(e.target.value)}
                 className="edit-process-input edit-process-input--mono"
               />
               <Input
@@ -366,7 +329,7 @@ export default function EditProcessPage() {
       {/* Actions */}
       <div className="edit-process-actions">
         <div className="edit-process-actions-row">
-          <Button variant="outline" onClick={() => setCloseDialogOpen(true)} className="edit-process-button edit-process-button--outline">
+          <Button onClick={() => setCloseDialogOpen(true)} className="edit-process-button edit-process-button--close">
             <CheckCircle size={15} />
             Encerrar Processo
           </Button>
@@ -428,7 +391,7 @@ export default function EditProcessPage() {
         <DialogContent className="edit-process-dialog">
           <DialogHeader>
             <div className="edit-process-dialog__header">
-              <div className="edit-process-dialog__icon-wrap edit-process-dialog__icon-wrap--blue">
+              <div className="edit-process-dialog__icon-wrap edit-process-dialog__icon-wrap--green">
                 <CheckCircle size={24} className="edit-process-dialog__icon" />
               </div>
               <DialogTitle className="edit-process-dialog-title">Encerrar processo?</DialogTitle>
@@ -439,7 +402,7 @@ export default function EditProcessPage() {
           </p>
           <DialogFooter className="edit-process-dialog-footer">
             <Button variant="outline" className="edit-process-dialog-button edit-process-dialog-button--outline" onClick={() => setCloseDialogOpen(false)}>Cancelar</Button>
-            <Button className="edit-process-dialog-button edit-process-dialog-button--primary" onClick={() => {
+            <Button className="edit-process-dialog-button edit-process-dialog-button--close" onClick={() => {
               if (process) {
                 const now = new Date();
                 const pad = (n) => String(n).padStart(2, "0");

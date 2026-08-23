@@ -410,6 +410,18 @@
   background: #fef3c7;
 }
 
+.edit-process-button--close {
+  height: 3rem;
+  border: 1px solid #a7f3d0;
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.edit-process-button--close:hover {
+  background: #d1fae5;
+  color: #047857;
+}
+
 .edit-process-button--danger {
   height: 2.75rem;
   border: 1px solid #fecaca;
@@ -465,6 +477,14 @@
   color: #dc2626;
 }
 
+.edit-process-dialog__icon-wrap--green {
+  background: #d1fae5;
+}
+
+.edit-process-dialog__icon-wrap--green .edit-process-dialog__icon {
+  color: #059669;
+}
+
 .edit-process-dialog-title {
   color: #0f2357;
   text-align: center;
@@ -510,6 +530,16 @@
 
 .edit-process-dialog-button--primary:hover {
   background: #1a3a7a;
+}
+
+.edit-process-dialog-button--close {
+  border: 0;
+  background: #059669;
+  color: #fff;
+}
+
+.edit-process-dialog-button--close:hover {
+  background: #047857;
 }
 
 .edit-process-dialog-button--warn {
