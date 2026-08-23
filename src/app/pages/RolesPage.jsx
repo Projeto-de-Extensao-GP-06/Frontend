@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Shield, ChevronDown, ChevronRight, Check, Lock, Edit2, Trash2, Search, X, Save, CheckCircle } from "lucide-react";
+import { Plus, Shield, ChevronDown, ChevronRight, Check, Lock, Edit2, Trash2, Search, X, Save, CheckCircle, RotateCcw } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import "../../styles/roles-page.css";
 const roles = [{
@@ -19,17 +19,17 @@ const permissionModules = [{
   key: "processo",
   label: "Processo",
   icon: "⚖️",
-  permissions: ["Criar", "Editar", "Excluir", "Visualizar"]
+  permissions: ["Criar", "Editar", "Excluir"]
 }, {
   key: "solicitacao",
   label: "Solicitações",
   icon: "📬",
-  permissions: ["Visualizar", "Aceitar", "Negar"]
+  permissions: ["Aceitar", "Negar"]
 }, {
   key: "cliente",
   label: "Cliente",
   icon: "👤",
-  permissions: ["Criar", "Editar", "Excluir", "Visualizar"]
+  permissions: ["Criar", "Editar", "Excluir"]
 }, {
   key: "cargo",
   label: "Cargo",
@@ -39,7 +39,7 @@ const permissionModules = [{
   key: "usuario",
   label: "Usuário",
   icon: "🔑",
-  permissions: ["Criar", "Editar", "Excluir", "Visualizar"]
+  permissions: ["Criar", "Editar", "Excluir"]
 }, {
   key: "contato",
   label: "Contato",
@@ -49,34 +49,29 @@ const permissionModules = [{
   key: "documento",
   label: "Documentos",
   icon: "📄",
-  permissions: ["Criar", "Editar", "Excluir", "Download"]
+  permissions: ["Criar", "Editar", "Excluir"]
 }];
 const defaultPerms = {
   "processo-Criar": true,
   "processo-Editar": true,
   "processo-Excluir": true,
-  "processo-Visualizar": true,
-  "solicitacao-Visualizar": true,
   "solicitacao-Aceitar": true,
   "solicitacao-Negar": true,
   "cliente-Criar": true,
   "cliente-Editar": true,
   "cliente-Excluir": true,
-  "cliente-Visualizar": true,
   "cargo-Criar": true,
   "cargo-Editar": true,
   "cargo-Excluir": true,
   "usuario-Criar": true,
   "usuario-Editar": true,
   "usuario-Excluir": true,
-  "usuario-Visualizar": true,
   "contato-Criar": true,
   "contato-Editar": true,
   "contato-Excluir": true,
   "documento-Criar": true,
   "documento-Editar": true,
-  "documento-Excluir": true,
-  "documento-Download": true
+  "documento-Excluir": true
 };
 export default function RolesPage() {
   useEffect(() => {
@@ -86,6 +81,7 @@ export default function RolesPage() {
   const [expandedModules, setExpandedModules] = useState(["processo"]);
   const [allExpanded, setAllExpanded] = useState(false);
   const [selectedRole, setSelectedRole] = useState("admin");
+  const [initialPerms, setInitialPerms] = useState(defaultPerms);
   const [checkedPerms, setCheckedPerms] = useState(defaultPerms);
   const [saved, setSaved] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
@@ -105,6 +101,7 @@ export default function RolesPage() {
     [key]: !p[key]
   }));
   const handleSave = () => {
+    setInitialPerms({ ...checkedPerms });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
@@ -135,6 +132,15 @@ export default function RolesPage() {
       clearedPerms[key] = false;
     });
     setCheckedPerms(clearedPerms);
+  };
+  const isPermsChanged = Object.keys(initialPerms).some(
+    key => Boolean(checkedPerms[key]) !== Boolean(initialPerms[key])
+  ) || Object.keys(checkedPerms).some(
+    key => Boolean(checkedPerms[key]) !== Boolean(initialPerms[key])
+  );
+
+  const handleRestorePermissions = () => {
+    setCheckedPerms({ ...initialPerms });
   };
   const totalChecked = Object.values(checkedPerms).filter(Boolean).length;
   const totalPerms = Object.keys(defaultPerms).length;
@@ -217,6 +223,16 @@ export default function RolesPage() {
           Permissões ativas
         </p>
         <div className="perms-toolbar__right">
+          {isPermsChanged && (
+            <button
+              onClick={handleRestorePermissions}
+              className="perms-restore-btn"
+              title="Restaurar estado inicial das permissões"
+            >
+              <RotateCcw size={12} />
+              Restaurar permissões
+            </button>
+          )}
           <button onClick={handleClearAllPermissions} className="perms-clear-btn">Remover todas</button>
           <span className="perms-counter">{totalChecked}/{totalPerms}</span>
         </div>
