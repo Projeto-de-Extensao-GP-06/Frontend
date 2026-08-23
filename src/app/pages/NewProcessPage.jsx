@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { ArrowLeft, Plus, FileText, Trash2, X, Check, Search, Users, RefreshCw } from "lucide-react";
+import { ArrowLeft, Plus, FileText, Trash2, X, Search, Users, RefreshCw } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -284,7 +284,7 @@ export default function NewProcessPage() {
               style={{ height: "2.25rem", marginTop: "0.25rem" }}
             >
               <Plus size={14} />
-              Add Arquivo
+              Adicionar Arquivo
             </Button>
           </div>
         </div>
@@ -304,7 +304,7 @@ export default function NewProcessPage() {
             onClick={() => navigate("/app/inicio")}
             className="edit-process-button edit-process-button--primary"
           >
-            <Check size={16} />
+            <Plus size={16} />
             Adicionar Processo
           </Button>
         </div>

@@ -34,7 +34,7 @@ export function SelectClientModal({
     const matchSearch =
       !search ||
       c.name.toLowerCase().includes(term) ||
-      c.email.toLowerCase().includes(term) ||
+      c.contacts?.some((ct) => ct.email?.toLowerCase().includes(term)) ||
       (doc && doc.includes(term));
     const matchType = typeFilter === "todos" || c.type === typeFilter;
     const matchStatus = statusFilter === "todos" || c.status === statusFilter;

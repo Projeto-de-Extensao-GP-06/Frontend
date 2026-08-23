@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router";
-import { ArrowLeft, Plus, X, Trash2, Save, Search, Users, RefreshCw } from "lucide-react";
+import { ArrowLeft, Plus, X, Trash2, Save, Search, Users, RefreshCw, CheckCircle, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -49,10 +49,22 @@ const maskCurrency = (value) => {
   }).format(numberValue);
 };
 
+const getDocBadgeClass = (type) => {
+  const t = (type || "").toUpperCase();
+  if (t === "PDF") return "edit-process-doc-badge--pdf";
+  if (["PNG", "JPG", "JPEG", "WEBP", "GIF", "SVG"].includes(t)) return "edit-process-doc-badge--img";
+  if (["DOC", "DOCX"].includes(t)) return "edit-process-doc-badge--doc";
+  if (["XLS", "XLSX", "CSV"].includes(t)) return "edit-process-doc-badge--sheet";
+  return "edit-process-doc-badge--generic";
+};
+
 export default function EditProcessPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [deleteDialog, setDeleteDialog] = useState(false);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
+  const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const process = mockProcesses.find((p) => p.id === id);
 
   const initialClient = process ? mockClients.find((c) => c.id === process.clientId) || null : null;
@@ -68,6 +80,9 @@ export default function EditProcessPage() {
   const [observations, setObservations] = useState(
     process?.observations ? process.observations.map((o) => o.text) : [""]
   );
+  const [documents, setDocuments] = useState(
+    process?.documents ? [...process.documents] : []
+  );
 
   if (!process) {
     return (
@@ -80,11 +95,49 @@ export default function EditProcessPage() {
     );
   }
 
+  if (process.status !== "ativo") {
+    return (
+      <div className="edit-process-page edit-process-page--empty">
+        <p className="edit-process-empty-text">Somente processos ativos podem ser editados.</p>
+        <Button onClick={() => navigate(`/app/processos/${id}`)} className="edit-process-empty-button">
+          Voltar ao Processo
+        </Button>
+      </div>
+    );
+  }
+
   const addObs = () => setObservations((prev) => [...prev, ""]);
   const updateObs = (i, val) =>
     setObservations((prev) => prev.map((o, idx) => (idx === i ? val : o)));
   const removeObs = (i) =>
     setObservations((prev) => prev.filter((_, idx) => idx !== i));
+
+  const handleFileUpload = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    const formattedDate = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
+
+    const newDocs = files.map((file, index) => {
+      const parts = file.name.split(".");
+      const ext = parts.length > 1 ? parts.pop().toUpperCase() : "DOC";
+      return {
+        id: `d_${Date.now()}_${index}`,
+        name: file.name,
+        type: ext.length > 5 ? ext.slice(0, 4) : ext,
+        uploadedAt: formattedDate,
+      };
+    });
+
+    setDocuments((prev) => [...prev, ...newDocs]);
+    e.target.value = "";
+  };
+
+  const removeDoc = (docId) => {
+    setDocuments((prev) => prev.filter((d) => d.id !== docId));
+  };
   return (
     <div className="edit-process-page">
       {/* Breadcrumb */}
@@ -273,20 +326,39 @@ export default function EditProcessPage() {
         <div className="edit-process-field">
           <Label className="edit-process-label edit-process-label--spaced">Documentos</Label>
           <div className="edit-process-doc-grid">
-            {process.documents.map(doc => <div key={doc.id} className="edit-process-doc-card">
-                <button className="edit-process-remove-doc">
+            {documents.map((doc) => (
+              <div key={doc.id} className="edit-process-doc-card">
+                <button
+                  type="button"
+                  onClick={() => removeDoc(doc.id)}
+                  className="edit-process-remove-doc"
+                  title="Remover documento"
+                >
                   <X size={13} />
                 </button>
-                <div className={`edit-process-doc-badge ${doc.type === "PDF" ? "edit-process-doc-badge--pdf" : "edit-process-doc-badge--generic"}`}>
+                <div className={`edit-process-doc-badge ${getDocBadgeClass(doc.type)}`}>
                   {doc.type}
                 </div>
-                <p className="edit-process-doc-name">{doc.name}</p>
-              </div>)}
+                <p className="edit-process-doc-name" title={doc.name}>
+                  {doc.name}
+                </p>
+                {doc.uploadedAt && (
+                  <span className="edit-process-doc-date">{doc.uploadedAt}</span>
+                )}
+              </div>
+            ))}
 
-            <div className="edit-process-doc-upload">
+            <label htmlFor="edit-process-file-upload" className="edit-process-doc-upload">
+              <input
+                id="edit-process-file-upload"
+                type="file"
+                multiple
+                onChange={handleFileUpload}
+                className="edit-process-file-input-hidden"
+              />
               <Plus size={18} className="edit-process-doc-upload-icon" />
-              <p className="edit-process-doc-upload-text">Add Arquivo</p>
-            </div>
+              <p className="edit-process-doc-upload-text">Adicionar Arquivo</p>
+            </label>
           </div>
         </div>
       </div>
@@ -294,17 +366,19 @@ export default function EditProcessPage() {
       {/* Actions */}
       <div className="edit-process-actions">
         <div className="edit-process-actions-row">
-          <Button variant="outline" onClick={() => navigate(`/app/processos/${id}`)} className="edit-process-button edit-process-button--outline">
-            Cancelar
+          <Button variant="outline" onClick={() => setCloseDialogOpen(true)} className="edit-process-button edit-process-button--outline">
+            <CheckCircle size={15} />
+            Encerrar Processo
           </Button>
-          <Button onClick={() => navigate(`/app/processos/${id}`)} className="edit-process-button edit-process-button--primary">
+          <Button onClick={() => setSaveDialogOpen(true)} className="edit-process-button edit-process-button--primary">
             <Save size={15} />
             Salvar Alterações
           </Button>
         </div>
 
         <div className="edit-process-actions-row">
-          <Button className="edit-process-button edit-process-button--warn" onClick={() => navigate(`/app/processos/${id}`)}>
+          <Button className="edit-process-button edit-process-button--warn" onClick={() => setDeactivateDialogOpen(true)}>
+            <AlertTriangle size={15} className="edit-process-dialog__icon" />
             Desativar Processo
           </Button>
           <Button onClick={() => setDeleteDialog(true)} className="edit-process-button edit-process-button--danger">
@@ -312,12 +386,125 @@ export default function EditProcessPage() {
             Excluir Processo
           </Button>
         </div>
+
+        <div className="edit-process-actions-row">
+          <Button variant="outline" onClick={() => navigate(`/app/processos/${id}`)} className="edit-process-button edit-process-button--outline">
+            Cancelar
+          </Button>
+        </div>
       </div>
 
+      {/* Modal de confirmação de alteração do processo */}
+      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+        <DialogContent className="edit-process-dialog">
+          <DialogHeader>
+            <div className="edit-process-dialog__header">
+              <div className="edit-process-dialog__icon-wrap edit-process-dialog__icon-wrap--blue">
+                <CheckCircle size={24} className="edit-process-dialog__icon" />
+              </div>
+              <DialogTitle className="edit-process-dialog-title">Confirmar alterações do processo</DialogTitle>
+            </div>
+          </DialogHeader>
+          <p className="edit-process-dialog-text">
+            Deseja salvar as alterações realizadas no processo <strong className="edit-process-dialog__highlight">{process?.cnj || id}</strong>?
+          </p>
+          <DialogFooter className="edit-process-dialog-footer">
+            <Button variant="outline" className="edit-process-dialog-button edit-process-dialog-button--outline" onClick={() => setSaveDialogOpen(false)}>Cancelar</Button>
+            <Button className="edit-process-dialog-button edit-process-dialog-button--primary" onClick={() => {
+              if (process) {
+                process.documents = documents;
+              }
+              setSaveDialogOpen(false);
+              navigate(`/app/processos/${id}`);
+            }}>
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de confirmação de encerramento do processo */}
+      <Dialog open={closeDialogOpen} onOpenChange={setCloseDialogOpen}>
+        <DialogContent className="edit-process-dialog">
+          <DialogHeader>
+            <div className="edit-process-dialog__header">
+              <div className="edit-process-dialog__icon-wrap edit-process-dialog__icon-wrap--blue">
+                <CheckCircle size={24} className="edit-process-dialog__icon" />
+              </div>
+              <DialogTitle className="edit-process-dialog-title">Encerrar processo?</DialogTitle>
+            </div>
+          </DialogHeader>
+          <p className="edit-process-dialog-text">
+            O processo será marcado como encerrado e inativo no sistema. Deseja continuar?
+          </p>
+          <DialogFooter className="edit-process-dialog-footer">
+            <Button variant="outline" className="edit-process-dialog-button edit-process-dialog-button--outline" onClick={() => setCloseDialogOpen(false)}>Cancelar</Button>
+            <Button className="edit-process-dialog-button edit-process-dialog-button--primary" onClick={() => {
+              if (process) {
+                const now = new Date();
+                const pad = (n) => String(n).padStart(2, "0");
+                const formattedDate = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+                process.status = "encerrado";
+                process.closedAt = formattedDate;
+                process.closedBy = process.responsible || "Thauany Bezerra";
+                if (!process.history) {
+                  process.history = [];
+                }
+                process.history.push({
+                  id: `h_${Date.now()}`,
+                  type: "fechamento",
+                  description: "Fechamento do processo",
+                  timestamp: `${pad(now.getHours())}:${pad(now.getMinutes())} ${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`,
+                });
+              }
+              setCloseDialogOpen(false);
+              navigate(`/app/processos/${id}`);
+            }}>
+              Encerrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de confirmação de desativação do processo */}
+      <Dialog open={deactivateDialogOpen} onOpenChange={setDeactivateDialogOpen}>
+        <DialogContent className="edit-process-dialog">
+          <DialogHeader>
+            <div className="edit-process-dialog__header">
+              <div className="edit-process-dialog__icon-wrap">
+                <AlertTriangle size={24} className="edit-process-dialog__icon" />
+              </div>
+              <DialogTitle className="edit-process-dialog-title">Desativar processo?</DialogTitle>
+            </div>
+          </DialogHeader>
+          <p className="edit-process-dialog-text">
+            O processo será marcado como inativo no sistema. Deseja continuar?
+          </p>
+          <DialogFooter className="edit-process-dialog-footer">
+            <Button variant="outline" className="edit-process-dialog-button edit-process-dialog-button--outline" onClick={() => setDeactivateDialogOpen(false)}>Cancelar</Button>
+            <Button className="edit-process-dialog-button edit-process-dialog-button--warn" onClick={() => {
+              if (process) {
+                process.status = "inativo";
+              }
+              setDeactivateDialogOpen(false);
+              navigate(`/app/processos/${id}`);
+            }}>
+              Desativar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de confirmação de exclusão do processo */}
       <Dialog open={deleteDialog} onOpenChange={setDeleteDialog}>
         <DialogContent className="edit-process-dialog">
           <DialogHeader>
-            <DialogTitle className="edit-process-dialog-title">Excluir processo?</DialogTitle>
+            <div className="edit-process-dialog__header">
+              <div className="edit-process-dialog__icon-wrap edit-process-dialog__icon-wrap--red">
+                <Trash2 size={24} className="edit-process-dialog__icon" />
+              </div>
+              <DialogTitle className="edit-process-dialog-title">Excluir processo?</DialogTitle>
+            </div>
           </DialogHeader>
           <p className="edit-process-dialog-text">
             Esta ação é irreversível. Todos os dados serão removidos permanentemente.
@@ -325,9 +512,9 @@ export default function EditProcessPage() {
           <DialogFooter className="edit-process-dialog-footer">
             <Button variant="outline" className="edit-process-dialog-button edit-process-dialog-button--outline" onClick={() => setDeleteDialog(false)}>Cancelar</Button>
             <Button className="edit-process-dialog-button edit-process-dialog-button--danger" onClick={() => {
-            setDeleteDialog(false);
-            navigate("/app/inicio");
-          }}>
+              setDeleteDialog(false);
+              navigate("/app/inicio");
+            }}>
               Excluir
             </Button>
           </DialogFooter>
