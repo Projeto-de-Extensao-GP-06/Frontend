@@ -19,6 +19,10 @@ const maskPhone = (value) => {
 };
 
 export default function ClientDetailPage() {
+  useEffect(() => {
+    document.title = `Cliente - ${client.name}`;
+  }, []);
+
   const {
     id
   } = useParams();

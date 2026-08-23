@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { Mail, Key, Shield, CheckCircle, AlertCircle, Check } from "lucide-react";
+import { toast } from "sonner";
+import { Mail, Key, Shield, CheckCircle, AlertCircle, Check, Cloud, RefreshCw, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { Button } from "../components/ui/button";
+import { startOneDriveLogin } from "../services/oneDriveService";
 import "../../styles/profile-page.css";
 
 export default function ProfilePage() {
@@ -10,10 +12,16 @@ export default function ProfilePage() {
     document.title = "Perfil";
   }, []);
 
+  // TODO: substituir por role vinda de autenticação real quando existir.
+  const userRole = "Administrador";
+  const isAdmin = userRole === "Administrador";
+
   const [email, setEmail] = useState("thauany@thauanybezerra.adv.br");
   const [emailSaved, setEmailSaved] = useState(false);
   const [confirmPassDialogOpen, setConfirmPassDialogOpen] = useState(false);
   const [confirmEmailDialogOpen, setConfirmEmailDialogOpen] = useState(false);
+  const [oneDriveLoading, setOneDriveLoading] = useState(false);
+  const [oneDriveError, setOneDriveError] = useState("");
   const navigate = useNavigate();
 
   const handleOpenEmailDialog = (e) => {
@@ -28,6 +36,20 @@ export default function ProfilePage() {
     setTimeout(() => {
       setEmailSaved(false);
     }, 3500);
+  };
+
+  const handleConnectOneDrive = async () => {
+    setOneDriveError("");
+    setOneDriveLoading(true);
+    try {
+      const { authUrl } = await startOneDriveLogin();
+      window.location.href = authUrl;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Não foi possível conectar ao OneDrive.";
+      setOneDriveError(message);
+      toast.error(message);
+      setOneDriveLoading(false);
+    }
   };
 
   return <div className="profile-page">
@@ -120,6 +142,41 @@ export default function ProfilePage() {
             {["Processos", "Clientes", "Usuários", "Cargos", "Documentos"].map(perm => <span key={perm} className="profile-permission-chip">{perm}</span>)}
           </div>
         </div>
+
+        {isAdmin && (
+          <div className="profile-card">
+            <h3 className="profile-card__title">
+              <Cloud size={14} className="profile-card__title-icon" />
+              Integrações
+            </h3>
+            <div className="profile-integration-row">
+              <div className="profile-integration-info">
+                <p className="profile-integration-info__name">Microsoft OneDrive</p>
+                <p className="profile-integration-info__hint">Reconecte caso o acesso aos arquivos do OneDrive expire.</p>
+              </div>
+            </div>
+
+            {oneDriveError && (
+              <div className="profile-feedback profile-feedback--error">
+                <AlertCircle size={15} />
+                <span>{oneDriveError}</span>
+              </div>
+            )}
+
+            <div className="profile-card__actions">
+              <button
+                type="button"
+                onClick={handleConnectOneDrive}
+                disabled={oneDriveLoading}
+                className="profile-onedrive-btn"
+              >
+                {oneDriveLoading ? <Loader2 size={15} className="profile-onedrive-btn__spinner" /> : <RefreshCw size={15} />}
+                {oneDriveLoading ? "Conectando..." : "Reconectar OneDrive"}
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="profile-footer">
           <p className="profile-footer__text">Thauany Bezerra Advocacia · SGPJ v1.0</p>
         </div>

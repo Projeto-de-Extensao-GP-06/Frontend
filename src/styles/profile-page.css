@@ -188,6 +188,67 @@
   border: 1px solid #a7f3d0;
 }
 
+.profile-feedback--error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.profile-integration-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.profile-integration-info__name {
+  margin: 0;
+  color: #0f2357;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.profile-integration-info__hint {
+  margin: 0.25rem 0 0;
+  color: #9ca3af;
+  font-size: 0.75rem;
+}
+
+.profile-onedrive-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  height: 2.75rem;
+  border: 1px solid #0f2357;
+  border-radius: 0.75rem;
+  background: #0f2357;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(15, 35, 87, 0.15);
+}
+
+.profile-onedrive-btn:hover:not(:disabled) {
+  background: #1a3a7a;
+  border-color: #1a3a7a;
+}
+
+.profile-onedrive-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.profile-onedrive-btn__spinner {
+  animation: profile-onedrive-spin 0.8s linear infinite;
+}
+
+@keyframes profile-onedrive-spin {
+  to { transform: rotate(360deg); }
+}
+
 .profile-card__actions {
   display: flex;
   flex-direction: column;
