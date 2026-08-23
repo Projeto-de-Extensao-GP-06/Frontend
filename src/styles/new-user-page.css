@@ -119,7 +119,8 @@
 }
 
 .new-user-btn-cancel:hover {
-  background: #f4f6fa;
+  background: #1a3a7a;
+  color: white;
 }
 
 .new-user-btn-submit {

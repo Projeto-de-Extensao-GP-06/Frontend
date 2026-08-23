@@ -38,7 +38,7 @@
 .profile-hero__kicker {
   margin: 0 0 1rem;
   color: #c9a96e;
-  font-size: 11px;
+  font-size: 0.8rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -376,6 +376,11 @@
 
 .profile-dialog-button--outline {
   border: 1px solid #e5e7eb;
+}
+
+.profile-dialog-button--outline:hover {
+  background: #1a3a7a;
+  color: white;
 }
 
 .profile-dialog-button--primary {

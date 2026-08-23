@@ -302,7 +302,8 @@
 }
 
 .edit-process-button--outline:hover {
-  background: #f4f6fa;
+  background: #1a3a7a;
+  color: white;
 }
 
 .edit-process-button--primary {
@@ -413,6 +414,11 @@
 
 .edit-process-dialog-button--outline {
   border: 1px solid #e5e7eb;
+}
+
+.edit-process-dialog-button--outline:hover {
+  background: #1a3a7a;
+  color: white;
 }
 
 .edit-process-dialog-button--primary {

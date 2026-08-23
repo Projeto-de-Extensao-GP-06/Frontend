@@ -50,7 +50,7 @@ function UserDetail({ user }) {
           onClick={() => navigate("/app/usuarios")}
           className="user-detail-back"
         >
-          <ArrowLeft size={13} />
+          <ArrowLeft size={15} />
           Usuários
         </button>
 

@@ -390,6 +390,11 @@
   border: 1px solid #e5e7eb;
 }
 
+.client-detail-dialog-button--outline:hover {
+  background: #1a3a7a;
+  color: white;
+}
+
 .client-detail-dialog-button--danger {
   background: #dc2626;
   color: #fff;

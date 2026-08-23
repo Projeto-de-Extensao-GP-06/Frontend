@@ -305,7 +305,8 @@
 }
 
 .edit-client-button--outline:hover {
-  background: #f4f6fa;
+  background: #1a3a7a;
+  color: white;
 }
 
 .edit-client-button--primary {
@@ -386,6 +387,11 @@
 
 .edit-client-dialog-button--outline {
   border: 1px solid #e5e7eb;
+}
+
+.edit-client-dialog-button--outline:hover {
+  background: #1a3a7a;
+  color: white;
 }
 
 .edit-client-dialog-button--primary {

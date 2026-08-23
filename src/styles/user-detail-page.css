@@ -18,8 +18,8 @@
   margin-bottom: 1.25rem;
   border: 0;
   background: none;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 0.75rem;
+  color: white;
+  font-size: 1rem;
   cursor: pointer;
   transition: color 0.2s ease;
 }
@@ -341,7 +341,8 @@
 }
 
 .user-detail-dialog-btn-cancel:hover {
-  background: #f4f6fa;
+  background: #1a3a7a;
+  color: white;
 }
 
 .user-detail-dialog-btn-primary {

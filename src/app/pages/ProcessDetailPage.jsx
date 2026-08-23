@@ -88,7 +88,7 @@ export default function ProcessDetailPage() {
 
       <div className="proc-hero">
         <button onClick={() => navigate("/app/inicio")} className="proc-hero__back">
-          <ArrowLeft size={13} />
+          <ArrowLeft size={15} />
           Início
         </button>
         <div className="proc-hero__deco" />

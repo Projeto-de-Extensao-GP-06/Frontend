@@ -591,7 +591,8 @@
 }
 
 .roles-dialog__btn--cancel:hover {
-  background: #e5e7eb;
+  background: #1a3a7a;
+  color: white;
 }
 
 .roles-dialog__btn--confirm {
@@ -695,7 +696,8 @@
 }
 
 .roles-add-modal__btn--cancel:hover {
-  background: #f4f6fa;
+  background: #1a3a7a;
+  color: white;
 }
 
 .roles-add-modal__btn--confirm {
@@ -802,7 +804,8 @@
 }
 
 .roles-delete-dialog__btn--outline:hover {
-  background: #f4f6fa;
+  background: #1a3a7a;
+  color: white;
 }
 
 .roles-delete-dialog__btn--primary {
