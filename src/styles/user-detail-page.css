@@ -204,6 +204,13 @@
   background: #ffffff;
 }
 
+.user-detail-input:disabled,
+.user-detail-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #eef1f8;
+}
+
 /* -- Buttons -- */
 .user-detail-btn-save {
   display: flex;
@@ -233,25 +240,46 @@
   box-shadow: none;
 }
 
-.user-detail-btn-delete {
+.user-detail-btn-deactivate {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
   width: 100%;
   height: 3rem;
-  border: 1px solid #fecaca;
+  border: 1px solid #fde68a;
   border-radius: 1.25rem;
-  background: #fef2f2;
-  color: #dc2626;
+  background: #fffbeb;
+  color: #a16207;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
-.user-detail-btn-delete:hover {
-  background: #fee2e2;
+.user-detail-btn-deactivate:hover {
+  background: #fef3c7;
+}
+
+.user-detail-btn-reactivate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  height: 3rem;
+  border: 1px solid #bbf7d0;
+  border-radius: 1.25rem;
+  background: #f0fdf4;
+  color: #16a34a;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.user-detail-btn-reactivate:hover {
+  background: #dcfce7;
 }
 
 /* -- Dialog -- */
@@ -291,6 +319,14 @@
 
 .user-detail-dialog__icon-wrap--blue .user-detail-dialog__icon {
   color: #0f2357;
+}
+
+.user-detail-dialog__icon-wrap--green {
+  background: #dcfce7;
+}
+
+.user-detail-dialog__icon-wrap--green .user-detail-dialog__icon {
+  color: #16a34a;
 }
 
 .user-detail-dialog__icon-wrap--red {
@@ -377,6 +413,40 @@
 
 .user-detail-dialog-btn-confirm:hover {
   background: #b91c1c;
+}
+
+.user-detail-dialog-btn-warn {
+  flex: 1;
+  height: 2.75rem;
+  border: none;
+  border-radius: 0.75rem;
+  background: #f59e0b;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.user-detail-dialog-btn-warn:hover {
+  background: #d97706;
+}
+
+.user-detail-dialog-btn-success {
+  flex: 1;
+  height: 2.75rem;
+  border: none;
+  border-radius: 0.75rem;
+  background: #16a34a;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.user-detail-dialog-btn-success:hover {
+  background: #15803d;
 }
 
 
