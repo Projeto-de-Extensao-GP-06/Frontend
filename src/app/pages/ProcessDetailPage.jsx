@@ -1,9 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { ArrowLeft, Pencil, Trash2, FileText, Clock, Plus, ChevronRight, Calendar, User, Building, Scale, AlertTriangle, Flag, RotateCcw } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, FileText, Clock, Plus, ChevronRight, Calendar, User, Building, Scale, AlertTriangle, Flag, RotateCcw, Check, X, CloudUpload } from "lucide-react";
 import { mockProcesses } from "../data/mockData";
 import { StatusBadge, PriorityBadge, PhaseBadge } from "../components/StatusBadge";
-import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import "../../styles/process-detail-page.css";
 
@@ -12,12 +11,22 @@ const fmt = v => new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL"
 }).format(v);
+
 const historyDotClass = {
   abertura: "proc-timeline__dot--abertura",
   fechamento: "proc-timeline__dot--fechamento",
   mudanca_status: "proc-timeline__dot--mudanca_status",
   observacao: "proc-timeline__dot--observacao",
   arquivo: "proc-timeline__dot--arquivo"
+};
+
+const getDocVariant = (type) => {
+  const t = (type || "").toUpperCase();
+  if (t === "PDF") return "pdf";
+  if (["PNG", "JPG", "JPEG", "WEBP", "GIF", "SVG"].includes(t)) return "img";
+  if (["DOC", "DOCX"].includes(t)) return "doc";
+  if (["XLS", "XLSX", "CSV"].includes(t)) return "sheet";
+  return "other";
 };
 
 /* ─ sub-components ─ */
@@ -34,10 +43,13 @@ export default function ProcessDetailPage() {
   const navigate = useNavigate();
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [reactivateDialog, setReactivateDialog] = useState(false);
+  const [confirmUploadDialog, setConfirmUploadDialog] = useState(false);
   const process = mockProcesses.find(p => p.id === id);
 
   const [status, setStatus] = useState(process?.status || "ativo");
   const [observations, setObservations] = useState(process?.observations || []);
+  const [documents, setDocuments] = useState(process?.documents || []);
+  const [pendingDocs, setPendingDocs] = useState([]);
   const [isAddingComment, setIsAddingComment] = useState(false);
   const [newComment, setNewComment] = useState("");
 
@@ -46,8 +58,78 @@ export default function ProcessDetailPage() {
       document.title = `Processo - ${process.clientName}`;
       setStatus(process.status || "ativo");
       setObservations(process.observations || []);
+      setDocuments(process.documents || []);
+      setPendingDocs([]);
     }
   }, [id, process]);
+
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    const formattedDate = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
+
+    const newDocs = files.map((file, index) => {
+      const parts = file.name.split(".");
+      const ext = parts.length > 1 ? parts.pop().toUpperCase() : "DOC";
+      return {
+        id: `pending_${Date.now()}_${index}`,
+        name: file.name,
+        type: ext.length > 5 ? ext.slice(0, 4) : ext,
+        uploadedAt: formattedDate,
+      };
+    });
+
+    setPendingDocs((prev) => [...prev, ...newDocs]);
+    e.target.value = "";
+  };
+
+  const removePendingDoc = (docId) => {
+    setPendingDocs((prev) => prev.filter((d) => d.id !== docId));
+  };
+
+  const handleCancelPending = () => {
+    setPendingDocs([]);
+  };
+
+  const handleConfirmPending = () => {
+    if (pendingDocs.length === 0) return;
+
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    const formattedDateTime = `${pad(now.getHours())}:${pad(now.getMinutes())} ${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
+
+    const confirmedDocs = pendingDocs.map((doc, i) => ({
+      ...doc,
+      id: `d_${Date.now()}_${i}`,
+    }));
+
+    const updated = [...documents, ...confirmedDocs];
+    setDocuments(updated);
+
+    if (process) {
+      if (!process.documents) {
+        process.documents = [];
+      }
+      process.documents.push(...confirmedDocs);
+
+      if (!process.history) {
+        process.history = [];
+      }
+      confirmedDocs.forEach((doc) => {
+        process.history.push({
+          id: `h_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          type: "arquivo",
+          description: `Documento adicionado: ${doc.name}`,
+          timestamp: formattedDateTime,
+        });
+      });
+    }
+
+    setPendingDocs([]);
+  };
 
   const handleReactivate = () => {
     if (process) {
@@ -241,31 +323,101 @@ export default function ProcessDetailPage() {
           <div className="proc-card__header">
             <h3 className="proc-card__title"><FileText size={14} className="proc-card__title-icon" />Documentos</h3>
           </div>
-          {process.documents.length === 0
+          {documents.length === 0 && pendingDocs.length === 0
             ? (!isClosed ? (
-                <div className="proc-doc-empty" onClick={() => navigate(`/app/processos/${id}/editar`)}>
-                  <Plus size={20} className="proc-doc-add__icon" />
+                <label htmlFor="proc-file-upload-empty" className="proc-doc-empty">
+                  <input
+                    id="proc-file-upload-empty"
+                    type="file"
+                    multiple
+                    onChange={handleFileSelect}
+                    className="proc-file-input-hidden"
+                  />
+                  <Plus size={20} className="proc-doc-empty__icon" />
                   <p className="proc-doc-empty__text">Adicionar arquivo</p>
-                </div>
+                </label>
               ) : (
                 <p className="proc-obs-empty">Nenhum documento cadastrado.</p>
               ))
-            : <div className="proc-doc-grid">
-                {process.documents.map(doc => {
-                  const variant = doc.type === "PDF" ? "pdf" : (doc.type === "JPEG" || doc.type === "PNG") ? "img" : "other";
-                  return <div key={doc.id} className="proc-doc-card" onClick={() => !isClosed && navigate(`/app/processos/${id}/editar`)} style={isClosed ? { cursor: "default" } : undefined}>
-                       <div className={`proc-doc-card__type proc-doc-card__type--${variant}`}><span className="proc-doc-card__type-label">{doc.type}</span></div>
-                      <p className="proc-doc-card__name">{doc.name}</p>
-                      <p className="proc-doc-card__date">{doc.uploadedAt}</p>
-                    </div>;
-                })}
-                {!isClosed && (
-                  <div className="proc-doc-add" onClick={() => navigate(`/app/processos/${id}/editar`)}>
-                    <Plus size={20} className="proc-doc-add__icon" />
-                    <p className="proc-doc-add__label">Adicionar arquivo</p>
+            : <>
+                <div className="proc-doc-grid">
+                  {documents.map(doc => {
+                    const variant = getDocVariant(doc.type);
+                    return (
+                      <div key={doc.id} className="proc-doc-card">
+                        <div className={`proc-doc-card__type proc-doc-card__type--${variant}`}>
+                          <span className="proc-doc-card__type-label">{doc.type}</span>
+                        </div>
+                        <p className="proc-doc-card__name" title={doc.name}>{doc.name}</p>
+                        <p className="proc-doc-card__date">{doc.uploadedAt}</p>
+                      </div>
+                    );
+                  })}
+                  {pendingDocs.map(doc => {
+                    const variant = getDocVariant(doc.type);
+                    return (
+                      <div key={doc.id} className="proc-doc-card proc-doc-card--pending">
+                        <button
+                          type="button"
+                          onClick={() => removePendingDoc(doc.id)}
+                          className="proc-doc-card__remove"
+                          title="Remover arquivo pendente"
+                        >
+                          <X size={13} />
+                        </button>
+                        <div className={`proc-doc-card__type proc-doc-card__type--${variant}`}>
+                          <span className="proc-doc-card__type-label">{doc.type}</span>
+                        </div>
+                        <p className="proc-doc-card__name" title={doc.name}>{doc.name}</p>
+                        <span className="proc-doc-card__tag">Pendente</span>
+                      </div>
+                    );
+                  })}
+                  {!isClosed && (
+                    <label htmlFor="proc-file-upload-grid" className="proc-doc-add">
+                      <input
+                        id="proc-file-upload-grid"
+                        type="file"
+                        multiple
+                        onChange={handleFileSelect}
+                        className="proc-file-input-hidden"
+                      />
+                      <Plus size={20} className="proc-doc-add__icon" />
+                      <p className="proc-doc-add__label">Adicionar arquivo</p>
+                    </label>
+                  )}
+                </div>
+
+                {pendingDocs.length > 0 && (
+                  <div className="proc-doc-confirm-bar">
+                    <div className="proc-doc-confirm-info">
+                      <span className="proc-doc-confirm-badge">{pendingDocs.length}</span>
+                      <p className="proc-doc-confirm-text">
+                        {pendingDocs.length === 1
+                          ? "1 arquivo pronto para ser adicionado"
+                          : `${pendingDocs.length} arquivos prontos para serem adicionados`}
+                      </p>
+                    </div>
+                    <div className="proc-doc-confirm-actions">
+                      <button
+                        type="button"
+                        onClick={handleCancelPending}
+                        className="proc-doc-confirm-btn proc-doc-confirm-btn--cancel"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmUploadDialog(true)}
+                        className="proc-doc-confirm-btn proc-doc-confirm-btn--submit"
+                      >
+                        <Check size={14} />
+                        Confirmar Adição
+                      </button>
+                    </div>
                   </div>
                 )}
-              </div>}
+              </>}
         </div>
 
         <div className="proc-actions">
@@ -284,6 +436,40 @@ export default function ProcessDetailPage() {
           </button>
         </div>
       </div>
+
+      {/* Modal de confirmação de envio para o OneDrive */}
+      <Dialog open={confirmUploadDialog} onOpenChange={setConfirmUploadDialog}>
+        <DialogContent className="proc-dialog">
+          <DialogHeader>
+            <div className="proc-dialog__header">
+              <div className="proc-dialog__icon-wrap">
+                <CloudUpload size={24} className="proc-dialog__icon" />
+              </div>
+              <DialogTitle className="proc-dialog__title">Salvar arquivos no OneDrive?</DialogTitle>
+            </div>
+          </DialogHeader>
+          <p className="proc-dialog__text">
+            Ao confirmar, {pendingDocs.length === 1 ? "o arquivo selecionado será salvo" : `os ${pendingDocs.length} arquivos selecionados serão salvos`} e sincronizados diretamente no <strong className="proc-dialog__highlight">OneDrive</strong> vinculado a este processo.
+          </p>
+          <DialogFooter className="proc-dialog__footer">
+            <button
+              className="proc-dialog__btn proc-dialog__btn--outline"
+              onClick={() => setConfirmUploadDialog(false)}
+            >
+              Cancelar
+            </button>
+            <button
+              className="proc-dialog__btn proc-dialog__btn--primary"
+              onClick={() => {
+                handleConfirmPending();
+                setConfirmUploadDialog(false);
+              }}
+            >
+              Confirmar
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={deleteDialog} onOpenChange={setDeleteDialog}>
         <DialogContent className="proc-dialog">

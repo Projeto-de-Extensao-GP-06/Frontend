@@ -49,6 +49,15 @@ const maskCurrency = (value) => {
   }).format(numberValue);
 };
 
+const getDocBadgeClass = (type) => {
+  const t = (type || "").toUpperCase();
+  if (t === "PDF") return "edit-process-doc-badge--pdf";
+  if (["PNG", "JPG", "JPEG", "WEBP", "GIF", "SVG"].includes(t)) return "edit-process-doc-badge--img";
+  if (["DOC", "DOCX"].includes(t)) return "edit-process-doc-badge--doc";
+  if (["XLS", "XLSX", "CSV"].includes(t)) return "edit-process-doc-badge--sheet";
+  return "edit-process-doc-badge--generic";
+};
+
 export default function EditProcessPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -70,6 +79,9 @@ export default function EditProcessPage() {
   );
   const [observations, setObservations] = useState(
     process?.observations ? process.observations.map((o) => o.text) : [""]
+  );
+  const [documents, setDocuments] = useState(
+    process?.documents ? [...process.documents] : []
   );
 
   if (!process) {
@@ -99,6 +111,33 @@ export default function EditProcessPage() {
     setObservations((prev) => prev.map((o, idx) => (idx === i ? val : o)));
   const removeObs = (i) =>
     setObservations((prev) => prev.filter((_, idx) => idx !== i));
+
+  const handleFileUpload = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    const formattedDate = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
+
+    const newDocs = files.map((file, index) => {
+      const parts = file.name.split(".");
+      const ext = parts.length > 1 ? parts.pop().toUpperCase() : "DOC";
+      return {
+        id: `d_${Date.now()}_${index}`,
+        name: file.name,
+        type: ext.length > 5 ? ext.slice(0, 4) : ext,
+        uploadedAt: formattedDate,
+      };
+    });
+
+    setDocuments((prev) => [...prev, ...newDocs]);
+    e.target.value = "";
+  };
+
+  const removeDoc = (docId) => {
+    setDocuments((prev) => prev.filter((d) => d.id !== docId));
+  };
   return (
     <div className="edit-process-page">
       {/* Breadcrumb */}
@@ -287,20 +326,39 @@ export default function EditProcessPage() {
         <div className="edit-process-field">
           <Label className="edit-process-label edit-process-label--spaced">Documentos</Label>
           <div className="edit-process-doc-grid">
-            {process.documents.map(doc => <div key={doc.id} className="edit-process-doc-card">
-                <button className="edit-process-remove-doc">
+            {documents.map((doc) => (
+              <div key={doc.id} className="edit-process-doc-card">
+                <button
+                  type="button"
+                  onClick={() => removeDoc(doc.id)}
+                  className="edit-process-remove-doc"
+                  title="Remover documento"
+                >
                   <X size={13} />
                 </button>
-                <div className={`edit-process-doc-badge ${doc.type === "PDF" ? "edit-process-doc-badge--pdf" : "edit-process-doc-badge--generic"}`}>
+                <div className={`edit-process-doc-badge ${getDocBadgeClass(doc.type)}`}>
                   {doc.type}
                 </div>
-                <p className="edit-process-doc-name">{doc.name}</p>
-              </div>)}
+                <p className="edit-process-doc-name" title={doc.name}>
+                  {doc.name}
+                </p>
+                {doc.uploadedAt && (
+                  <span className="edit-process-doc-date">{doc.uploadedAt}</span>
+                )}
+              </div>
+            ))}
 
-            <div className="edit-process-doc-upload">
+            <label htmlFor="edit-process-file-upload" className="edit-process-doc-upload">
+              <input
+                id="edit-process-file-upload"
+                type="file"
+                multiple
+                onChange={handleFileUpload}
+                className="edit-process-file-input-hidden"
+              />
               <Plus size={18} className="edit-process-doc-upload-icon" />
-              <p className="edit-process-doc-upload-text">Add Arquivo</p>
-            </div>
+              <p className="edit-process-doc-upload-text">Adicionar Arquivo</p>
+            </label>
           </div>
         </div>
       </div>
@@ -353,6 +411,9 @@ export default function EditProcessPage() {
           <DialogFooter className="edit-process-dialog-footer">
             <Button variant="outline" className="edit-process-dialog-button edit-process-dialog-button--outline" onClick={() => setSaveDialogOpen(false)}>Cancelar</Button>
             <Button className="edit-process-dialog-button edit-process-dialog-button--primary" onClick={() => {
+              if (process) {
+                process.documents = documents;
+              }
               setSaveDialogOpen(false);
               navigate(`/app/processos/${id}`);
             }}>
