@@ -317,16 +317,6 @@ export const mockRequests = [{
   createdAt: "20/05/2026",
   status: "aceita"
 }, {
-  id: "r4",
-  name: "Paulo Henrique Costa",
-  email: "paulo.costa@outlook.com",
-  phone: "(41) 96543-2109",
-  state: "PR",
-  description: "Sofri um acidente de trânsito e a seguradora está se recusando a pagar a indenização. Tenho boletim de ocorrência e laudo médico.",
-  processNumber: "",
-  createdAt: "15/05/2026",
-  status: "negada"
-}, {
   id: "r5",
   name: "Larissa Mendonça",
   email: "larissa@email.com",

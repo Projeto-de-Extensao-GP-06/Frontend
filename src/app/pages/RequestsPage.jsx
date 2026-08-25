@@ -15,9 +15,6 @@ const TABS = [{
 }, {
   id: "aceita",
   label: "Aceitas"
-}, {
-  id: "negada",
-  label: "Negadas"
 }];
 
 export default function RequestsPage() {
@@ -50,8 +47,7 @@ export default function RequestsPage() {
   const counts = {
     todas: searchFiltered.length,
     pendente: searchFiltered.filter(r => r.status === "pendente").length,
-    aceita: searchFiltered.filter(r => r.status === "aceita").length,
-    negada: searchFiltered.filter(r => r.status === "negada").length
+    aceita: searchFiltered.filter(r => r.status === "aceita").length
   };
 
   const filtered = activeTab === "todas"
