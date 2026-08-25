@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Navigate } from "react-router";
-import { ArrowLeft, Mail, Shield, Trash2 } from "lucide-react";
+import { ArrowLeft, Mail, Shield, AlertTriangle, Save, CheckCircle, RefreshCw } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
+import { getInitials } from "../components/UserAvatar";
 import { mockUsers } from "../data/mockData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import "../../styles/user-detail-page.css";
@@ -21,25 +22,22 @@ export default function UserDetailPage() {
 
 function UserDetail({ user }) {
   const navigate = useNavigate();
-  const [deleteDialog, setDeleteDialog] = useState(false);
+  const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
+  const [reactivateDialogOpen, setReactivateDialogOpen] = useState(false);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [email, setEmail] = useState(user.email || "");
   const [status, setStatus] = useState(user.status);
   const [role, setRole] = useState(user.role);
   const [saved, setSaved] = useState(false);
+
+  const isInactive = status === "inativo";
 
   const handleSave = () => {
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const initials = user.name
-    ? user.name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase()
-    : "";
+  const initials = getInitials(user.name);
 
   return (
     <div className="user-detail-page">
@@ -49,7 +47,7 @@ function UserDetail({ user }) {
           onClick={() => navigate("/app/usuarios")}
           className="user-detail-back"
         >
-          <ArrowLeft size={13} />
+          <ArrowLeft size={15} />
           Usuários
         </button>
 
@@ -96,23 +94,12 @@ function UserDetail({ user }) {
           </div>
 
           <div className="user-detail-field">
-            <label className="user-detail-label">Status</label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="user-detail-select"
-            >
-              <option value="ativo">Ativo</option>
-              <option value="inativo">Inativo</option>
-            </select>
-          </div>
-
-          <div className="user-detail-field">
             <label className="user-detail-label">Cargo</label>
             <select
               value={role}
               onChange={(e) => setRole(e.target.value)}
               className="user-detail-select"
+              disabled={isInactive}
             >
               <option>Administrador</option>
               <option>Advogado</option>
@@ -120,52 +107,150 @@ function UserDetail({ user }) {
             </select>
           </div>
 
-          <button
-            onClick={handleSave}
-            className={`user-detail-btn-save ${
-              saved ? "is-saved" : ""
-            }`}
-          >
-            {saved ? "✓ Salvo com sucesso" : "Salvar alterações"}
-          </button>
+          {!isInactive && (
+            <button
+              onClick={() => setSaveDialogOpen(true)}
+              className={`user-detail-btn-save ${
+                saved ? "is-saved" : ""
+              }`}
+            >
+              {saved ? (
+                "✓ Salvo com sucesso"
+              ) : (
+                <>
+                  <Save size={15} />
+                  Salvar alterações
+                </>
+              )}
+            </button>
+          )}
         </div>
 
-        {/* Excluir */}
-        <button
-          onClick={() => setDeleteDialog(true)}
-          className="user-detail-btn-delete"
-        >
-          <Trash2 size={14} />
-          Excluir Usuário
-        </button>
+        {/* Desativar ou Reativar */}
+        {!isInactive ? (
+          <button
+            onClick={() => setDeactivateDialogOpen(true)}
+            className="user-detail-btn-deactivate"
+          >
+            <AlertTriangle size={15} className="user-detail-dialog__icon" />
+            Desativar Usuário
+          </button>
+        ) : (
+          <button
+            onClick={() => setReactivateDialogOpen(true)}
+            className="user-detail-btn-reactivate"
+          >
+            <RefreshCw size={15} />
+            Reativar Usuário
+          </button>
+        )}
       </div>
 
-      {/* ── Modal Excluir ── */}
-      <Dialog open={deleteDialog} onOpenChange={setDeleteDialog}>
+      {/* ── Modal Salvar Alterações ── */}
+      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
         <DialogContent className="user-detail-dialog">
           <DialogHeader>
-            <DialogTitle className="user-detail-dialog-title">
-              Excluir usuário?
-            </DialogTitle>
+            <div className="user-detail-dialog__header">
+              <div className="user-detail-dialog__icon-wrap user-detail-dialog__icon-wrap--blue">
+                <CheckCircle size={24} className="user-detail-dialog__icon" />
+              </div>
+              <DialogTitle className="user-detail-dialog-title">
+                Confirmar alterações do usuário
+              </DialogTitle>
+            </div>
           </DialogHeader>
           <p className="user-detail-dialog-text">
-            {user.name} será removido do sistema permanentemente.
+            Deseja salvar as alterações no cadastro de <strong className="user-detail-dialog__highlight">{user.name}</strong>?
           </p>
           <DialogFooter className="user-detail-dialog-actions">
             <button
               className="user-detail-dialog-btn-cancel"
-              onClick={() => setDeleteDialog(false)}
+              onClick={() => setSaveDialogOpen(false)}
             >
               Cancelar
             </button>
             <button
-              className="user-detail-dialog-btn-confirm"
+              className="user-detail-dialog-btn-primary"
               onClick={() => {
-                setDeleteDialog(false);
+                setSaveDialogOpen(false);
+                handleSave();
+              }}
+            >
+              Confirmar
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Modal Desativar Usuário ── */}
+      <Dialog open={deactivateDialogOpen} onOpenChange={setDeactivateDialogOpen}>
+        <DialogContent className="user-detail-dialog">
+          <DialogHeader>
+            <div className="user-detail-dialog__header">
+              <div className="user-detail-dialog__icon-wrap">
+                <AlertTriangle size={24} className="user-detail-dialog__icon" />
+              </div>
+              <DialogTitle className="user-detail-dialog-title">
+                Desativar usuário?
+              </DialogTitle>
+            </div>
+          </DialogHeader>
+          <p className="user-detail-dialog-text">
+            O usuário será marcado como inativo no sistema. Deseja continuar?
+          </p>
+          <DialogFooter className="user-detail-dialog-actions">
+            <button
+              className="user-detail-dialog-btn-cancel"
+              onClick={() => setDeactivateDialogOpen(false)}
+            >
+              Cancelar
+            </button>
+            <button
+              className="user-detail-dialog-btn-warn"
+              onClick={() => {
+                setDeactivateDialogOpen(false);
+                setStatus("inativo");
                 navigate("/app/usuarios");
               }}
             >
-              Excluir
+              Desativar
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Modal Reativar Usuário ── */}
+      <Dialog open={reactivateDialogOpen} onOpenChange={setReactivateDialogOpen}>
+        <DialogContent className="user-detail-dialog">
+          <DialogHeader>
+            <div className="user-detail-dialog__header">
+              <div className="user-detail-dialog__icon-wrap user-detail-dialog__icon-wrap--green">
+                <RefreshCw size={24} className="user-detail-dialog__icon" />
+              </div>
+              <DialogTitle className="user-detail-dialog-title">
+                Reativar usuário?
+              </DialogTitle>
+            </div>
+          </DialogHeader>
+          <p className="user-detail-dialog-text">
+            O usuário será marcado como ativo no sistema. Deseja continuar?
+          </p>
+          <DialogFooter className="user-detail-dialog-actions">
+            <button
+              className="user-detail-dialog-btn-cancel"
+              onClick={() => setReactivateDialogOpen(false)}
+            >
+              Cancelar
+            </button>
+            <button
+              className="user-detail-dialog-btn-success"
+              onClick={() => {
+                setReactivateDialogOpen(false);
+                setStatus("ativo");
+                navigate("/app/usuarios");
+              }}
+            >
+              Reativar
             </button>
           </DialogFooter>
         </DialogContent>

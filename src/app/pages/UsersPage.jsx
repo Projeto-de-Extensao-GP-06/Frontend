@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Plus, Shield, ChevronRight, UserCog, Search, X } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
+import { UserAvatar } from "../components/UserAvatar";
+import { FilterSelect } from "../components/FilterSelect";
+import { PaginationBar } from "../components/PaginationBar";
 import { mockUsers } from "../data/mockData";
 import "../../styles/users-page.css";
 
@@ -10,40 +13,6 @@ const STATUS_OPTS = [
   { value: "ativo", label: "Ativo" },
   { value: "inativo", label: "Inativo" },
 ];
-
-/* Unique initials-based avatar colors */
-const avatarPalette = [
-  { bg: "user-avatar--blue", text: "user-avatar-text--blue" },
-  { bg: "user-avatar--gold", text: "user-avatar-text--gold" },
-  { bg: "user-avatar--green", text: "user-avatar-text--green" },
-  { bg: "user-avatar--amber", text: "user-avatar-text--amber" },
-];
-
-function UserAvatar({ name, size = "md" }) {
-  const initials = name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
-  const idx = name.charCodeAt(0) % avatarPalette.length;
-  const { bg, text } = avatarPalette[idx];
-  return (
-    <div className={`user-avatar ${size === "lg" ? "is-lg" : size === "sm" ? "is-sm" : "is-md"} ${bg}`}>
-      <span className={`user-avatar-initials ${text}`}>{initials}</span>
-    </div>
-  );
-}
-
-function FilterSelect({ label, value, onChange, children }) {
-  return (
-    <div className="users-filter-select">
-      <span className="users-filter-select-label">{label}:</span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="users-filter-select-input"
-      >
-        {children}
-      </select>
-    </div>
-  );
-}
 
 export default function UsersPage() {
   useEffect(() => {
@@ -158,6 +127,7 @@ export default function UsersPage() {
             <span className="users-filter-label">Filtros</span>
 
             <FilterSelect
+              prefix="users"
               label="Cargo"
               value={filterRole}
               onChange={(val) => {
@@ -173,6 +143,7 @@ export default function UsersPage() {
             </FilterSelect>
 
             <FilterSelect
+              prefix="users"
               label="Status"
               value={filterStatus}
               onChange={(val) => {
@@ -265,52 +236,6 @@ export default function UsersPage() {
         )}
       </div>
       <PaginationBar page={safePage} total={totalPages} onPage={setPage} />
-    </div>
-  );
-}
-
-function PaginationBar({ page, total, onPage }) {
-  if (total <= 1) return null;
-
-  const MAX_VISIBLE_PAGES = 10;
-  const currentBlock = Math.floor((page - 1) / MAX_VISIBLE_PAGES);
-  const startPage = currentBlock * MAX_VISIBLE_PAGES + 1;
-  const endPage = Math.min(startPage + MAX_VISIBLE_PAGES - 1, total);
-
-  const pages = [];
-  for (let i = startPage; i <= endPage; i++) {
-    pages.push(i);
-  }
-
-  return (
-    <div className="pagination">
-      <button
-        className="pagination__btn"
-        onClick={() => onPage(page - 1)}
-        disabled={page === 1}
-        aria-label="Página anterior"
-      >
-        ‹
-      </button>
-
-      {pages.map((p) => (
-        <button
-          key={p}
-          className={`pagination__page ${page === p ? "is-active" : ""}`}
-          onClick={() => onPage(p)}
-        >
-          {p}
-        </button>
-      ))}
-
-      <button
-        className="pagination__btn"
-        onClick={() => onPage(page + 1)}
-        disabled={page === total}
-        aria-label="Próxima página"
-      >
-        ›
-      </button>
     </div>
   );
 }

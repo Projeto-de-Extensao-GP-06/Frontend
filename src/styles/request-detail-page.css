@@ -333,7 +333,10 @@
   color: #374151;
 }
 
-.req-dialog__btn--outline:hover { background: #f4f6fa; }
+.req-dialog__btn--outline:hover { 
+  background: #1a3a7a;
+  color: white; 
+}
 
 .req-dialog__btn--danger {
   border: 0;

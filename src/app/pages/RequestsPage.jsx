@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { ChevronRight, Mail, Calendar, Inbox, Search, X } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
+import { FilterSelect } from "../components/FilterSelect";
+import { PaginationBar } from "../components/PaginationBar";
 import { mockRequests } from "../data/mockData";
 import "../../styles/requests-page.css";
 const TABS = [{
@@ -146,6 +148,7 @@ export default function RequestsPage() {
             </span>
 
             <FilterSelect
+              prefix="requests"
               label="Estado"
               value={filterState}
               onChange={val => {
@@ -234,72 +237,6 @@ export default function RequestsPage() {
     </div>;
 }
 
-function FilterSelect({
-  label,
-  value,
-  onChange,
-  children
-}) {
-  return (
-    <div className="requests-filter-select">
-      <span className="requests-filter-select-label">
-        {label}:
-      </span>
-      <select
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        className="requests-filter-select-input"
-      >
-        {children}
-      </select>
-    </div>
-  );
-}
-function PaginationBar({ page, total, onPage }) {
-  if (total <= 1) return null;
-
-  const MAX_VISIBLE_PAGES = 10;
-  const currentBlock = Math.floor((page - 1) / MAX_VISIBLE_PAGES);
-  const startPage = currentBlock * MAX_VISIBLE_PAGES + 1;
-  const endPage = Math.min(startPage + MAX_VISIBLE_PAGES - 1, total);
-
-  const pages = [];
-  for (let i = startPage; i <= endPage; i++) {
-    pages.push(i);
-  }
-
-  return (
-    <div className="pagination">
-      <button
-        className="pagination__btn"
-        onClick={() => onPage(page - 1)}
-        disabled={page === 1}
-        aria-label="Página anterior"
-      >
-        ‹
-      </button>
-
-      {pages.map((p) => (
-        <button
-          key={p}
-          className={`pagination__page ${page === p ? "is-active" : ""}`}
-          onClick={() => onPage(p)}
-        >
-          {p}
-        </button>
-      ))}
-
-      <button
-        className="pagination__btn"
-        onClick={() => onPage(page + 1)}
-        disabled={page === total}
-        aria-label="Próxima página"
-      >
-        ›
-      </button>
-    </div>
-  );
-}
 function RequestCard({
   request,
   onClick

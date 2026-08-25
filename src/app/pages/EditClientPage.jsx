@@ -1,18 +1,68 @@
 import { useNavigate, useParams } from "react-router";
-import { ArrowLeft, Check, Building2, User } from "lucide-react";
+import { ArrowLeft, Save, Building2, User, Plus, X, CheckCircle } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { mockClients, brazilStates } from "../data/mockData";
+import { maskCPF, maskCNPJ, maskRG, maskPhone, maskCEP } from "../utils/masks";
 import "../../styles/edit-client-page.css";
+
 export default function EditClientPage() {
   const {
     id
   } = useParams();
   const navigate = useNavigate();
   const [tab, setTab] = useState("dados");
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const client = mockClients.find(c => c.id === id);
+
+  const [cpf, setCpf] = useState(() => (client?.cpf ? maskCPF(client.cpf) : ""));
+  const [rg, setRg] = useState(() => (client?.rg ? maskRG(client.rg) : ""));
+  const [cnpj, setCnpj] = useState(() => (client?.cnpj ? maskCNPJ(client.cnpj) : ""));
+  const [phone, setPhone] = useState(() => (client?.phone ? maskPhone(client.phone) : ""));
+  const [cep, setCep] = useState(() => (client?.address?.cep ? maskCEP(client.address.cep) : ""));
+  const [contacts, setContacts] = useState(() =>
+    client?.contacts?.map(c => ({
+      ...c,
+      name: c.name ?? "",
+      email: c.email ?? "",
+      profession: c.profession ?? "",
+      phone: c.phone ? maskPhone(c.phone) : ""
+    })) ?? []
+  );
+
+  const handleContactChange = (index, field, value) => {
+    setContacts(prev =>
+      prev.map((c, i) => (i === index ? { ...c, [field]: value } : c))
+    );
+  };
+
+  const handleContactPhoneChange = (index, value) => {
+    setContacts(prev => prev.map((c, i) => i === index ? { ...c, phone: maskPhone(value) } : c));
+  };
+
+  const handleAddContact = () => {
+    setContacts(prev => [
+      ...prev,
+      {
+        id: `contact-${Date.now()}`,
+        name: "",
+        email: "",
+        phone: "",
+        profession: "",
+        isPrimary: prev.length === 0 && client?.type !== "PF"
+      }
+    ]);
+  };
+
+  const handleRemoveContact = (index) => {
+    const contact = contacts[index];
+    if (!isPF && contact?.isPrimary) return;
+    setContacts(prev => prev.filter((_, i) => i !== index));
+  };
+
   if (!client) {
     return <div className="edit-client-page edit-client-page--empty">
         <p className="edit-client-empty-text">Cliente não encontrado.</p>
@@ -73,21 +123,55 @@ export default function EditClientPage() {
       {/* Tab Content */}
       {tab === "dados" && <div className="edit-client-section">
           {isPF ? <>
-              <Field label="CPF" defaultValue={pf.cpf} mono />
-              <Field label="RG" defaultValue={pf.rg} mono />
+              <Field
+                label="CPF"
+                value={cpf}
+                onChange={(e) => setCpf(maskCPF(e.target.value))}
+                placeholder="000.000.000-00"
+                maxLength={14}
+                mono
+              />
+              <Field
+                label="RG"
+                value={rg}
+                onChange={(e) => setRg(maskRG(e.target.value))}
+                placeholder="00.000.000-0"
+                maxLength={12}
+                mono
+              />
               <Field label="Nome Completo" defaultValue={pf.name} />
               <Field label="E-mail" defaultValue={pf.email} type="email" />
-              <Field label="Telefone" defaultValue={pf.phone} />
+              <Field
+                label="Telefone"
+                value={phone}
+                onChange={(e) => setPhone(maskPhone(e.target.value))}
+                placeholder="(00) 00000-0000"
+                maxLength={15}
+              />
               <Field label="Profissão" defaultValue={pf.profession} />
             </> : <>
-              <Field label="CNPJ" defaultValue={pj.cnpj} mono />
+              <Field
+                label="CNPJ"
+                value={cnpj}
+                onChange={(e) => setCnpj(maskCNPJ(e.target.value))}
+                placeholder="00.000.000/0000-00"
+                maxLength={18}
+                mono
+              />
               <Field label="Nome / Razão Social" defaultValue={pj.name} />
               <Field label="E-mail" defaultValue={pj.email} type="email" />
             </>}
         </div>}
 
       {tab === "endereco" && <div className="edit-client-section">
-          <Field label="CEP" defaultValue={client.address.cep} mono />
+          <Field
+            label="CEP"
+            value={cep}
+            onChange={(e) => setCep(maskCEP(e.target.value))}
+            placeholder="00000-000"
+            maxLength={9}
+            mono
+          />
           <Field label="Logradouro" defaultValue={client.address.logradouro} />
           <div className="edit-client-grid edit-client-grid--2">
             <Field label="Número" defaultValue={client.address.numero} />
@@ -108,20 +192,70 @@ export default function EditClientPage() {
         </div>}
 
       {tab === "contatos" && <div className="edit-client-section edit-client-section--contacts">
-          {client.contacts.length === 0 ? <div className="edit-client-empty-card">
+          {contacts.length === 0 ? <div className="edit-client-empty-card">
               <p className="edit-client-empty-text">Nenhum contato cadastrado</p>
-            </div> : client.contacts.map((contact, i) => <div key={contact.id} className="edit-client-contact-card">
-                {contact.isPrimary && <div className="edit-client-primary-row">
-                    <div className="edit-client-primary-dot" />
-                    <span className="edit-client-primary-label">Contato Principal</span>
-                  </div>}
-                <Field label="Nome" defaultValue={contact.name} />
-                <Field label="E-mail" defaultValue={contact.email} type="email" />
-                <Field label="Telefone" defaultValue={contact.phone} />
-                <Field label="Profissão" defaultValue={contact.profession} />
+            </div> : contacts.map((contact, i) => <div key={contact.id} className="edit-client-contact-card">
+                <div className="edit-client-contact-card-header">
+                  {!isPF && contact.isPrimary ? (
+                    <div className="edit-client-primary-row">
+                      <div className="edit-client-primary-dot" />
+                      <span className="edit-client-primary-label">Contato Principal</span>
+                    </div>
+                  ) : (
+                    <span className="edit-client-contact-card-label">
+                      {!isPF
+                        ? `Contato adicional ${contacts.some(c => c.isPrimary) ? i : i + 1}`
+                        : contacts.length > 1
+                        ? `Contato ${i + 1}`
+                        : "Contato adicional"}
+                    </span>
+                  )}
+                  {(isPF || !contact.isPrimary) && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveContact(i)}
+                      className="edit-client-contact-remove"
+                      title="Remover contato"
+                      aria-label="Remover contato"
+                    >
+                      <X size={15} />
+                    </button>
+                  )}
+                </div>
+                <Field
+                  label="Nome"
+                  value={contact.name}
+                  onChange={(e) => handleContactChange(i, "name", e.target.value)}
+                  placeholder="Nome do contato"
+                />
+                <Field
+                  label="E-mail"
+                  value={contact.email}
+                  onChange={(e) => handleContactChange(i, "email", e.target.value)}
+                  placeholder="email@empresa.com"
+                  type="email"
+                />
+                <Field
+                  label="Telefone"
+                  value={contact.phone}
+                  onChange={(e) => handleContactPhoneChange(i, e.target.value)}
+                  placeholder="(00) 00000-0000"
+                  maxLength={15}
+                />
+                <Field
+                  label="Profissão / Cargo"
+                  value={contact.profession}
+                  onChange={(e) => handleContactChange(i, "profession", e.target.value)}
+                  placeholder="Ex: Gerente, Diretor..."
+                />
               </div>)}
-          <button className="edit-client-add-contact-button">
-            + Add outro contato
+          <button
+            type="button"
+            onClick={handleAddContact}
+            className="edit-client-add-contact-button"
+          >
+            <Plus size={16} />
+            Adicionar outro contato
           </button>
         </div>}
 
@@ -130,23 +264,63 @@ export default function EditClientPage() {
         <Button variant="outline" onClick={() => navigate(`/app/clientes/${id}`)} className="edit-client-button edit-client-button--outline">
           Cancelar
         </Button>
-        <Button onClick={() => navigate(`/app/clientes/${id}`)} className="edit-client-button edit-client-button--primary">
-          <Check size={16} />
+        <Button onClick={() => setSaveDialogOpen(true)} className="edit-client-button edit-client-button--primary">
+          <Save size={15} />
           Salvar alterações
         </Button>
       </div>
+
+      {/* Modal de confirmação de alteração do cliente */}
+      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+        <DialogContent className="edit-client-dialog">
+          <DialogHeader>
+            <div className="edit-client-dialog__header">
+              <div className="edit-client-dialog__icon-wrap edit-client-dialog__icon-wrap--blue">
+                <CheckCircle size={24} className="edit-client-dialog__icon" />
+              </div>
+              <DialogTitle className="edit-client-dialog-title">Confirmar alterações do cliente</DialogTitle>
+            </div>
+          </DialogHeader>
+          <p className="edit-client-dialog-text">
+            Deseja salvar as alterações realizadas no cadastro de <strong className="edit-client-dialog__highlight">{client?.name || id}</strong>?
+          </p>
+          <DialogFooter className="edit-client-dialog-footer">
+            <Button variant="outline" className="edit-client-dialog-button edit-client-dialog-button--outline" onClick={() => setSaveDialogOpen(false)}>Cancelar</Button>
+            <Button className="edit-client-dialog-button edit-client-dialog-button--primary" onClick={() => {
+              setSaveDialogOpen(false);
+              navigate(`/app/clientes/${id}`);
+            }}>
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>;
 }
 function Field({
   label,
+  value,
   defaultValue,
+  onChange,
   type = "text",
-  mono = false
+  mono = false,
+  placeholder,
+  maxLength,
+  ...props
 }) {
   return <div className="edit-client-field">
       <Label className="edit-client-label">
         {label}
       </Label>
-      <Input type={type} defaultValue={defaultValue} className={`edit-client-input ${mono ? "edit-client-input--mono" : ""}`} />
+      <Input
+        type={type}
+        value={value}
+        defaultValue={defaultValue}
+        onChange={onChange}
+        placeholder={placeholder}
+        maxLength={maxLength}
+        className={`edit-client-input ${mono ? "edit-client-input--mono" : ""}`}
+        {...props}
+      />
     </div>;
 }

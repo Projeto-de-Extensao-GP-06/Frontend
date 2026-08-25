@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { ArrowLeft, Plus, FileText, Trash2, X, Check, Search, Users, RefreshCw } from "lucide-react";
+import { ArrowLeft, Plus, FileText, Trash2, X, Search, Users, RefreshCw } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -8,45 +8,10 @@ import { Textarea } from "../components/ui/textarea";
 import { ClientCard } from "../components/ClientCard";
 import { SelectClientModal } from "../components/SelectClientModal";
 import { phases, tribunals } from "../data/mockData";
+import { maskCNJ, maskCurrency } from "../utils/masks";
+import { getDocBadgeClass } from "../utils/document";
 import "../../styles/edit-process-page.css";
 import "../../styles/select-client-modal.css";
-
-const maskDate = (value) => {
-  const digits = value.replace(/\D/g, "").slice(0, 8);
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
-};
-
-const maskCNJ = (value) => {
-  if (!value) return "";
-  const digits = value.replace(/\D/g, "").slice(0, 20);
-  if (digits.length <= 7) return digits;
-  if (digits.length <= 9) return `${digits.slice(0, 7)}-${digits.slice(7)}`;
-  if (digits.length <= 13) return `${digits.slice(0, 7)}-${digits.slice(7, 9)}.${digits.slice(9)}`;
-  if (digits.length <= 14) return `${digits.slice(0, 7)}-${digits.slice(7, 9)}.${digits.slice(9, 13)}.${digits.slice(13)}`;
-  if (digits.length <= 16) return `${digits.slice(0, 7)}-${digits.slice(7, 9)}.${digits.slice(9, 13)}.${digits.slice(13, 14)}.${digits.slice(14)}`;
-  return `${digits.slice(0, 7)}-${digits.slice(7, 9)}.${digits.slice(9, 13)}.${digits.slice(13, 14)}.${digits.slice(14, 16)}.${digits.slice(16)}`;
-};
-
-const maskCurrency = (value) => {
-  if (value === null || value === undefined || value === "") return "";
-  if (typeof value === "number") {
-    const safeNumber = Math.min(value, 9999999999999.99);
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(safeNumber);
-  }
-  // DECIMAL(15,2): máx. 15 dígitos no total (13 inteiros + 2 decimais)
-  const digits = value.toString().replace(/\D/g, "").slice(0, 15);
-  if (!digits) return "";
-  const numberValue = Number(digits) / 100;
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(numberValue);
-};
 
 export default function NewProcessPage() {
   useEffect(() => {
@@ -60,12 +25,40 @@ export default function NewProcessPage() {
   const [causeValue, setCauseValue] = useState("");
   const [hearingDate, setHearingDate] = useState("");
   const [observations, setObservations] = useState([""]);
+  const [documents, setDocuments] = useState([]);
 
   const addObs = () => setObservations((prev) => [...prev, ""]);
   const updateObs = (i, val) =>
     setObservations((prev) => prev.map((o, idx) => (idx === i ? val : o)));
   const removeObs = (i) =>
     setObservations((prev) => prev.filter((_, idx) => idx !== i));
+
+  const handleFileUpload = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    const formattedDate = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
+
+    const newDocs = files.map((file, index) => {
+      const parts = file.name.split(".");
+      const ext = parts.length > 1 ? parts.pop().toUpperCase() : "DOC";
+      return {
+        id: `d_${Date.now()}_${index}`,
+        name: file.name,
+        type: ext.length > 5 ? ext.slice(0, 4) : ext,
+        uploadedAt: formattedDate,
+      };
+    });
+
+    setDocuments((prev) => [...prev, ...newDocs]);
+    e.target.value = "";
+  };
+
+  const removeDoc = (docId) => {
+    setDocuments((prev) => prev.filter((d) => d.id !== docId));
+  };
 
   return (
     <div className="edit-process-page">
@@ -215,11 +208,9 @@ export default function NewProcessPage() {
             <Label className="edit-process-label">Data e hora da audiência (opcional)</Label>
             <div className="edit-process-datetime-group">
               <Input
-                type="text"
+                type="date"
                 value={hearingDate}
-                onChange={(e) => setHearingDate(maskDate(e.target.value))}
-                placeholder="dd/mm/yyyy"
-                maxLength={10}
+                onChange={(e) => setHearingDate(e.target.value)}
                 className="edit-process-input edit-process-input--mono"
               />
               <Input
@@ -271,21 +262,40 @@ export default function NewProcessPage() {
         {/* Documents */}
         <div className="edit-process-field">
           <Label className="edit-process-label edit-process-label--spaced">Documentos</Label>
-          <div className="edit-process-doc-upload" style={{ minHeight: "7rem" }}>
-            <div className="edit-process-doc-upload-icon-wrap">
-              <FileText size={18} className="edit-process-doc-upload-icon" />
-            </div>
-            <p className="edit-process-doc-name">Carregar arquivo</p>
-            <p className="edit-process-doc-upload-text">Solte ou clique para selecionar</p>
-            <Button
-              type="button"
-              variant="outline"
-              className="edit-process-button edit-process-button--outline"
-              style={{ height: "2.25rem", marginTop: "0.25rem" }}
-            >
-              <Plus size={14} />
-              Add Arquivo
-            </Button>
+          <div className="edit-process-doc-grid">
+            {documents.map((doc) => (
+              <div key={doc.id} className="edit-process-doc-card">
+                <button
+                  type="button"
+                  onClick={() => removeDoc(doc.id)}
+                  className="edit-process-remove-doc"
+                  title="Remover documento"
+                >
+                  <X size={13} />
+                </button>
+                <div className={`edit-process-doc-badge ${getDocBadgeClass(doc.type)}`}>
+                  {doc.type}
+                </div>
+                <p className="edit-process-doc-name" title={doc.name}>
+                  {doc.name}
+                </p>
+                {doc.uploadedAt && (
+                  <span className="edit-process-doc-date">{doc.uploadedAt}</span>
+                )}
+              </div>
+            ))}
+
+            <label htmlFor="new-process-file-upload" className="edit-process-doc-upload">
+              <input
+                id="new-process-file-upload"
+                type="file"
+                multiple
+                onChange={handleFileUpload}
+                className="edit-process-file-input-hidden"
+              />
+              <Plus size={18} className="edit-process-doc-upload-icon" />
+              <p className="edit-process-doc-upload-text">Adicionar Arquivo</p>
+            </label>
           </div>
         </div>
       </div>
@@ -304,7 +314,7 @@ export default function NewProcessPage() {
             onClick={() => navigate("/app/inicio")}
             className="edit-process-button edit-process-button--primary"
           >
-            <Check size={16} />
+            <Plus size={16} />
             Adicionar Processo
           </Button>
         </div>

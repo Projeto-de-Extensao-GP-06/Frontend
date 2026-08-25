@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Plus, Search, Scale, Calendar, ChevronRight, FileText, Zap, TrendingUp, Clock, X, BarChart3 } from "lucide-react";
 import { StatusBadge, PriorityBadge, PhaseBadge } from "../components/StatusBadge";
+import { CalendarEventModal } from "../components/CalendarEventModal";
+import { FilterSelect } from "../components/FilterSelect";
+import { PaginationBar } from "../components/PaginationBar";
 import { mockProcesses, mockRequests } from "../data/mockData";
 import "../../styles/home-page.css";
 const STATUS_OPTS = [{
@@ -56,6 +59,7 @@ export default function HomePage() {
   const [filterPhase, setFilterPhase] = useState("Todas");
   const [filterPriority, setFilterPriority] = useState("Todas");
   const [sortBy, setSortBy] = useState("cliente_asc");
+  const [calendarModalOpen, setCalendarModalOpen] = useState(false);
   const navigate = useNavigate();
   const activeProcesses = mockProcesses.filter(p => p.status === "ativo");
   const encerrados = mockProcesses.filter(p => p.status === "encerrado");
@@ -133,11 +137,21 @@ export default function HomePage() {
             Processos
           </h1>
         </div>
-        <button onClick={() => navigate("/app/processos/novo")} className="home-new-button">
-          <Plus size={16} />
-          <span className="home-new-button-label home-new-button-label--wide">Novo Processo</span>
-          <span className="home-new-button-label home-new-button-label--compact">Novo</span>
-        </button>
+        <div className="home-header-actions">
+          <button
+            type="button"
+            onClick={() => setCalendarModalOpen(true)}
+            className="home-calendar-button"
+          >
+            <Calendar size={16} />
+            <span>Gerar evento de calendário</span>
+          </button>
+          <button onClick={() => navigate("/app/processos/novo")} className="home-new-button">
+            <Plus size={16} />
+            <span className="home-new-button-label home-new-button-label--wide">Novo Processo</span>
+            <span className="home-new-button-label home-new-button-label--compact">Novo</span>
+          </button>
+        </div>
       </div>
 
       {/* ── Metric cards ── */}
@@ -171,25 +185,25 @@ export default function HomePage() {
               Filtros
             </span>
 
-            <FilterSelect label="Status" value={filterStatus} onChange={setFilterStatus}>
+            <FilterSelect prefix="home" label="Status" value={filterStatus} onChange={setFilterStatus}>
               {STATUS_OPTS.map(o => <option key={o.value} value={o.value}>
                   {o.label}
                 </option>)}
             </FilterSelect>
 
-            <FilterSelect label="Fase" value={filterPhase} onChange={setFilterPhase}>
+            <FilterSelect prefix="home" label="Fase" value={filterPhase} onChange={setFilterPhase}>
               {PHASE_OPTS.map(p => <option key={p} value={p}>
                   {p === "Todas" ? "Todas" : p}
                 </option>)}
             </FilterSelect>
 
-            <FilterSelect label="Prioridade" value={filterPriority} onChange={setFilterPriority}>
+            <FilterSelect prefix="home" label="Prioridade" value={filterPriority} onChange={setFilterPriority}>
               {PRIORITY_OPTS.map(o => <option key={o.value} value={o.value}>
                   {o.label}
                 </option>)}
             </FilterSelect>
 
-            <FilterSelect label="Tribunal" value={filterTribunal} onChange={setFilterTribunal}>
+            <FilterSelect prefix="home" label="Tribunal" value={filterTribunal} onChange={setFilterTribunal}>
               {tribunalOptions.map(t => <option key={t} value={t}>
                   {t}
                 </option>)}
@@ -250,6 +264,11 @@ export default function HomePage() {
           {paginated.map(p => <ProcessCard key={p.id} process={p} onClick={() => navigate(`/app/processos/${p.id}`)} />)}
         </div>}
       <PaginationBar page={safePage} total={totalPages} onPage={setPage} />
+
+      <CalendarEventModal
+        open={calendarModalOpen}
+        onOpenChange={setCalendarModalOpen}
+      />
     </div>;
 }
 
@@ -280,66 +299,7 @@ function MetricCard({
       </div>
     </div>;
 }
-function FilterSelect({
-  label,
-  value,
-  onChange,
-  children
-}) {
-  return <div className="home-filter-select">
-      <span className="home-filter-select-label">
-        {label}:
-      </span>
-      <select value={value} onChange={e => onChange(e.target.value)} className="home-filter-select-input">
-        {children}
-      </select>
-    </div>;
-}
-function PaginationBar({ page, total, onPage }) {
-  if (total <= 1) return null;
 
-  const MAX_VISIBLE_PAGES = 10;
-  const currentBlock = Math.floor((page - 1) / MAX_VISIBLE_PAGES);
-  const startPage = currentBlock * MAX_VISIBLE_PAGES + 1;
-  const endPage = Math.min(startPage + MAX_VISIBLE_PAGES - 1, total);
-
-  const pages = [];
-  for (let i = startPage; i <= endPage; i++) {
-    pages.push(i);
-  }
-
-  return (
-    <div className="pagination">
-      <button
-        className="pagination__btn"
-        onClick={() => onPage(page - 1)}
-        disabled={page === 1}
-        aria-label="Página anterior"
-      >
-        ‹
-      </button>
-
-      {pages.map((p) => (
-        <button
-          key={p}
-          className={`pagination__page ${page === p ? "is-active" : ""}`}
-          onClick={() => onPage(p)}
-        >
-          {p}
-        </button>
-      ))}
-
-      <button
-        className="pagination__btn"
-        onClick={() => onPage(page + 1)}
-        disabled={page === total}
-        aria-label="Próxima página"
-      >
-        ›
-      </button>
-    </div>
-  );
-}
 function ProcessCard({
   process,
   onClick

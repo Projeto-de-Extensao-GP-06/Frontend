@@ -13,6 +13,7 @@
   height: 60px;
   background: #0f2357;
   box-shadow: 0 2px 8px rgba(15, 35, 87, 0.18);
+  border-bottom: solid 0.3rem #c9a96e;
 }
 
 .app-header-inner {

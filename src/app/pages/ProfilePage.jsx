@@ -197,8 +197,8 @@ export default function ProfilePage() {
             Tem certeza de que deseja alterar seu e-mail para <strong className="profile-dialog__highlight">{email}</strong>?
           </p>
           <DialogFooter className="profile-dialog__footer">
-            <Button variant="outline" className="edit-process-dialog-button edit-process-dialog-button--outline" onClick={() => setConfirmEmailDialogOpen(false)}>Cancelar</Button>
-            <Button className="edit-process-button edit-process-button--primary" style={{flex:1}} onClick={handleConfirmEmailChange}>Confirmar</Button>
+            <Button variant="outline" className="profile-dialog-button profile-dialog-button--outline" onClick={() => setConfirmEmailDialogOpen(false)}>Cancelar</Button>
+            <Button className="profile-dialog-button profile-dialog-button--primary" onClick={handleConfirmEmailChange}>Confirmar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -218,8 +218,8 @@ export default function ProfilePage() {
             Você será redirecionado para a tela de alteração de senha e será desconectado do sistema. Deseja continuar?
           </p>
           <DialogFooter className="profile-dialog__footer">
-            <Button variant="outline" className="edit-process-dialog-button edit-process-dialog-button--outline" onClick={() => setConfirmPassDialogOpen(false)}>Cancelar</Button>
-            <Button className="edit-process-button edit-process-button--primary" style={{flex:1}} onClick={() => { setConfirmPassDialogOpen(false); navigate("/redefinir-senha?mode=redefinir"); }}>Continuar</Button>
+            <Button variant="outline" className="profile-dialog-button profile-dialog-button--outline" onClick={() => setConfirmPassDialogOpen(false)}>Cancelar</Button>
+            <Button className="profile-dialog-button profile-dialog-button--primary" onClick={() => { setConfirmPassDialogOpen(false); navigate("/redefinir-senha?mode=redefinir"); }}>Continuar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

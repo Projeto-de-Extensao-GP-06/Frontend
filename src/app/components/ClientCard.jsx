@@ -14,6 +14,8 @@ export function ClientCard({
 
   const isPF = client.type === "PF";
   const doc = isPF ? client.cpf : client.cnpj;
+  const primaryContact = client.contacts?.find((c) => c.isPrimary) || client.contacts?.[0];
+  const primaryEmail = (isPF ? (client.email || primaryContact?.email) : primaryContact?.email) || "—";
 
   return (
     <div
@@ -62,8 +64,8 @@ export function ClientCard({
 
       {/* Footer row */}
       <div className="client-card-footer">
-        <p className="client-card-email" title={client.email}>
-          {client.email}
+        <p className="client-card-email" title={primaryEmail}>
+          {primaryEmail}
         </p>
         <StatusBadge status={client.status} />
       </div>
