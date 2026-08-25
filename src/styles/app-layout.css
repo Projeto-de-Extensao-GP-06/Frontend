@@ -310,6 +310,11 @@
   font-family: "DM Sans", sans-serif;
 }
 
+.app-logout-secondary:hover {
+  background: #1a3a7a;
+  color: white;
+}
+
 .app-logout-title {
   color: #0f2357;
   font-family: "DM Sans", sans-serif;
