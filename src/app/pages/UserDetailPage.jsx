@@ -107,23 +107,21 @@ function UserDetail({ user }) {
             </select>
           </div>
 
-          {!isInactive && (
-            <button
-              onClick={() => setSaveDialogOpen(true)}
-              className={`user-detail-btn-save ${
-                saved ? "is-saved" : ""
-              }`}
-            >
-              {saved ? (
-                "✓ Salvo com sucesso"
-              ) : (
-                <>
-                  <Save size={15} />
-                  Salvar alterações
-                </>
-              )}
-            </button>
-          )}
+          <button
+            onClick={() => setSaveDialogOpen(true)}
+            className={`user-detail-btn-save ${
+              saved ? "is-saved" : ""
+            }`}
+          >
+            {saved ? (
+              "✓ Salvo com sucesso"
+            ) : (
+              <>
+                <Save size={15} />
+                Salvar alterações
+              </>
+            )}
+          </button>
         </div>
 
         {/* Desativar ou Reativar */}
