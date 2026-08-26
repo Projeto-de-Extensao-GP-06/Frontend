@@ -1,307 +1,56 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { Scale, MessageSquare, TrendingUp, ArrowUpRight, Zap, Users, Calendar, CalendarRange, X } from "lucide-react";
-import { mockProcesses, mockRequests, mockClients } from "../data/mockData";
+import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { ArrowUpRight, Calendar, CalendarRange, Info, MessageSquare, RotateCcw, Scale, TrendingUp, Users, Zap, X, ArrowLeft } from "lucide-react";
 import "../../styles/dashboard-page.css";
 
-/* ── Static chart data ── */
-const phaseData = [{
-  fase: "Inicial",
-  total: 2
-}, {
-  fase: "Citação",
-  total: 5
-}, {
-  fase: "Saneamento",
-  total: 3
-}, {
-  fase: "Sentença",
-  total: 7
-}, {
-  fase: "Cumpr.",
-  total: 3
-}, {
-  fase: "Penhora",
-  total: 1
-}];
-const closureData = [{
-  tipo: "Penhora",
-  total: 3
-}, {
-  tipo: "Acordo",
-  total: 8
-}, {
-  tipo: "Extinção",
-  total: 2
-}];
-const accordData = [{
-  tipo: "Trabalhista",
-  taxa: 65
-}, {
-  tipo: "Civil",
-  taxa: 80
-}, {
-  tipo: "Imobiliário",
-  taxa: 45
-}, {
-  tipo: "Empresarial",
-  taxa: 70
-}];
+const TODAY = new Date("2026-08-25T12:00:00");
 const PRESETS = ["Hoje", "Esta semana", "Último mês", "Últimos 3 meses", "Último ano"];
-const fmt = d => {
-  if (!d) return "";
-  const [y, m, day] = d.split("-");
-  return `${day}/${m}/${y}`;
-};
+const COLORS = ["#1D4ED8", "#3B82F6", "#0F766E", "#C9A96E", "#B45309"];
+const portfolio = [
+  { id: 1, openedAt: "2026-01-14", closedAt: "2026-07-19", phase: "Sentença", value: 180000, responsible: "Thauany Bezerra", hearing: "2026-09-02", updatedAt: "2026-08-22", priority: "Alta", active: true },
+  { id: 2, openedAt: "2026-02-08", closedAt: null, phase: "Citação", value: 85000, responsible: "Rafael Monteiro", hearing: "2026-08-27", updatedAt: "2026-08-20", priority: "Alta", active: true },
+  { id: 3, openedAt: "2026-03-04", closedAt: "2026-06-11", phase: "Penhora", value: 42000, responsible: "Thauany Bezerra", hearing: null, updatedAt: "2026-06-11", priority: "Baixa", active: false },
+  { id: 4, openedAt: "2026-03-29", closedAt: null, phase: "Saneamento", value: 320000, responsible: "Carolina Almeida", hearing: "2026-09-11", updatedAt: "2026-08-03", priority: "Média", active: true },
+  { id: 5, openedAt: "2026-04-16", closedAt: null, phase: "Inicial", value: 50000, responsible: "Rafael Monteiro", hearing: null, updatedAt: "2026-08-24", priority: "Baixa", active: true },
+  { id: 6, openedAt: "2026-05-02", closedAt: "2026-08-14", phase: "Cumprimento", value: 120000, responsible: "Thauany Bezerra", hearing: null, updatedAt: "2026-08-14", priority: "Média", active: false },
+  { id: 7, openedAt: "2026-05-18", closedAt: null, phase: "Sentença", value: 260000, responsible: "Carolina Almeida", hearing: "2026-08-31", updatedAt: "2026-08-05", priority: "Alta", active: true },
+  { id: 8, openedAt: "2026-06-10", closedAt: null, phase: "Citação", value: 75000, responsible: "Rafael Monteiro", hearing: null, updatedAt: "2026-08-09", priority: "Média", active: true },
+  { id: 9, openedAt: "2026-06-26", closedAt: "2026-08-02", phase: "Penhora", value: 28000, responsible: "Thauany Bezerra", hearing: null, updatedAt: "2026-08-02", priority: "Baixa", active: false },
+  { id: 10, openedAt: "2026-07-05", closedAt: null, phase: "Inicial", value: 95000, responsible: "Carolina Almeida", hearing: "2026-09-18", updatedAt: "2026-07-26", priority: "Alta", active: true },
+  { id: 11, openedAt: "2026-07-21", closedAt: null, phase: "Saneamento", value: 160000, responsible: "Rafael Monteiro", hearing: null, updatedAt: "2026-08-18", priority: "Média", active: true },
+  { id: 12, openedAt: "2026-08-04", closedAt: null, phase: "Citação", value: 68000, responsible: "Thauany Bezerra", hearing: "2026-08-29", updatedAt: "2026-08-23", priority: "Alta", active: true },
+  { id: 13, openedAt: "2026-08-12", closedAt: null, phase: "Inicial", value: 110000, responsible: "Carolina Almeida", hearing: null, updatedAt: "2026-08-12", priority: "Média", active: true }
+];
+const requestFunnel = [{ etapa: "Recebidas", total: 42 }, { etapa: "Triadas", total: 30 }, { etapa: "Aceitas", total: 19 }, { etapa: "Clientes", total: 14 }, { etapa: "Processos", total: 11 }];
+const formatCurrency = value => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(value);
+const dateValue = value => new Date(`${value}T12:00:00`);
+const formatDate = value => new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" }).format(dateValue(value));
+const daysSince = value => Math.floor((TODAY - dateValue(value)) / 86400000);
+const monthLabel = month => new Intl.DateTimeFormat("pt-BR", { month: "short" }).format(new Date(`${month}-01T12:00:00`)).replace(".", "");
+function periodStart(preset) { const date = new Date(TODAY); if (preset === "Hoje") return date; if (preset === "Esta semana") date.setDate(date.getDate() - 6); if (preset === "Último mês") date.setDate(date.getDate() - 29); if (preset === "Últimos 3 meses") date.setMonth(date.getMonth() - 3); if (preset === "Último ano") date.setFullYear(date.getFullYear() - 1); return date; }
+function CustomTip({ active, payload, label }) { if (!active || !payload?.length) return null; return <div className="dashboard-tooltip"><p className="dashboard-tooltip-title">{label}</p>{payload.map((item, index) => <p key={index} style={{ color: item.color ?? "#C9A96E" }}>{item.name}: {item.value}</p>)}</div>; }
 
-/* ── Custom tooltip ── */
-function CustomTip({
-  active,
-  payload,
-  label
-}) {
-  if (!active || !payload?.length) return null;
-  return <div className="dashboard-tooltip">
-      <p className="dashboard-tooltip-title">{label}</p>
-      {payload.map((p, i) => <p key={i} style={{
-      color: p.color ?? "#C9A96E"
-    }}>
-          {p.name}: {p.value}{p.unit ?? ""}
-        </p>)}
-    </div>;
-}
 export default function DashboardPage() {
-  useEffect(() => {
-    document.title = "Dashboard";
-  }, []);
-
-  const [periodMode, setPeriodMode] = useState("preset");
-  const [preset, setPreset] = useState("Último mês");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [appliedPeriod, setAppliedPeriod] = useState("Último mês");
-  const navigate = useNavigate();
-  const selectPreset = p => {
-    setPeriodMode("preset");
-    setPreset(p);
-    setAppliedPeriod(p);
-  };
-  const applyCustom = () => {
-    if (!dateFrom || !dateTo) return;
-    setAppliedPeriod(`${fmt(dateFrom)} – ${fmt(dateTo)}`);
-  };
-  const activeCount = mockProcesses.filter(p => p.status === "ativo").length;
-  const pendingCount = mockRequests.filter(r => r.status === "pendente").length;
-  const clientCount = mockClients.length;
-  const hearingCount = mockProcesses.filter(p => p.hearingDate !== "—").length;
-  return <div className="dashboard-page">
-      {/* ── Header ── */}
-      <div className="page-header">
-        <p className="page-kicker">
-          SGPJ
-        </p>
-        <h1 className="page-title">
-          Dashboard
-        </h1>
-      </div>
-
-      {/* ── KPI cards ── */}
-      <div className="dashboard-kpi-grid">
-        <KpiCard label="Processos ativos" value={activeCount} icon={<Scale size={15} className="kpi-card-icon kpi-card-icon--blue" />} iconVariant="kpi-card-badge--blue" sub="+2 este mês" subIcon={<TrendingUp size={10} />} subVariant="kpi-card-sub--success" />
-        <KpiCard label="Solicitações" value={pendingCount} icon={<Zap size={15} className="kpi-card-icon kpi-card-icon--amber" />} iconVariant="kpi-card-badge--amber" sub="Pendentes hoje" subIcon={<ArrowUpRight size={10} />} subVariant="kpi-card-sub--amber" />
-        <KpiCard label="Clientes" value={clientCount} icon={<Users size={15} className="kpi-card-icon kpi-card-icon--green" />} iconVariant="kpi-card-badge--green" sub="Cadastrados" subIcon={<Users size={10} />} subVariant="kpi-card-sub--muted" />
-        <KpiCard label="Com audiência" value={hearingCount} icon={<Calendar size={15} className="kpi-card-icon kpi-card-icon--gold" />} iconVariant="kpi-card-badge--gold" sub="Agendadas" subIcon={<Calendar size={10} />} subVariant="kpi-card-sub--muted" />
-      </div>
-
-      {/* ── Period filter panel ── */}
-      <div className="dashboard-panel">
-        {/* Header row */}
-        <div className="dashboard-panel-header">
-          <p className="dashboard-panel-title">Análise de desempenho</p>
-          <span className="dashboard-period-badge">
-            <CalendarRange size={11} />
-            {appliedPeriod}
-          </span>
-        </div>
-
-        <div className="dashboard-divider" />
-
-        {/* Preset chips */}
-        <div className="dashboard-preset-row">
-          {PRESETS.map(p => <button key={p} onClick={() => selectPreset(p)} className={`dashboard-preset-btn ${periodMode === "preset" && preset === p ? "dashboard-preset-btn--active" : ""}`}>
-              {p}
-            </button>)}
-          <button onClick={() => setPeriodMode("custom")} className={`dashboard-preset-btn dashboard-preset-btn--custom ${periodMode === "custom" ? "dashboard-preset-btn--active" : ""}`}>
-            <Calendar size={11} />
-            Personalizado
-          </button>
-        </div>
-
-        {/* Custom date inputs — shown when "Personalizado" is active */}
-        {periodMode === "custom" && <div className="dashboard-custom-period">
-            <div className="dashboard-custom-divider" />
-            <div className="dashboard-custom-grid">
-              <div className="dashboard-field">
-                <label className="dashboard-label">
-                  Data inicial
-                </label>
-                <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="dashboard-input" />
-              </div>
-              <div className="dashboard-field">
-                <label className="dashboard-label">
-                  Data final
-                </label>
-                <input type="date" value={dateTo} min={dateFrom} onChange={e => setDateTo(e.target.value)} className="dashboard-input" />
-              </div>
-              <div className="dashboard-actions">
-                <button onClick={applyCustom} disabled={!dateFrom || !dateTo} className="dashboard-primary-button">
-                  Aplicar
-                </button>
-                <button onClick={() => {
-              setPeriodMode("preset");
-              setDateFrom("");
-              setDateTo("");
-            }} className="dashboard-icon-button" title="Limpar">
-                  <X size={13} />
-                </button>
-              </div>
-            </div>
-          </div>}
-      </div>
-
-      {/* ── Charts: two side-by-side on desktop ── */}
-      <div className="dashboard-charts-grid dashboard-charts-grid--split">
-        <ChartCard title="Processos por fase" sub={`Distribuição — ${appliedPeriod}`}>
-          <ResponsiveContainer width="100%" height={150}>
-            <BarChart data={phaseData} margin={{
-            top: 0,
-            right: 0,
-            left: -28,
-            bottom: 0
-          }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} />
-              <XAxis dataKey="fase" tick={{
-              fontSize: 10,
-              fill: "#6B7280",
-              fontFamily: "'DM Sans', sans-serif"
-            }} axisLine={false} tickLine={false} />
-              <YAxis domain={[0, 12]} tick={{
-              fontSize: 10,
-              fill: "#9CA3AF"
-            }} axisLine={false} tickLine={false} />
-              <Tooltip content={<CustomTip />} cursor={{
-              fill: "#F4F6FA",
-              radius: 6
-            }} />
-              <Bar dataKey="total" name="Processos" radius={[5, 5, 0, 0]} maxBarSize={32}>
-                {phaseData.map((_, i) => <Cell key={i} fill={i % 2 === 0 ? "#1D4ED8" : "#3B82F6"} />)}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
-
-        <ChartCard title="Encerramentos por tipo" sub={`Processos encerrados — ${appliedPeriod}`}>
-          <ResponsiveContainer width="100%" height={150}>
-            <BarChart data={closureData} margin={{
-            top: 0,
-            right: 0,
-            left: -28,
-            bottom: 0
-          }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} />
-              <XAxis dataKey="tipo" tick={{
-              fontSize: 10,
-              fill: "#6B7280",
-              fontFamily: "'DM Sans', sans-serif"
-            }} axisLine={false} tickLine={false} />
-              <YAxis domain={[0, 12]} tick={{
-              fontSize: 10,
-              fill: "#9CA3AF"
-            }} axisLine={false} tickLine={false} />
-              <Tooltip content={<CustomTip />} cursor={{
-              fill: "#F4F6FA",
-              radius: 6
-            }} />
-              <Bar dataKey="total" name="Encerramentos" fill="#C9A96E" radius={[5, 5, 0, 0]} maxBarSize={44} />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
-      </div>
-
-      {/* ── Chart 3: Taxa de acordos ── */}
-      <ChartCard title="Taxa de acordos por tipo de processo" sub={`Comparativo entre tipologias (%) — ${appliedPeriod}`}>
-        <ResponsiveContainer width="100%" height={160}>
-          <BarChart data={accordData} margin={{
-          top: 0,
-          right: 0,
-          left: -28,
-          bottom: 0
-        }} barCategoryGap="20%">
-            <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} />
-            <XAxis dataKey="tipo" tick={{
-            fontSize: 10,
-            fill: "#6B7280",
-            fontFamily: "'DM Sans', sans-serif"
-          }} axisLine={false} tickLine={false} />
-            <YAxis domain={[0, 100]} unit="%" tick={{
-            fontSize: 10,
-            fill: "#9CA3AF"
-          }} axisLine={false} tickLine={false} />
-            <Tooltip content={<CustomTip />} cursor={{
-            fill: "#F4F6FA",
-            radius: 6
-          }} />
-            <Bar dataKey="taxa" name="Taxa" fill="#0F2357" radius={[5, 5, 0, 0]} maxBarSize={44} />
-          </BarChart>
-        </ResponsiveContainer>
-      </ChartCard>
-
-      {/* ── Floating AI button ── */}
-      <button onClick={() => navigate("/app/assistente")} className="dashboard-fab">
-        <div className="dashboard-fab-icon-wrap">
-          <MessageSquare size={14} className="dashboard-fab-icon" />
-        </div>
-        <span className="dashboard-fab-label">Assistente Jurídico</span>
-      </button>
-    </div>;
+  useEffect(() => { document.title = "Dashboard"; }, []);
+  const navigate = useNavigate(); const [periodMode, setPeriodMode] = useState("preset"); const [preset, setPreset] = useState("Últimos 3 meses"); const [dateFrom, setDateFrom] = useState(""); const [dateTo, setDateTo] = useState(""); const [appliedPeriod, setAppliedPeriod] = useState("Últimos 3 meses");
+  const activeProcesses = portfolio.filter(process => process.active);
+  const phaseData = ["Inicial", "Citação", "Saneamento", "Sentença", "Cumprimento", "Penhora"].map(fase => ({ fase, processos: activeProcesses.filter(process => process.phase === fase).length }));
+  const monthlyData = ["2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08"].map(month => ({ mes: monthLabel(month), abertos: portfolio.filter(process => process.openedAt.startsWith(month)).length, encerrados: portfolio.filter(process => process.closedAt?.startsWith(month)).length }));
+  const upcomingHearings = activeProcesses.filter(process => process.hearing && dateValue(process.hearing) >= TODAY).sort((a, b) => a.hearing.localeCompare(b.hearing)).slice(0, 5);
+  const staleProcesses = activeProcesses.map(process => ({ ...process, daysStopped: daysSince(process.updatedAt) })).filter(process => process.daysStopped >= 15).sort((a, b) => b.daysStopped - a.daysStopped).slice(0, 4);
+  const applyCustom = () => { if (dateFrom && dateTo) setAppliedPeriod(`${dateFrom.split("-").reverse().join("/")} - ${dateTo.split("-").reverse().join("/")}`); };
+  const selectPreset = value => { setPeriodMode("preset"); setPreset(value); setAppliedPeriod(value); };
+  return <div className="dashboard-page"><div className="page-header"><p className="page-kicker">SGPJ</p><h1 className="page-title">Dashboard</h1></div>
+    <div className="dashboard-kpi-grid"><KpiCard label="Processos ativos" value="3" icon={<Scale size={15} className="kpi-card-icon kpi-card-icon--blue" />} iconVariant="kpi-card-badge--blue" sub="+2 este mês" subIcon={<TrendingUp size={10} />} subVariant="kpi-card-sub--success" /><KpiCard label="Solicitações" value="3" icon={<Zap size={15} className="kpi-card-icon kpi-card-icon--amber" />} iconVariant="kpi-card-badge--amber" sub="Pendentes hoje" subIcon={<ArrowUpRight size={10} />} subVariant="kpi-card-sub--amber" /><KpiCard label="Clientes" value="4" icon={<Users size={15} className="kpi-card-icon kpi-card-icon--green" />} iconVariant="kpi-card-badge--green" sub="Cadastrados" subIcon={<Users size={10} />} subVariant="kpi-card-sub--muted" /><KpiCard label="Com audiência" value="3" icon={<Calendar size={15} className="kpi-card-icon kpi-card-icon--gold" />} iconVariant="kpi-card-badge--gold" sub="Agendadas" subIcon={<Calendar size={10} />} subVariant="kpi-card-sub--muted" /></div>
+    <div className="dashboard-panel"><div className="dashboard-panel-header"><p className="dashboard-panel-title">Análise de desempenho</p><span className="dashboard-period-badge"><CalendarRange size={11} />{appliedPeriod}</span></div><div className="dashboard-divider" /><div className="dashboard-preset-row">{PRESETS.map(value => <button key={value} onClick={() => selectPreset(value)} className={`dashboard-preset-btn ${periodMode === "preset" && preset === value ? "dashboard-preset-btn--active" : ""}`}>{value}</button>)}<button onClick={() => setPeriodMode("custom")} className={`dashboard-preset-btn ${periodMode === "custom" ? "dashboard-preset-btn--active" : ""}`}><Calendar size={11} />Personalizado</button></div>{periodMode === "custom" && <div className="dashboard-custom-period"><div className="dashboard-custom-divider" /><div className="dashboard-custom-grid"><div className="dashboard-field"><label className="dashboard-label">Data inicial</label><input type="date" value={dateFrom} onChange={event => setDateFrom(event.target.value)} className="dashboard-input" /></div><div className="dashboard-field"><label className="dashboard-label">Data final</label><input type="date" min={dateFrom} value={dateTo} onChange={event => setDateTo(event.target.value)} className="dashboard-input" /></div><div className="dashboard-actions"><button onClick={applyCustom} disabled={!dateFrom || !dateTo} className="dashboard-primary-button">Aplicar</button><button onClick={() => { setPeriodMode("preset"); setDateFrom(""); setDateTo(""); }} className="dashboard-icon-button" title="Limpar"><X size={13} /></button></div></div></div>}</div>
+    <div className="dashboard-charts-grid dashboard-charts-grid--split"><ChartCard title="Evolução da carteira" sub={`Aberturas e encerramentos por mês - ${appliedPeriod}`} info="Compara, mês a mês, os processos abertos com os processos encerrados. Quando as aberturas superam os encerramentos, a carteira tende a crescer; o inverso indica redução do estoque."><ResponsiveContainer width="100%" height={220}><LineChart data={monthlyData} margin={{ top: 4, right: 4, left: -26, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} /><XAxis dataKey="mes" axisLine={false} tickLine={false} /><YAxis allowDecimals={false} axisLine={false} tickLine={false} /><Tooltip content={<CustomTip />} /><Legend iconType="circle" /><Line type="monotone" dataKey="abertos" name="Abertos" stroke="#1D4ED8" strokeWidth={2.5} dot={{ r: 3 }} /><Line type="monotone" dataKey="encerrados" name="Encerrados" stroke="#C9A96E" strokeWidth={2.5} dot={{ r: 3 }} /></LineChart></ResponsiveContainer></ChartCard><ChartCard title="Funil de atendimento" sub="Solicitações até a abertura do processo" info="Mostra a passagem das solicitações recebidas até se tornarem processos. A diferença entre etapas revela onde há maior perda ou demora no atendimento."><ResponsiveContainer width="100%" height={220}><BarChart data={requestFunnel} layout="vertical" margin={{ top: 0, right: 12, left: 22, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" horizontal={false} /><XAxis type="number" hide /><YAxis dataKey="etapa" type="category" width={72} axisLine={false} tickLine={false} /><Tooltip content={<CustomTip />} /><Bar dataKey="total" name="Quantidade" radius={[0, 5, 5, 0]}>{requestFunnel.map((_, index) => <Cell key={index} fill={COLORS[index]} />)}</Bar></BarChart></ResponsiveContainer></ChartCard></div>
+    <ChartCard title="Processos por fase" sub={`Distribuição - ${appliedPeriod}`} info="Distribui os processos ativos entre as etapas processuais. Uma concentração alta em uma fase pode indicar um gargalo que merece acompanhamento."><ResponsiveContainer width="100%" height={240}><BarChart data={phaseData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} /><XAxis dataKey="fase" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} /><YAxis allowDecimals={false} axisLine={false} tickLine={false} /><Tooltip content={<CustomTip />} /><Bar dataKey="processos" name="Processos" fill="#0F2357" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer></ChartCard>
+    <div className="dashboard-charts-grid dashboard-charts-grid--split"><ListCard title="Agenda de risco" sub="Audiências futuras ordenadas por data" empty="Não há audiências futuras." info="Lista as próximas audiências dos processos ativos em ordem de data. A prioridade ajuda a destacar os casos que exigem preparação imediata.">{upcomingHearings.map(process => <div key={process.id} className="dashboard-list-item"><div><strong>{formatDate(process.hearing)}</strong><span>{process.phase} · {process.responsible}</span></div><span className={`dashboard-priority dashboard-priority--${process.priority.toLowerCase()}`}>{process.priority}</span></div>)}</ListCard><ListCard title="Processos sem atualização" sub="Priorize os casos que ficaram parados" empty="Nenhum processo parado no momento." info="Exibe processos ativos sem atualização há pelo menos 15 dias. O número de dias indica há quanto tempo o caso não recebeu movimentação interna registrada.">{staleProcesses.map(process => <div key={process.id} className="dashboard-list-item"><div><strong>{process.phase} · {formatCurrency(process.value)}</strong><span>{process.responsible}</span></div><span className="dashboard-stale-days">{process.daysStopped} dias</span></div>)}</ListCard></div>
+    <button onClick={() => navigate("/app/assistente")} className="dashboard-fab"><div className="dashboard-fab-icon-wrap"><MessageSquare size={14} className="dashboard-fab-icon" /></div><span className="dashboard-fab-label">Assistente Jurídico</span></button></div>;
 }
-
-/* ── Sub-components ── */
-
-function KpiCard({
-  label,
-  value,
-  icon,
-  iconVariant,
-  sub,
-  subIcon,
-  subVariant
-}) {
-  return <div className="kpi-card">
-      <div className={`kpi-card-badge ${iconVariant}`}>
-        {icon}
-      </div>
-      <p className="kpi-card-value">
-        {value}
-      </p>
-      <p className="kpi-card-label">{label}</p>
-      <div className={`kpi-card-sub ${subVariant}`}>
-        {subIcon}
-        <span className="kpi-card-sub-text">{sub}</span>
-      </div>
-    </div>;
-}
-function ChartCard({
-  title,
-  sub,
-  children
-}) {
-  return <div className="chart-card">
-      <div className="chart-card-header">
-        <p className="chart-card-title">{title}</p>
-        <p className="chart-card-subtitle">{sub}</p>
-      </div>
-      {children}
-    </div>;
-}
+function KpiCard({ label, value, icon, iconVariant, sub, subIcon, subVariant }) { return <div className="kpi-card"><div className={`kpi-card-badge ${iconVariant}`}>{icon}</div><p className="kpi-card-value">{value}</p><p className="kpi-card-label">{label}</p><div className={`kpi-card-sub ${subVariant}`}>{subIcon}<span className="kpi-card-sub-text">{sub}</span></div></div>; }
+function ChartCard({ title, sub, children, info }) { return <FlipCard title={title} sub={sub} info={info}>{children}</FlipCard>; }
+function ListCard({ title, sub, children, empty, info }) { const items = Array.isArray(children) ? children : [children]; return <FlipCard title={title} sub={sub} info={info}><div className="dashboard-list">{items.filter(Boolean).length ? items : <p className="dashboard-empty">{empty}</p>}</div></FlipCard>; }
+function FlipCard({ title, sub, info, children }) { const [flipped, setFlipped] = useState(false); return <div className={`dashboard-flip-card ${flipped ? "dashboard-flip-card--flipped" : ""}`}><div className="dashboard-flip-card-inner"><div className="chart-card dashboard-flip-card-face dashboard-flip-card-front"><div className="chart-card-header"><div><p className="chart-card-title">{title}</p><p className="chart-card-subtitle">{sub}</p></div><InfoButton title={title} onClick={() => setFlipped(true)} /></div>{children}</div><div className="chart-card dashboard-flip-card-face dashboard-flip-card-back"><p className="chart-card-title">Sobre este indicador</p><h2 className="dashboard-flip-title">{title}</h2><p className="dashboard-flip-description">{info}</p><button type="button" className="dashboard-flip-return" onClick={() => setFlipped(false)}><ArrowLeft size={14} />Voltar ao gráfico</button></div></div></div>; }
+function InfoButton({ title, onClick }) { return <button type="button" className="dashboard-info-button" onClick={onClick} aria-label={`Entender ${title}`} title={`Entender ${title}`}><Info size={14} /></button>; }
