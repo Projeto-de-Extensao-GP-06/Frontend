@@ -1,6 +1,6 @@
 import { trace } from '@opentelemetry/api';
 import { WebTracerProvider } from '@opentelemetry/sdk-trace-web';
-import { Resource } from '@opentelemetry/resources';
+import { resourceFromAttributes } from '@opentelemetry/resources';
 import { SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { getWebAutoInstrumentations } from '@opentelemetry/auto-instrumentations-web';
@@ -9,7 +9,7 @@ import { registerInstrumentations } from '@opentelemetry/instrumentation';
 const initTracing = () => {
   try {
     const provider = new WebTracerProvider({
-      resource: new Resource({
+      resource: resourceFromAttributes({
         'service.name': 'sgpj-frontend',
         'service.version': '1.0.0',
         'deployment.environment': import.meta.env.MODE || 'development'
