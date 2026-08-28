@@ -296,3 +296,101 @@
   background: #059669;
   box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2);
 }
+
+/* Event Cards (Multiple Events) */
+.calendar-event-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  padding: 1.125rem;
+  border: 1px solid #e8ecf4;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 35, 87, 0.03);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.calendar-event-card:hover {
+  border-color: #d7deec;
+  box-shadow: 0 4px 12px rgba(15, 35, 87, 0.05);
+}
+
+.calendar-event-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.625rem;
+  border-bottom: 1px solid #f1f4f9;
+}
+
+.calendar-event-card-label {
+  color: #4b5563;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.calendar-event-primary-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.calendar-event-primary-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: #c9a96e;
+}
+
+.calendar-event-primary-label {
+  color: #c9a96e;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.calendar-event-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: #f4f6fa;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.calendar-event-remove:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.calendar-add-event-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  height: 2.875rem;
+  border: 1.5px dashed #c7d0e8;
+  border-radius: 0.875rem;
+  background: #fff;
+  color: #0f2357;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.calendar-add-event-button:hover {
+  background: #eef1f8;
+  border-color: #0f2357;
+  color: #0f2357;
+}
+
+.calendar-add-event-button:active {
+  transform: scale(0.99);
+}
