@@ -92,11 +92,40 @@ export default function PublicSitePage() {
 
       <header className="site-header">
         <div className="site-header__inner">
-          <div className="site-header__logo">
+          <div className="site-header__logo" onClick={() => scrollTo("hero")} style={{ cursor: "pointer" }}>
             <ImageWithFallback src={siteLogoImage} alt="Thauany Bezerra Advocacia" className="site-logo" />
           </div>
+
+          {/* ── Desktop Navigation ── */}
+          <nav className="site-header__desktop-nav" aria-label="Navegação do site">
+            {[
+              { id: "hero", label: "Início" },
+              { id: "areas", label: "Áreas de Atuação" },
+              { id: "como-funciona", label: "Como Funciona" },
+              { id: "sobre", label: "Sobre" },
+              { id: "contato", label: "Contato" }
+            ].map(item => (
+              <button
+                key={item.id}
+                onClick={() => scrollTo(item.id)}
+                className="site-header__desktop-link"
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+
           <div className="site-header__actions">
-            <button onClick={() => setMenuOpen(true)} className="site-header__menu-btn">
+            {/* Desktop CTA */}
+            <Button
+              onClick={() => navigate("/")}
+              className="site-header__colaborador-btn"
+            >
+              Área do Colaborador
+            </Button>
+
+            {/* Mobile menu button */}
+            <button onClick={() => setMenuOpen(true)} className="site-header__menu-btn" aria-label="Abrir menu">
               <Menu size={22} />
             </button>
           </div>
