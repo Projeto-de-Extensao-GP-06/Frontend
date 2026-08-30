@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
-import { Mail, Key, Shield, CheckCircle, AlertCircle, Check, Cloud, RefreshCw, Loader2 } from "lucide-react";
+import { Key, Shield, CheckCircle, AlertCircle, Cloud, RefreshCw, Loader2, User, Save } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { Button } from "../components/ui/button";
 import { startOneDriveLogin } from "../services/oneDriveService";
@@ -16,25 +16,36 @@ export default function ProfilePage() {
   const userRole = "Administrador";
   const isAdmin = userRole === "Administrador";
 
+  const [name, setName] = useState("Thauany Bezerra");
   const [email, setEmail] = useState("thauany@thauanybezerra.adv.br");
-  const [emailSaved, setEmailSaved] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [confirmPassDialogOpen, setConfirmPassDialogOpen] = useState(false);
-  const [confirmEmailDialogOpen, setConfirmEmailDialogOpen] = useState(false);
+  const [confirmSaveDialogOpen, setConfirmSaveDialogOpen] = useState(false);
   const [oneDriveLoading, setOneDriveLoading] = useState(false);
   const [oneDriveError, setOneDriveError] = useState("");
   const navigate = useNavigate();
 
-  const handleOpenEmailDialog = (e) => {
+  const initials = name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase() || "TB";
+
+  const handleOpenSaveDialog = (e) => {
     e.preventDefault();
-    if (!email.trim()) return;
-    setConfirmEmailDialogOpen(true);
+    if (!name.trim() || !email.trim()) return;
+    setConfirmSaveDialogOpen(true);
   };
 
-  const handleConfirmEmailChange = () => {
-    setConfirmEmailDialogOpen(false);
-    setEmailSaved(true);
+  const handleConfirmSaveChange = () => {
+    setConfirmSaveDialogOpen(false);
+    setSaved(true);
+    toast.success("Informações salvas com sucesso!");
     setTimeout(() => {
-      setEmailSaved(false);
+      setSaved(false);
     }, 3500);
   };
 
@@ -62,10 +73,10 @@ export default function ProfilePage() {
           <p className="profile-hero__kicker">SGPJ · Perfil</p>
           <div className="profile-hero__identity">
             <div className="profile-avatar">
-              <span className="profile-avatar__initials">TB</span>
+              <span className="profile-avatar__initials">{initials}</span>
             </div>
             <div className="profile-hero__copy">
-              <h1 className="profile-hero__name">Thauany Bezerra</h1>
+              <h1 className="profile-hero__name">{name || "Thauany Bezerra"}</h1>
               <p className="profile-hero__role">Administrador</p>
               <div className="profile-hero__status">
                 <div className="profile-hero__status-dot" />
@@ -80,10 +91,26 @@ export default function ProfilePage() {
       <div className="profile-content">
         <div className="profile-card">
           <h3 className="profile-card__title">
-            <Mail size={14} className="profile-card__title-icon" />
+            <User size={14} className="profile-card__title-icon" />
             Informações da conta
           </h3>
-          <form onSubmit={handleOpenEmailDialog}>
+          <form onSubmit={handleOpenSaveDialog}>
+            <div className="profile-field">
+              <label htmlFor="profile-name-input" className="profile-field__label">Nome completo</label>
+              <input
+                id="profile-name-input"
+                type="text"
+                className="profile-field__input"
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (saved) setSaved(false);
+                }}
+                placeholder="Seu nome completo"
+                required
+              />
+            </div>
+
             <div className="profile-field">
               <label htmlFor="profile-email-input" className="profile-field__label">E-mail</label>
               <input
@@ -93,24 +120,24 @@ export default function ProfilePage() {
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
-                  if (emailSaved) setEmailSaved(false);
+                  if (saved) setSaved(false);
                 }}
                 placeholder="seu.email@exemplo.adv.br"
                 required
               />
             </div>
 
-            {emailSaved && (
+            {saved && (
               <div className="profile-feedback profile-feedback--success">
                 <CheckCircle size={15} />
-                <span>E-mail atualizado com sucesso!</span>
+                <span>Alterações salvas com sucesso!</span>
               </div>
             )}
 
             <div className="profile-card__actions">
               <button type="submit" className="profile-save-email-btn">
-                <Check size={15} />
-                Confirmar mudança de e-mail
+                <Save size={15} />
+                Salvar alterações
               </button>
               <button
                 type="button"
@@ -182,23 +209,23 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Modal de confirmação de alteração de e-mail */}
-      <Dialog open={confirmEmailDialogOpen} onOpenChange={setConfirmEmailDialogOpen}>
+      {/* Modal de confirmação de alteração de informações */}
+      <Dialog open={confirmSaveDialogOpen} onOpenChange={setConfirmSaveDialogOpen}>
         <DialogContent className="profile-dialog">
           <DialogHeader>
             <div className="profile-dialog__header">
               <div className="profile-dialog__icon-wrap profile-dialog__icon-wrap--blue">
-                <Mail size={24} className="profile-dialog__icon" />
+                <User size={24} className="profile-dialog__icon" />
               </div>
-              <DialogTitle className="profile-dialog__title">Confirmar alteração de e-mail</DialogTitle>
+              <DialogTitle className="profile-dialog__title">Salvar alterações</DialogTitle>
             </div>
           </DialogHeader>
           <p className="profile-dialog__text">
-            Tem certeza de que deseja alterar seu e-mail para <strong className="profile-dialog__highlight">{email}</strong>?
+            Tem certeza de que deseja salvar as alterações nas informações da sua conta?
           </p>
           <DialogFooter className="profile-dialog__footer">
-            <Button variant="outline" className="profile-dialog-button profile-dialog-button--outline" onClick={() => setConfirmEmailDialogOpen(false)}>Cancelar</Button>
-            <Button className="profile-dialog-button profile-dialog-button--primary" onClick={handleConfirmEmailChange}>Confirmar</Button>
+            <Button variant="outline" className="profile-dialog-button profile-dialog-button--outline" onClick={() => setConfirmSaveDialogOpen(false)}>Cancelar</Button>
+            <Button className="profile-dialog-button profile-dialog-button--primary" onClick={handleConfirmSaveChange}>Confirmar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

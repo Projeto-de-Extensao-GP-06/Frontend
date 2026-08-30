@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { ArrowLeft, Pencil, Trash2, FileText, Clock, Plus, ChevronRight, Calendar, User, Building, Scale, AlertTriangle, Flag, RotateCcw, Check, X, CloudUpload } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, FileText, Clock, Plus, ChevronRight, Calendar, User, Building, Scale, AlertTriangle, Flag, RotateCcw, Check, X, CloudUpload, RefreshCw } from "lucide-react";
 import { mockProcesses } from "../data/mockData";
 import { StatusBadge, PriorityBadge, PhaseBadge } from "../components/StatusBadge";
 import { InfoRow } from "../components/InfoRow";
@@ -199,6 +199,21 @@ export default function ProcessDetailPage() {
 
       <div className="proc-content">
         <div className="proc-card">
+          <div className="proc-sync-bar">
+            <div className="proc-sync-bar__info">
+              <span className="proc-sync-bar__label">Última busca de dados:</span>
+              <span className="proc-sync-bar__value">{process.lastSyncDate || process.lastSync || "28/08/2026 às 14:30"}</span>
+            </div>
+            <button
+              type="button"
+              className="proc-sync-bar__btn"
+              title="Buscar e atualizar dados do processo"
+            >
+              <RefreshCw size={14} />
+              <span>Atualizar dados</span>
+            </button>
+          </div>
+
           <div className="proc-grid">
             <InfoRow label="Fase" value={process.phase} variant="proc" />
             <InfoRow label="Tribunal" value={process.tribunal} variant="proc" />

@@ -281,9 +281,11 @@ export const mockProcesses = [{
 }];
 export const mockRequests = [{
   id: "r1",
+  type: "PF",
   name: "Fernanda Oliveira",
   email: "fernanda.oliveira@gmail.com",
   phone: "(11) 94567-8901",
+  profession: "Assistente Administrativo",
   state: "SP",
   description: "Preciso de orientação jurídica sobre uma demissão que considero injusta. Trabalhei por 5 anos na empresa e fui dispensada sem receber as verbas rescisórias corretamente.",
   processNumber: "",
@@ -291,9 +293,11 @@ export const mockRequests = [{
   status: "pendente"
 }, {
   id: "r2",
+  type: "PF",
   name: "Ricardo Nascimento",
   email: "ricardo.nascimento@email.com",
   phone: "(21) 98234-5678",
+  profession: "Arquiteto",
   state: "RJ",
   description: "Meu locatário está inadimplente há 4 meses e preciso retomar o imóvel urgentemente. Tenho contrato assinado e todas as notificações feitas.",
   processNumber: "0001234-56.2024.8.19.0001",
@@ -308,8 +312,12 @@ export const mockRequests = [{
   processualClass: "Ação de Despejo"
 }, {
   id: "r3",
+  type: "PJ",
+  companyName: "Nexus Engenharia e Construções LTDA",
   name: "Marcela Souza",
-  email: "marcela.souza@empresa.com",
+  contactRole: "Gerente de Operações",
+  cnpj: "19.876.543/0001-21",
+  email: "marcela.souza@nexuseng.com.br",
   phone: "(31) 97890-1234",
   state: "MG",
   description: "Nossa empresa sofreu um acidente de trabalho grave e precisamos de assessoria jurídica para lidar com o processo trabalhista e garantir os direitos de todos os envolvidos.",
@@ -318,19 +326,31 @@ export const mockRequests = [{
   status: "aceita"
 }, {
   id: "r4",
-  name: "Paulo Henrique Costa",
-  email: "paulo.costa@outlook.com",
-  phone: "(41) 96543-2109",
-  state: "PR",
-  description: "Sofri um acidente de trânsito e a seguradora está se recusando a pagar a indenização. Tenho boletim de ocorrência e laudo médico.",
-  processNumber: "",
+  type: "PJ",
+  companyName: "InovaTech Serviços Digitais S/A",
+  name: "Carlos Eduardo Silveira",
+  contactRole: "Diretor Executivo",
+  cnpj: "34.567.890/0001-12",
+  email: "carlos.silveira@inovatech.com.br",
+  phone: "(11) 3456-7890",
+  state: "SP",
+  description: "Necessitamos de assessoria jurídica contenciosa cível para defesa em ação de rescisão contratual e perdas e danos movida por fornecedor de software.",
+  processNumber: "0004567-89.2024.8.26.0100",
   createdAt: "15/05/2026",
-  status: "negada"
+  status: "pendente",
+  filingDate: "12/04/2024",
+  instance: "1ª Instância",
+  secrecyLevel: "Público",
+  judgingBody: "3ª Vara Cível de São Paulo",
+  tribunalSystem: "e-SAJ",
+  processualClass: "Ação de Cobrança / Rescisão"
 }, {
   id: "r5",
+  type: "PF",
   name: "Larissa Mendonça",
   email: "larissa@email.com",
   phone: "(51) 95432-1098",
+  profession: "Professora",
   state: "RS",
   description: "Preciso de ajuda com inventário de bens após falecimento de familiar. Há divergências entre os herdeiros sobre a divisão.",
   processNumber: "",

@@ -59,13 +59,74 @@ export default function AppLayout() {
         <div className="app-header-inner">
 
           {/* Logo SGPJ */}
-          <div className="app-brand-wrap">
+          <div className="app-brand-wrap" onClick={() => go("/app/inicio")} role="button" tabIndex={0} title="Ir para o início">
             <span className="app-brand">
               SGPJ
             </span>
           </div>
 
-          {/* Menu hamburguer à direita */}
+          {/* ── Desktop Navigation (visível apenas em telas maiores) ── */}
+          <nav className="app-desktop-nav" aria-label="Navegação principal">
+            {navItems.filter(item => item.path !== "/app/perfil").map(item => {
+              const Icon = item.icon;
+              const active = location.pathname.startsWith(item.path);
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => go(item.path)}
+                  className={`app-desktop-nav-link ${active ? "is-active" : ""}`}
+                >
+                  <Icon size={16} className="app-desktop-nav-icon" />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+
+            {/* Assistente IA */}
+            <button
+              onClick={() => go("/app/assistente")}
+              className={`app-desktop-nav-link app-desktop-nav-link--assistant ${
+                location.pathname === "/app/assistente" ? "is-active" : ""
+              }`}
+            >
+              <MessageSquare size={16} className="app-desktop-nav-icon" />
+              <span>Assistente IA</span>
+              <span className="app-desktop-badge">NOVO</span>
+            </button>
+          </nav>
+
+          {/* ── Desktop User Profile & Logout (visível apenas em telas maiores) ── */}
+          <div className="app-desktop-user-actions">
+            <button
+              onClick={() => go("/app/perfil")}
+              className={`app-desktop-profile-btn ${
+                location.pathname.startsWith("/app/perfil") ? "is-active" : ""
+              }`}
+              title="Meu Perfil"
+            >
+              <div className="app-desktop-avatar">
+                <span>TB</span>
+              </div>
+              <div className="app-desktop-user-info">
+                <span className="app-desktop-user-name">Thauany</span>
+                <span className="app-desktop-user-role">Administrador</span>
+              </div>
+            </button>
+
+            <div className="app-desktop-divider" />
+
+            <button
+              onClick={() => setLogoutOpen(true)}
+              className="app-desktop-logout-btn"
+              title="Sair do sistema"
+              aria-label="Sair"
+            >
+              <LogOut size={16} />
+              <span className="app-desktop-logout-label">Sair</span>
+            </button>
+          </div>
+
+          {/* Menu hamburguer à direita (visível apenas em mobile/telas menores) */}
           <button onClick={() => setDrawerOpen(true)} className="app-menu-button" aria-label="Abrir menu">
             <Menu size={22} />
           </button>
@@ -79,7 +140,7 @@ export default function AppLayout() {
 
       <Toaster position="top-right" richColors />
 
-      {/* ── Custom Side Drawer ── */}
+      {/* ── Custom Side Drawer (Mobile) ── */}
       <div className={`app-drawer-layer ${drawerOpen ? "is-open" : ""}`}>
         {/* Overlay */}
         <div className={`app-drawer-overlay ${drawerOpen ? "is-open" : ""}`} onClick={() => setDrawerOpen(false)} />

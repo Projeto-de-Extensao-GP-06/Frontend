@@ -1,24 +1,29 @@
 import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
-import { ArrowLeft, Mail, Phone, Calendar, FileText, Check, X, User } from "lucide-react";
+import { ArrowLeft, Mail, Phone, Calendar, FileText, Check, X, User, Building2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { StatusBadge } from "../components/StatusBadge";
 import { mockRequests } from "../data/mockData";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
+import { AcceptRequestModal } from "../components/AcceptRequestModal";
 import "../../styles/request-detail-page.css";
 export default function RequestDetailPage() {
-  useEffect(() => {
-    document.title = `Solicitação - ${request.name}`;
-  }, []);
-
   const {
     id
   } = useParams();
   const navigate = useNavigate();
   const [status, setStatus] = useState("pending");
   const [denyDialog, setDenyDialog] = useState(false);
+  const [acceptModalOpen, setAcceptModalOpen] = useState(false);
   const request = mockRequests.find(r => r.id === id);
+
+  useEffect(() => {
+    if (request) {
+      document.title = `Solicitação - ${request.companyName || request.name}`;
+    }
+  }, [request]);
+
   if (!request) {
     return <div className="req-detail-empty">
         <p className="req-detail-empty__text">Solicitação não encontrada.</p>
@@ -33,22 +38,50 @@ export default function RequestDetailPage() {
       <div className="req-detail-header">
         <div>
           <p className="req-detail-header__kicker">Solicitações › Detalhe</p>
-          <h1 className="req-detail-header__title">{request.name}</h1>
+          <h1 className="req-detail-header__title">{request.companyName || request.name}</h1>
         </div>
-        <StatusBadge status={status === "accepted" ? "aceita" : status === "denied" ? "negada" : request.status} />
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+          <span
+            style={{
+              fontSize: "0.75rem",
+              fontWeight: "700",
+              padding: "0.25rem 0.6rem",
+              borderRadius: "0.5rem",
+              backgroundColor: request.type === "PJ" ? "#eef1f8" : "#f1f5f9",
+              color: request.type === "PJ" ? "#0f2357" : "#475569",
+              border: "1px solid #e2e8f0"
+            }}
+          >
+            {request.type === "PJ" ? "Pessoa Jurídica (PJ)" : "Pessoa Física (PF)"}
+          </span>
+          <StatusBadge status={status === "accepted" ? "aceita" : status === "denied" ? "negada" : request.status} />
+        </div>
       </div>
 
       <div className="req-detail-card">
         <div className="req-detail-requester">
           <div className="req-detail-requester__avatar">
-            <User size={20} className="req-detail-requester__avatar-icon" />
+            {request.type === "PJ" ? (
+              <Building2 size={20} className="req-detail-requester__avatar-icon" />
+            ) : (
+              <User size={20} className="req-detail-requester__avatar-icon" />
+            )}
           </div>
           <div>
-            <p className="req-detail-requester__name">{request.name}</p>
+            <p className="req-detail-requester__name">{request.companyName || request.name}</p>
             <p className="req-detail-requester__meta">{request.state} • {request.createdAt}</p>
           </div>
         </div>
         <div className="req-detail-info-list">
+          {request.companyName && (
+            <div className="req-detail-info-row">
+              <User size={14} className="req-detail-info-row__icon" />
+              <span className="req-detail-info-row__value">
+                Contato principal: <strong>{request.name}</strong>
+                {request.contactRole ? ` (${request.contactRole})` : ""}
+              </span>
+            </div>
+          )}
           <div className="req-detail-info-row">
             <Mail size={14} className="req-detail-info-row__icon" />
             <span className="req-detail-info-row__value">{request.email}</span>
@@ -88,14 +121,23 @@ export default function RequestDetailPage() {
       {status === "pending" && request.status === "pendente"
         ? <div className="req-detail-actions">
             <p className="req-detail-actions__label">Análise desta solicitação:</p>
-            <Button onClick={() => setStatus("accepted")} className="req-detail-actions__btn req-detail-actions__btn--accept"><Check size={16} />Aceitar Solicitação</Button>
+            <Button onClick={() => setAcceptModalOpen(true)} className="req-detail-actions__btn req-detail-actions__btn--accept"><Check size={16} />Aceitar Solicitação</Button>
             <Button onClick={() => setDenyDialog(true)} className="req-detail-actions__btn req-detail-actions__btn--deny"><X size={16} />Negar Solicitação</Button>
           </div>
         : <div className={`req-detail-result ${status === "accepted" || request.status === "aceita" ? "req-detail-result--accepted" : "req-detail-result--denied"}`}>
             {status === "accepted" || request.status === "aceita"
-              ? <><Check size={18} className="req-detail-result__icon req-detail-result__icon--accepted" /><div><p className="req-detail-result__title req-detail-result__title--accepted">Solicitação aceita</p><p className="req-detail-result__sub req-detail-result__sub--accepted">O cliente será contatado em breve.</p></div></>
+              ? <><Check size={18} className="req-detail-result__icon req-detail-result__icon--accepted" /><div><p className="req-detail-result__title req-detail-result__title--accepted">Solicitação aceita</p><p className="req-detail-result__sub req-detail-result__sub--accepted">A solicitação foi processada.</p></div></>
               : <><X size={18} className="req-detail-result__icon req-detail-result__icon--denied" /><div><p className="req-detail-result__title req-detail-result__title--denied">Solicitação negada</p><p className="req-detail-result__sub req-detail-result__sub--denied">A solicitação foi recusada.</p></div></>}
           </div>}
+
+      <AcceptRequestModal
+        open={acceptModalOpen}
+        onOpenChange={setAcceptModalOpen}
+        request={request}
+        onConfirmAccept={(data) => {
+          setStatus("accepted");
+        }}
+      />
 
       <Dialog open={denyDialog} onOpenChange={setDenyDialog}>
         <DialogContent className="req-dialog">

@@ -15,9 +15,6 @@ const TABS = [{
 }, {
   id: "aceita",
   label: "Aceitas"
-}, {
-  id: "negada",
-  label: "Negadas"
 }];
 
 export default function RequestsPage() {
@@ -38,6 +35,7 @@ export default function RequestsPage() {
     const cleanQ = q.replace(/[.\-/]/g, "");
     const matchQ = !q ||
       r.name.toLowerCase().includes(q) ||
+      (r.companyName && r.companyName.toLowerCase().includes(q)) ||
       r.email.toLowerCase().includes(q) ||
       (r.processNumber && (
         r.processNumber.toLowerCase().includes(q) ||
@@ -50,8 +48,7 @@ export default function RequestsPage() {
   const counts = {
     todas: searchFiltered.length,
     pendente: searchFiltered.filter(r => r.status === "pendente").length,
-    aceita: searchFiltered.filter(r => r.status === "aceita").length,
-    negada: searchFiltered.filter(r => r.status === "negada").length
+    aceita: searchFiltered.filter(r => r.status === "aceita").length
   };
 
   const filtered = activeTab === "todas"
@@ -247,9 +244,22 @@ function RequestCard({
         {/* Name + status + chevron */}
         <div className="request-card-topline">
           <p className="request-card-name">
-            {request.name}
+            {request.companyName || request.name}
           </p>
           <div className="request-card-actions">
+            <span
+              style={{
+                fontSize: "0.6875rem",
+                fontWeight: "700",
+                padding: "0.15rem 0.45rem",
+                borderRadius: "0.375rem",
+                backgroundColor: request.type === "PJ" ? "#eef1f8" : "#f1f5f9",
+                color: request.type === "PJ" ? "#0f2357" : "#475569",
+                border: "1px solid #e2e8f0"
+              }}
+            >
+              {request.type === "PJ" ? "PJ" : "PF"}
+            </span>
             <StatusBadge status={request.status} />
             <ChevronRight size={14} className="request-card-chevron" />
           </div>
@@ -257,6 +267,12 @@ function RequestCard({
 
         {/* State + date — secondary hierarchy */}
         <div className="request-card-meta">
+          {request.companyName && (
+            <>
+              <span className="request-card-contact-name">Contato: {request.name}</span>
+              <span className="request-card-dot">·</span>
+            </>
+          )}
           <span className="request-card-state">{request.state}</span>
           <span className="request-card-dot">·</span>
           <span className="request-card-date">

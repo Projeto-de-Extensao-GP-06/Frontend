@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router";
-import { Menu, X, Instagram, MessageCircle, Linkedin, Phone, Mail, ChevronRight, CheckCircle, Send, FileText, Shield, Home, Briefcase, Users } from "lucide-react";
+import { Menu, X, Instagram, MessageCircle, Linkedin, Phone, Mail, ChevronRight, CheckCircle, Send, FileText, Shield, Home, Briefcase, Users, User, Building2, Check } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
 import { Checkbox } from "../components/ui/checkbox";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+import { maskPhone, maskCNJ } from "../utils/masks";
+import { brazilStates } from "../data/mockData";
 import siteLogoImage from "../../imports/Captura_de_tela_2026-05-29_235111-1.png";
 import "../../styles/public-site-page.css";
 const areas = [{
@@ -46,6 +48,20 @@ export default function PublicSitePage() {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [accepted, setAccepted] = useState(false);
+  const [clientType, setClientType] = useState("PF");
+  const [submitted, setSubmitted] = useState(false);
+
+  // Form states
+  const [name, setName] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [contactName, setContactName] = useState("");
+  const [profession, setProfession] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [state, setState] = useState("");
+  const [processNumber, setProcessNumber] = useState("");
+  const [description, setDescription] = useState("");
+
   const navigate = useNavigate();
   const scrollTo = id => {
     document.getElementById(id)?.scrollIntoView({
@@ -53,15 +69,63 @@ export default function PublicSitePage() {
     });
     setMenuOpen(false);
   };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setSubmitted(true);
+  };
+
+  const handleReset = () => {
+    setName("");
+    setCompanyName("");
+    setContactName("");
+    setProfession("");
+    setEmail("");
+    setPhone("");
+    setState("");
+    setProcessNumber("");
+    setDescription("");
+    setAccepted(false);
+    setSubmitted(false);
+  };
   return <div className="public-site">
 
       <header className="site-header">
         <div className="site-header__inner">
-          <div className="site-header__logo">
+          <div className="site-header__logo" onClick={() => scrollTo("hero")} style={{ cursor: "pointer" }}>
             <ImageWithFallback src={siteLogoImage} alt="Thauany Bezerra Advocacia" className="site-logo" />
           </div>
+
+          {/* ── Desktop Navigation ── */}
+          <nav className="site-header__desktop-nav" aria-label="Navegação do site">
+            {[
+              { id: "hero", label: "Início" },
+              { id: "areas", label: "Áreas de Atuação" },
+              { id: "como-funciona", label: "Como Funciona" },
+              { id: "sobre", label: "Sobre" },
+              { id: "contato", label: "Contato" }
+            ].map(item => (
+              <button
+                key={item.id}
+                onClick={() => scrollTo(item.id)}
+                className="site-header__desktop-link"
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+
           <div className="site-header__actions">
-            <button onClick={() => setMenuOpen(true)} className="site-header__menu-btn">
+            {/* Desktop CTA */}
+            <Button
+              onClick={() => navigate("/")}
+              className="site-header__colaborador-btn"
+            >
+              Área do Colaborador
+            </Button>
+
+            {/* Mobile menu button */}
+            <button onClick={() => setMenuOpen(true)} className="site-header__menu-btn" aria-label="Abrir menu">
               <Menu size={22} />
             </button>
           </div>
@@ -168,32 +232,251 @@ export default function PublicSitePage() {
             <p className="site-section__sub">Preencha o formulário e envie seu caso para nossa equipe</p>
           </div>
           <div className="site-contact-card">
-            <form className="site-contact-form">
-              <div className="site-contact-grid">
-                <div className="site-contact-grid__full"><Label className="site-contact-label">Nome Completo *</Label><Input className="site-contact-input" placeholder="Seu nome" /></div>
-                <div><Label className="site-contact-label">E-mail *</Label><Input type="email" className="site-contact-input" placeholder="seu@email.com" /></div>
-                <div><Label className="site-contact-label">Telefone *</Label><Input className="site-contact-input" placeholder="(xx) 9xxxx-xxxx" /></div>
-                <div><Label className="site-contact-label">Estado *</Label>
-                  <select className="site-contact-select">
-                    <option value="">Selecione...</option>
-                    <option>SP</option><option>RJ</option><option>MG</option>
-                    <option>RS</option><option>PR</option><option>BA</option>
-                    <option>GO</option><option>DF</option>
-                  </select>
+            {submitted ? (
+              <div className="site-contact-success">
+                <CheckCircle size={48} className="site-contact-success__icon" />
+                <h3 className="site-contact-success__title">Solicitação Enviada!</h3>
+                <p className="site-contact-success__desc">
+                  Recebemos seu caso com sucesso. Nossa equipe jurídica analisará todas as informações e entrará em contato em breve através do e-mail ou telefone informado.
+                </p>
+                <Button onClick={handleReset} className="site-contact-submit" style={{ marginTop: "1rem" }}>
+                  Enviar outro caso
+                </Button>
+              </div>
+            ) : (
+              <form className="site-contact-form" onSubmit={handleSubmit}>
+                {/* Switcher PF / PJ */}
+                <div className="site-contact-type-wrap">
+                  <span className="site-contact-type-label">Tipo de solicitante:</span>
+                  <div className="site-contact-type-grid">
+                    <button
+                      type="button"
+                      className={`site-contact-type-btn ${
+                        clientType === "PF" ? "site-contact-type-btn--active" : ""
+                      }`}
+                      onClick={() => setClientType("PF")}
+                    >
+                      <div className="site-contact-type-badge">PF</div>
+                      <div>
+                        <p className="site-contact-type-title">Pessoa Física</p>
+                        <p className="site-contact-type-desc">Atendimento individual</p>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      className={`site-contact-type-btn ${
+                        clientType === "PJ" ? "site-contact-type-btn--active" : ""
+                      }`}
+                      onClick={() => setClientType("PJ")}
+                    >
+                      <div className="site-contact-type-badge">PJ</div>
+                      <div>
+                        <p className="site-contact-type-title">Pessoa Jurídica</p>
+                        <p className="site-contact-type-desc">Empresas e negócios</p>
+                      </div>
+                    </button>
+                  </div>
                 </div>
-                <div><Label className="site-contact-label">N° do Processo (CNJ)</Label><Input className="site-contact-input site-contact-input--mono" placeholder="Opcional" /></div>
-                <div className="site-contact-grid__full"><Label className="site-contact-label">Descreva sua Situação *</Label><Textarea className="site-contact-textarea" placeholder="Descreva brevemente o seu caso..." /></div>
-              </div>
-              <div className="site-contact-privacy">
-                <Checkbox id="privacy" checked={accepted} onCheckedChange={v => setAccepted(!!v)} className="site-contact-checkbox" />
-                <label htmlFor="privacy" className="site-contact-privacy__label">
-                  Li e aceito as <Link to="/politica-de-privacidade" className="site-contact-privacy__link">Políticas de privacidade</Link> e <Link to="/termos-de-uso" className="site-contact-privacy__link">Termos de uso</Link>
-                </label>
-              </div>
-              <Button type="submit" disabled={!accepted} className="site-contact-submit">
-                <Send size={16} />Enviar caso
-              </Button>
-            </form>
+
+                <div className="site-contact-grid">
+                  {clientType === "PF" ? (
+                    <>
+                      <div>
+                        <Label className="site-contact-label">Nome Completo *</Label>
+                        <Input
+                          required
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          className="site-contact-input"
+                          placeholder="Seu nome completo"
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="site-contact-label">Profissão / Ocupação *</Label>
+                        <Input
+                          required
+                          value={profession}
+                          onChange={(e) => setProfession(e.target.value)}
+                          className="site-contact-input"
+                          placeholder="Ex: Engenheiro, Professor, Autônomo"
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="site-contact-label">E-mail *</Label>
+                        <Input
+                          type="email"
+                          required
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="site-contact-input"
+                          placeholder="seu@email.com"
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="site-contact-label">Telefone / WhatsApp *</Label>
+                        <Input
+                          required
+                          value={phone}
+                          onChange={(e) => setPhone(maskPhone(e.target.value))}
+                          className="site-contact-input"
+                          placeholder="(xx) 9xxxx-xxxx"
+                          maxLength={15}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="site-contact-grid__full">
+                        <Label className="site-contact-label">Razão Social / Nome da Empresa *</Label>
+                        <Input
+                          required
+                          value={companyName}
+                          onChange={(e) => setCompanyName(e.target.value)}
+                          className="site-contact-input"
+                          placeholder="Ex: Construtech Soluções e Engenharia LTDA"
+                        />
+                      </div>
+
+                      <div className="site-contact-pj-box">
+                        <div className="site-contact-pj-header">
+                          <div className="site-contact-pj-title-wrap">
+                            <User size={16} style={{ color: "#0f2357" }} />
+                            <h4 className="site-contact-pj-title">Contato Principal da Empresa</h4>
+                          </div>
+                          <span className="site-contact-pj-badge">
+                            <Check size={11} /> Contato Principal
+                          </span>
+                        </div>
+                        <p className="site-contact-pj-notice">
+                          Informe abaixo o responsável que será registrado como o <strong>contato principal</strong> para o acompanhamento deste caso.
+                        </p>
+
+                        <div className="site-contact-pj-grid">
+                          <div>
+                            <Label className="site-contact-label">Nome do Contato Principal *</Label>
+                            <Input
+                              required
+                              value={contactName}
+                              onChange={(e) => setContactName(e.target.value)}
+                              className="site-contact-input"
+                              placeholder="Ex: Carlos Mendes"
+                            />
+                          </div>
+
+                          <div>
+                            <Label className="site-contact-label">Cargo *</Label>
+                            <Input
+                              required
+                              value={profession}
+                              onChange={(e) => setProfession(e.target.value)}
+                              className="site-contact-input"
+                              placeholder="Ex: Diretor Executivo, Gerente Jurídico"
+                            />
+                          </div>
+
+                          <div>
+                            <Label className="site-contact-label">E-mail do Contato *</Label>
+                            <Input
+                              type="email"
+                              required
+                              value={email}
+                              onChange={(e) => setEmail(e.target.value)}
+                              className="site-contact-input"
+                              placeholder="carlos@empresa.com.br"
+                            />
+                          </div>
+
+                          <div>
+                            <Label className="site-contact-label">Telefone / WhatsApp do Contato *</Label>
+                            <Input
+                              required
+                              value={phone}
+                              onChange={(e) => setPhone(maskPhone(e.target.value))}
+                              className="site-contact-input"
+                              placeholder="(xx) 9xxxx-xxxx"
+                              maxLength={15}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  <div>
+                    <Label className="site-contact-label">Estado *</Label>
+                    <select
+                      required
+                      value={state}
+                      onChange={(e) => setState(e.target.value)}
+                      className="site-contact-select"
+                    >
+                      <option value="">Selecione...</option>
+                      {brazilStates.map((st) => (
+                        <option key={st} value={st}>
+                          {st}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <Label className="site-contact-label">N° do Processo (CNJ)</Label>
+                    <Input
+                      value={processNumber}
+                      onChange={(e) => setProcessNumber(maskCNJ(e.target.value))}
+                      className="site-contact-input site-contact-input--mono"
+                      placeholder="Opcional"
+                      maxLength={25}
+                    />
+                  </div>
+
+                  <div className="site-contact-grid__full">
+                    <Label className="site-contact-label">
+                      {clientType === "PF" ? "Descreva sua Situação *" : "Descreva a Necessidade da Empresa *"}
+                    </Label>
+                    <Textarea
+                      required
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      className="site-contact-textarea"
+                      placeholder={
+                        clientType === "PF"
+                          ? "Descreva brevemente o seu caso..."
+                          : "Descreva a situação jurídica, contrato ou litígio envolvendo a empresa..."
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="site-contact-privacy">
+                  <Checkbox
+                    id="privacy"
+                    checked={accepted}
+                    onCheckedChange={(v) => setAccepted(!!v)}
+                    className="site-contact-checkbox"
+                  />
+                  <label htmlFor="privacy" className="site-contact-privacy__label">
+                    Li e aceito as{" "}
+                    <Link to="/politica-de-privacidade" className="site-contact-privacy__link">
+                      Políticas de privacidade
+                    </Link>{" "}
+                    e{" "}
+                    <Link to="/termos-de-uso" className="site-contact-privacy__link">
+                      Termos de uso
+                    </Link>
+                  </label>
+                </div>
+
+                <Button type="submit" disabled={!accepted} className="site-contact-submit">
+                  <Send size={16} />
+                  Enviar caso
+                </Button>
+              </form>
+            )}
           </div>
         </div>
       </section>

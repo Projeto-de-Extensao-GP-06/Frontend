@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Navigate } from "react-router";
-import { ArrowLeft, Mail, Shield, AlertTriangle, Save, CheckCircle, RefreshCw } from "lucide-react";
+import { ArrowLeft, User, Shield, AlertTriangle, Save, CheckCircle, RefreshCw } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
 import { getInitials } from "../components/UserAvatar";
 import { mockUsers } from "../data/mockData";
@@ -8,12 +8,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import "../../styles/user-detail-page.css";
 
 export default function UserDetailPage() {
-  useEffect(() => {
-    document.title = `Usuário - ${user.name}`;
-  }, []);
-
   const { id } = useParams();
   const user = mockUsers.find((u) => u.id === id);
+
+  useEffect(() => {
+    if (user) {
+      document.title = `Usuário - ${user.name}`;
+    }
+  }, [user]);
 
   if (!user) return <Navigate to="/app/usuarios" replace />;
 
@@ -25,6 +27,7 @@ function UserDetail({ user }) {
   const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
   const [reactivateDialogOpen, setReactivateDialogOpen] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [name, setName] = useState(user.name || "");
   const [email, setEmail] = useState(user.email || "");
   const [status, setStatus] = useState(user.status);
   const [role, setRole] = useState(user.role);
@@ -37,7 +40,7 @@ function UserDetail({ user }) {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const initials = getInitials(user.name);
+  const initials = getInitials(name || user.name);
 
   return (
     <div className="user-detail-page">
@@ -61,7 +64,7 @@ function UserDetail({ user }) {
           </div>
           <div className="user-detail-copy">
             <h1 className="user-detail-name">
-              {user.name}
+              {name || user.name}
             </h1>
             <div className="user-detail-status-row">
               <StatusBadge status={status} />
@@ -79,9 +82,20 @@ function UserDetail({ user }) {
         {/* Informações e Gerenciamento */}
         <div className="user-detail-card">
           <h3 className="user-detail-card-title">
-            <Mail size={14} className="user-card__title-icon" />
+            <User size={14} className="user-card__title-icon" />
             Informações e Acesso
           </h3>
+          <div className="user-detail-field">
+            <label className="user-detail-label">Nome completo</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="user-detail-input"
+              placeholder="Nome do usuário"
+            />
+          </div>
+
           <div className="user-detail-field">
             <label className="user-detail-label">E-mail</label>
             <input
@@ -107,23 +121,21 @@ function UserDetail({ user }) {
             </select>
           </div>
 
-          {!isInactive && (
-            <button
-              onClick={() => setSaveDialogOpen(true)}
-              className={`user-detail-btn-save ${
-                saved ? "is-saved" : ""
-              }`}
-            >
-              {saved ? (
-                "✓ Salvo com sucesso"
-              ) : (
-                <>
-                  <Save size={15} />
-                  Salvar alterações
-                </>
-              )}
-            </button>
-          )}
+          <button
+            onClick={() => setSaveDialogOpen(true)}
+            className={`user-detail-btn-save ${
+              saved ? "is-saved" : ""
+            }`}
+          >
+            {saved ? (
+              "✓ Salvo com sucesso"
+            ) : (
+              <>
+                <Save size={15} />
+                Salvar alterações
+              </>
+            )}
+          </button>
         </div>
 
         {/* Desativar ou Reativar */}
@@ -160,7 +172,7 @@ function UserDetail({ user }) {
             </div>
           </DialogHeader>
           <p className="user-detail-dialog-text">
-            Deseja salvar as alterações no cadastro de <strong className="user-detail-dialog__highlight">{user.name}</strong>?
+            Deseja salvar as alterações no cadastro de <strong className="user-detail-dialog__highlight">{name || user.name}</strong>?
           </p>
           <DialogFooter className="user-detail-dialog-actions">
             <button
