@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { Plus, Search, Scale, Calendar, ChevronRight, FileText, Zap, TrendingUp, Clock, X, BarChart3 } from "lucide-react";
 import { StatusBadge, PriorityBadge, PhaseBadge } from "../components/StatusBadge";
 import { CalendarEventModal } from "../components/CalendarEventModal";
@@ -42,6 +42,17 @@ const PRIORITY_WEIGHT = {
   baixa: 1
 };
 
+const HEARING_OPTS = [{
+  value: "Todos",
+  label: "Todos"
+}, {
+  value: "com",
+  label: "Com audiência"
+}, {
+  value: "sem",
+  label: "Sem audiência"
+}];
+
 const parseDateToTimestamp = (dateStr) => {
   if (!dateStr || dateStr === "—") return null;
   const [day, month, year] = dateStr.split("/");
@@ -53,11 +64,26 @@ export default function HomePage() {
     document.title = "Início - Processos";
   }, []);
 
+  const [searchParams] = useSearchParams();
   const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState("Todos");
+  const [filterStatus, setFilterStatus] = useState(() => {
+    const value = searchParams.get("status");
+    return STATUS_OPTS.some(o => o.value === value) ? value : "Todos";
+  });
   const [filterTribunal, setFilterTribunal] = useState("Todos");
-  const [filterPhase, setFilterPhase] = useState("Todas");
-  const [filterPriority, setFilterPriority] = useState("Todas");
+  const [filterPhase, setFilterPhase] = useState(() => {
+    const value = searchParams.get("fase");
+    return PHASE_OPTS.includes(value) ? value : "Todas";
+  });
+  const [filterPriority, setFilterPriority] = useState(() => {
+    const value = searchParams.get("prioridade");
+    return PRIORITY_OPTS.some(o => o.value === value) ? value : "Todas";
+  });
+  // Vindo do drill-down do Dashboard (KPI "Com audiência") ou selecionado direto no filtro abaixo.
+  const [filterHearing, setFilterHearing] = useState(() => {
+    const value = searchParams.get("audiencia");
+    return HEARING_OPTS.some(o => o.value === value) ? value : "Todos";
+  });
   const [sortBy, setSortBy] = useState("cliente_asc");
   const [calendarModalOpen, setCalendarModalOpen] = useState(false);
   const navigate = useNavigate();
@@ -73,7 +99,8 @@ export default function HomePage() {
     const matchT = filterTribunal === "Todos" || p.tribunal === filterTribunal;
     const matchP = filterPhase === "Todas" || p.phase === filterPhase;
     const matchPriority = filterPriority === "Todas" || p.priority === filterPriority;
-    return matchQ && matchS && matchT && matchP && matchPriority;
+    const matchHearing = filterHearing === "Todos" || (filterHearing === "com" ? p.hearingDate !== "—" : p.hearingDate === "—");
+    return matchQ && matchS && matchT && matchP && matchPriority && matchHearing;
   });
 
   const sorted = [...filtered].sort((a, b) => {
@@ -112,13 +139,14 @@ export default function HomePage() {
     return 0;
   });
 
-  const hasActiveFilters = search !== "" || filterStatus !== "Todos" || filterTribunal !== "Todos" || filterPhase !== "Todas" || filterPriority !== "Todas";
+  const hasActiveFilters = search !== "" || filterStatus !== "Todos" || filterTribunal !== "Todos" || filterPhase !== "Todas" || filterPriority !== "Todas" || filterHearing !== "Todos";
   const clearFilters = () => {
     setSearch("");
     setFilterStatus("Todos");
     setFilterTribunal("Todos");
     setFilterPhase("Todas");
     setFilterPriority("Todas");
+    setFilterHearing("Todos");
     setPage(1);
   };
   const PAGE_SIZE = 6;
@@ -199,6 +227,12 @@ export default function HomePage() {
 
             <FilterSelect prefix="home" label="Prioridade" value={filterPriority} onChange={setFilterPriority}>
               {PRIORITY_OPTS.map(o => <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>)}
+            </FilterSelect>
+
+            <FilterSelect prefix="home" label="Audiência" value={filterHearing} onChange={setFilterHearing}>
+              {HEARING_OPTS.map(o => <option key={o.value} value={o.value}>
                   {o.label}
                 </option>)}
             </FilterSelect>

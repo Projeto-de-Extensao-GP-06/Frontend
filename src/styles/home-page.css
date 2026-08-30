@@ -6,6 +6,8 @@
 .home-header {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   justify-content: space-between;
   margin-bottom: 1.75rem;
 }
@@ -426,7 +428,7 @@
 .home-grid {
   display: grid;
   gap: 1rem;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .process-card {

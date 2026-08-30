@@ -592,8 +592,14 @@
 
 .site-contact-type-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.75rem;
+}
+
+@media (min-width: 48rem) {
+  .site-contact-type-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .site-contact-type-btn {
@@ -630,6 +636,7 @@
   font-weight: 700;
   background: #e2e8f0;
   color: #0f2357;
+  flex-shrink: 0;
 }
 
 .site-contact-type-btn--active .site-contact-type-badge {
@@ -637,17 +644,23 @@
   color: #ffffff;
 }
 
+.site-contact-type-copy {
+  min-width: 0;
+}
+
 .site-contact-type-title {
   margin: 0;
   font-size: 0.9375rem;
   font-weight: 600;
   color: #1a2237;
+  overflow-wrap: break-word;
 }
 
 .site-contact-type-desc {
   margin: 0;
   font-size: 0.75rem;
   color: #64748b;
+  overflow-wrap: break-word;
 }
 
 /* PJ Primary Contact Section */
