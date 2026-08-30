@@ -257,7 +257,7 @@ export default function PublicSitePage() {
                       onClick={() => setClientType("PF")}
                     >
                       <div className="site-contact-type-badge">PF</div>
-                      <div>
+                      <div className="site-contact-type-copy">
                         <p className="site-contact-type-title">Pessoa Física</p>
                         <p className="site-contact-type-desc">Atendimento individual</p>
                       </div>
@@ -271,7 +271,7 @@ export default function PublicSitePage() {
                       onClick={() => setClientType("PJ")}
                     >
                       <div className="site-contact-type-badge">PJ</div>
-                      <div>
+                      <div className="site-contact-type-copy">
                         <p className="site-contact-type-title">Pessoa Jurídica</p>
                         <p className="site-contact-type-desc">Empresas e negócios</p>
                       </div>
