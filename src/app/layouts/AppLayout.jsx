@@ -51,7 +51,8 @@ export default function AppLayout() {
     navigate(path);
     setDrawerOpen(false);
   };
-  const currentLabel = navItems.find(i => location.pathname.startsWith(i.path))?.label ?? "SGPJ";
+  const isAssistant = location.pathname.startsWith("/app/assistente");
+
   return <div className="app-shell">
 
       {/* ── Fixed Top Header ── */}
@@ -134,7 +135,7 @@ export default function AppLayout() {
       </header>
 
       {/* ── Scrollable Content ── */}
-      <main className="app-main">
+      <main className={`app-main ${isAssistant ? "app-main--assistant" : ""}`}>
         <Outlet />
       </main>
 
