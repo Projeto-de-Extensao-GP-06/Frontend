@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { ChevronRight, Mail, Calendar, Inbox, Search, X } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
 import { FilterSelect } from "../components/FilterSelect";
@@ -22,7 +22,11 @@ export default function RequestsPage() {
     document.title = "Solicitações";
   }, []);
 
-  const [activeTab, setActiveTab] = useState("todas");
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(() => {
+    const tab = searchParams.get("tab");
+    return TABS.some(t => t.id === tab) ? tab : "todas";
+  });
   const [search, setSearch] = useState("");
   const [filterState, setFilterState] = useState("Todos");
   const [sortBy, setSortBy] = useState("recente");

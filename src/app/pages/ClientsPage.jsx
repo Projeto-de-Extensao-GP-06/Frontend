@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { Plus, Search, Users, X } from "lucide-react";
 import { ClientCard } from "../components/ClientCard";
 import { FilterSelect } from "../components/FilterSelect";
@@ -24,9 +24,13 @@ export default function ClientsPage() {
     document.title = "Clientes";
   }, []);
 
+  const [searchParams] = useSearchParams();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("todos");
-  const [statusFilter, setStatusFilter] = useState("todos");
+  const [statusFilter, setStatusFilter] = useState(() => {
+    const value = searchParams.get("status");
+    return STATUS_OPTS.some(o => o.value === value) ? value : "todos";
+  });
   const [sortBy, setSortBy] = useState("nome_asc");
   const [page, setPage] = useState(1);
   const navigate = useNavigate();

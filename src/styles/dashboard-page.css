@@ -40,6 +40,18 @@
   box-shadow: 0 1px 2px rgba(17, 24, 39, 0.06);
 }
 
+.kpi-card--clickable {
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.kpi-card--clickable:hover,
+.kpi-card--clickable:focus-visible {
+  border-color: rgba(201, 169, 110, 0.4);
+  box-shadow: 0 4px 12px rgba(15, 35, 87, 0.1);
+  outline: none;
+}
+
 .kpi-card-badge {
   display: inline-flex;
   align-items: center;
@@ -243,11 +255,13 @@
 }
 
 .dashboard-flip-card {
+  height: 100%;
   perspective: 1200px;
 }
 
 .dashboard-flip-card-inner {
   display: grid;
+  height: calc(100% - 1rem);
   transform-style: preserve-3d;
   transition: transform 0.5s ease;
   margin-bottom: 1rem;
@@ -259,6 +273,7 @@
 
 .dashboard-flip-card-face {
   grid-area: 1 / 1;
+  height: 100%;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
@@ -325,6 +340,20 @@
   gap: 0.75rem;
   padding: 0.625rem 0;
   border-bottom: 1px solid #f0f4fa;
+}
+
+.dashboard-list-item--clickable {
+  cursor: pointer;
+  margin: 0 -0.5rem;
+  padding-inline: 0.5rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.15s ease;
+}
+
+.dashboard-list-item--clickable:hover,
+.dashboard-list-item--clickable:focus-visible {
+  background: #f4f6fa;
+  outline: none;
 }
 
 .dashboard-list-item:last-child {
@@ -430,7 +459,7 @@
 
 .dashboard-fab {
   position: fixed;
-  right: 1rem;
+  left: 1rem;
   bottom: 1.5rem;
   z-index: 40;
   display: inline-flex;
@@ -504,6 +533,10 @@
   .dashboard-page {
     padding-right: 1.5rem;
     padding-left: 1.5rem;
+  }
+
+  .dashboard-kpi-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .dashboard-charts-grid--split {
