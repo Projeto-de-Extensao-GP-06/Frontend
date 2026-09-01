@@ -48,7 +48,7 @@
   outline: none;
   background: #f8fafc;
   color: #374151;
-  font-size: 0.875rem;
+  font-size: 1rem;
   transition: all 0.2s ease;
 }
 
@@ -156,7 +156,7 @@
   border-radius: 0;
   background: transparent;
   color: #0f2357;
-  font-size: 0.75rem;
+  font-size: 1rem;
   font-weight: 600;
   outline: none;
   cursor: pointer;
@@ -192,7 +192,7 @@
   border-radius: 0;
   background: transparent;
   color: #0f2357;
-  font-size: 0.75rem;
+  font-size: 1rem;
   font-weight: 600;
   outline: none;
   cursor: pointer;

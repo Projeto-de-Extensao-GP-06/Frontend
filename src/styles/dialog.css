@@ -12,12 +12,16 @@
 
 .dialog-content {
   position: fixed;
-  top: 50%;
-  left: 50%;
+  inset: 0;
   z-index: 50;
   display: grid;
+  align-content: center;
   width: calc(100% - 2rem);
   max-width: 32rem;
+  height: fit-content;
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+  margin: auto;
   gap: 1rem;
   padding: 1.5rem;
   border: 1px solid #e5e7eb;
@@ -26,7 +30,6 @@
   color: #111827;
   font-family: "DM Sans", sans-serif;
   box-shadow: 0 20px 50px rgba(15, 35, 87, 0.16);
-  transform: translate(-50%, -50%);
   animation: dialog-pop-in 0.2s ease-out;
 }
 
