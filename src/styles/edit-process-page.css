@@ -115,7 +115,7 @@
 .edit-process-input[type="time"] {
   color-scheme: light;
   cursor: text;
-  font-size: 0.875rem;
+  font-size: 1rem;
   padding-inline: 0.75rem;
 }
 
@@ -151,7 +151,7 @@
 
 .edit-process-datetime-group {
   display: grid;
-  grid-template-columns: 1.35fr 1fr;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
   gap: 0.5rem;
 }
 
