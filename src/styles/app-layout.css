@@ -248,6 +248,17 @@
   padding: 64px 0 2rem;
 }
 
+.app-main--assistant {
+  padding-bottom: 0;
+  height: calc(100dvh - 64px);
+  height: calc(100vh - 64px);
+  max-height: calc(100dvh - 64px);
+  max-height: calc(100vh - 64px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 .app-drawer-layer {
   position: fixed;
   inset: 0;

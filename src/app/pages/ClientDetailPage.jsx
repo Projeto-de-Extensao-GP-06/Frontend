@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { User, Building2, Mail, Phone, MapPin, Briefcase, ChevronRight, Plus, Pencil, Trash2, ArrowLeft, Calendar, FileText, Scale } from "lucide-react";
+import { User, Building2, Mail, Phone, MapPin, Briefcase, ChevronRight, Plus, Pencil, Trash2, ArrowLeft, Calendar, FileText, Scale, Search, X } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { StatusBadge, PriorityBadge, PhaseBadge } from "../components/StatusBadge";
 import { InfoRow } from "../components/InfoRow";
+import { PaginationBar } from "../components/PaginationBar";
 import { maskPhone } from "../utils/masks";
 import { mockClients, mockProcesses } from "../data/mockData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
@@ -31,6 +32,10 @@ export default function ClientDetailPage() {
 
   const client = mockClients.find(c => c.id === id);
   const [contacts, setContacts] = useState(() => (client?.contacts ? [...client.contacts] : []));
+  const [contactSearchInput, setContactSearchInput] = useState("");
+  const [appliedContactSearch, setAppliedContactSearch] = useState("");
+  const [contactPage, setContactPage] = useState(1);
+  const CONTACTS_PAGE_SIZE = 3;
 
   useEffect(() => {
     if (client) {
@@ -50,6 +55,36 @@ export default function ClientDetailPage() {
   const pf = client;
   const pj = client;
   const clientProcesses = mockProcesses.filter(p => p.clientId === id);
+
+  const handleSearchSubmit = (e) => {
+    e?.preventDefault();
+    setAppliedContactSearch(contactSearchInput);
+    setContactPage(1);
+  };
+
+  const handleClearSearch = () => {
+    setContactSearchInput("");
+    setAppliedContactSearch("");
+    setContactPage(1);
+  };
+
+  const filteredContacts = contacts.filter(contact => {
+    if (!appliedContactSearch.trim()) return true;
+    const term = appliedContactSearch.toLowerCase().trim();
+    return (
+      contact.name?.toLowerCase().includes(term) ||
+      contact.email?.toLowerCase().includes(term) ||
+      contact.phone?.toLowerCase().includes(term) ||
+      contact.profession?.toLowerCase().includes(term)
+    );
+  });
+
+  const totalContactPages = Math.max(1, Math.ceil(filteredContacts.length / CONTACTS_PAGE_SIZE));
+  const safeContactPage = Math.min(contactPage, totalContactPages);
+  const paginatedContacts = filteredContacts.slice(
+    (safeContactPage - 1) * CONTACTS_PAGE_SIZE,
+    safeContactPage * CONTACTS_PAGE_SIZE
+  );
 
   const isFormValid =
     Boolean(newContact.name.trim()) &&
@@ -148,8 +183,55 @@ export default function ClientDetailPage() {
           </button>
         </div>
 
-        {contacts.length === 0 ? <p className="client-detail-empty-inline">Nenhum contato adicionado</p> : <div className="client-detail-contact-list">
-            {contacts.map((contact, i) => <div key={contact.id} className={`client-detail-contact-item ${i > 0 ? "client-detail-contact-item--separated" : ""}`}>
+        {/* Contact Search Form */}
+        {(contacts.length > 0 || appliedContactSearch || contactSearchInput) && (
+          <form onSubmit={handleSearchSubmit} className="client-detail-search-row">
+            <div className="client-detail-search-wrap">
+              <Search size={14} className="client-detail-search-icon" />
+              <input
+                type="text"
+                placeholder="Buscar contato por nome, e-mail, telefone..."
+                value={contactSearchInput}
+                onChange={(e) => {
+                  setContactSearchInput(e.target.value);
+                  if (e.target.value === "") {
+                    setAppliedContactSearch("");
+                    setContactPage(1);
+                  }
+                }}
+                className="client-detail-search-input"
+              />
+              {contactSearchInput && (
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  className="client-detail-search-clear"
+                  title="Limpar busca"
+                  aria-label="Limpar busca"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+            <button type="submit" className="client-detail-search-btn">
+              Buscar
+            </button>
+          </form>
+        )}
+
+        {contacts.length === 0 ? (
+          <p className="client-detail-empty-inline">Nenhum contato adicionado</p>
+        ) : filteredContacts.length === 0 ? (
+          <p className="client-detail-empty-inline">
+            Nenhum contato encontrado para &ldquo;{appliedContactSearch}&rdquo;
+          </p>
+        ) : (
+          <div className="client-detail-contact-list">
+            {paginatedContacts.map((contact, i) => (
+              <div
+                key={contact.id}
+                className={`client-detail-contact-item ${i > 0 ? "client-detail-contact-item--separated" : ""}`}
+              >
                 {!isPF && contact.isPrimary && <span className="client-detail-primary-tag">Principal</span>}
                 <div className="client-detail-info-list client-detail-info-list--compact">
                   <InfoRow label="Nome" value={contact.name || "—"} />
@@ -157,8 +239,21 @@ export default function ClientDetailPage() {
                   {contact.phone && <InfoRow label="Telefone" value={contact.phone} icon={<Phone size={13} />} />}
                   {contact.profession && <InfoRow label="Profissão" value={contact.profession} icon={<Briefcase size={13} />} />}
                 </div>
-              </div>)}
-          </div>}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalContactPages > 1 && (
+          <div className="client-detail-pagination-wrap">
+            <PaginationBar
+              page={safeContactPage}
+              total={totalContactPages}
+              onPage={setContactPage}
+            />
+          </div>
+        )}
       </div>
 
       {/* Processes */}

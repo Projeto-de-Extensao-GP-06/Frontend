@@ -1,33 +1,50 @@
 import { useState, useRef, useEffect } from "react";
-import { Scale, Sparkles, Send, FileText, ChevronDown, ChevronRight, Bot } from "lucide-react";
+import { Scale, Sparkles, Send, RefreshCw, Trash2, Search, Bot, FileText } from "lucide-react";
 import { mockProcesses } from "../data/mockData";
+import { ProcessCard } from "../components/ProcessCard";
+import { SelectProcessModal } from "../components/SelectProcessModal";
 import "../../styles/ai-assistant-page.css";
-const SUGGESTIONS = ["Quais são os prazos mais urgentes?", "Resumo dos processos em Citação", "Ações importantes para hoje", "Processos com audiência esta semana"];
-const now = () => new Date().toLocaleTimeString("pt-BR", {
-  hour: "2-digit",
-  minute: "2-digit"
-});
+import "../../styles/select-process-modal.css";
+
+const SUGGESTIONS = [
+  "Quais são os prazos mais urgentes?",
+  "Resumo dos processos em Citação",
+  "Ações importantes para hoje",
+  "Processos com audiência esta semana",
+];
+
+const now = () =>
+  new Date().toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
 export default function AIAssistantPage() {
   useEffect(() => {
     document.title = "Assistente de IA";
   }, []);
 
-  const [messages, setMessages] = useState([{
-    id: "0",
-    role: "assistant",
-    content: "Olá! Sou o **Assistente Jurídico do SGPJ**. Selecione um processo e me faça uma pergunta — analisarei os dados e trarei as ações mais importantes.",
-    time: now()
-  }]);
+  const [messages, setMessages] = useState([
+    {
+      id: "0",
+      role: "assistant",
+      content:
+        "Olá! Sou o **Assistente Jurídico do SGPJ**. Selecione um processo e me faça uma pergunta — analisarei os dados e trarei as ações mais importantes.",
+      time: now(),
+    },
+  ]);
   const [input, setInput] = useState("");
   const [selectedProcess, setProc] = useState(null);
-  const [pickerOpen, setPickerOpen] = useState(false);
+  const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
   const [typing, setTyping] = useState(false);
   const bottomRef = useRef(null);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({
-      behavior: "smooth"
+      behavior: "smooth",
     });
   }, [messages, typing]);
+
   const send = () => {
     const text = input.trim();
     if (!text) return;
@@ -35,27 +52,35 @@ export default function AIAssistantPage() {
       id: Date.now().toString(),
       role: "user",
       content: text,
-      time: now()
+      time: now(),
     };
-    setMessages(p => [...p, userMsg]);
+    setMessages((p) => [...p, userMsg]);
     setInput("");
     setTyping(true);
     setTimeout(() => {
-      const proc = selectedProcess ? mockProcesses.find(p => p.id === selectedProcess) : null;
-      const reply = proc ? `Com base no processo **${proc.cnj}** (${proc.clientName}):\n\n• Verificar prazo para audiência em **${proc.hearingDate}**\n• Conferir documentos pendentes de envio\n• Notificar o cliente sobre andamento da fase ${proc.phase}\n• Preparar contestação para a próxima etapa\n• Confirmar disponibilidade de testemunhas` : "Por favor, selecione um processo acima para que eu possa trazer análises específicas e personalizadas.";
+      const proc = selectedProcess
+        ? mockProcesses.find((p) => p.id === selectedProcess)
+        : null;
+      const reply = proc
+        ? `Com base no processo **${proc.cnj}** (${proc.clientName}):\n\n• Verificar prazo para audiência em **${proc.hearingDate}**\n• Conferir documentos pendentes de envio\n• Notificar o cliente sobre andamento da fase ${proc.phase}\n• Preparar contestação para a próxima etapa\n• Confirmar disponibilidade de testemunhas`
+        : "Por favor, selecione um processo acima para que eu possa trazer análises específicas e personalizadas.";
       const assistantMsg = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
         content: reply,
-        time: now()
+        time: now(),
       };
       setTyping(false);
-      setMessages(p => [...p, assistantMsg]);
+      setMessages((p) => [...p, assistantMsg]);
     }, 1600);
   };
-  const procData = selectedProcess ? mockProcesses.find(p => p.id === selectedProcess) : null;
-  return <div className="ai-page">
 
+  const procData = selectedProcess
+    ? mockProcesses.find((p) => p.id === selectedProcess)
+    : null;
+
+  return (
+    <div className="ai-page">
       <div className="ai-header">
         <p className="ai-header__kicker">Assistente de IA</p>
         <div className="ai-header__identity">
@@ -69,25 +94,77 @@ export default function AIAssistantPage() {
         </div>
       </div>
 
-      <div className="ai-picker">
-        <button onClick={() => setPickerOpen(p => !p)} className={`ai-picker__trigger ${procData ? "ai-picker__trigger--active" : ""}`}>
-          <div className={`ai-picker__file-icon-wrap ${procData ? "ai-picker__file-icon-wrap--active" : ""}`}>
-            <FileText size={14} className={procData ? "ai-picker__file-icon--active" : "ai-picker__file-icon"} />
+      <div className="ai-picker-section">
+        {procData ? (
+          <div className="ai-selected-process-bar">
+            <div className="ai-selected-process-info">
+              <div className="ai-selected-process-icon-wrap">
+                <FileText size={16} />
+              </div>
+              <div className="ai-selected-process-text">
+                <div className="ai-selected-process-meta">
+                  <span className="ai-selected-process-name" title={procData.clientName}>
+                    {procData.clientName}
+                  </span>
+                  <span className="ai-selected-process-cnj">{procData.cnj}</span>
+                  <span className="ai-selected-process-badge">{procData.phase}</span>
+                  {procData.tribunal && (
+                    <span className="ai-selected-process-badge ai-selected-process-badge--tribunal">
+                      {procData.tribunal}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="ai-selected-process-actions">
+              <button
+                type="button"
+                onClick={() => setIsSelectModalOpen(true)}
+                className="ai-selected-process-btn"
+                title="Trocar processo"
+              >
+                <RefreshCw size={12} />
+                <span>Trocar</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setProc(null)}
+                className="ai-selected-process-btn ai-selected-process-btn--remove"
+                title="Remover processo (pergunta geral)"
+              >
+                <Trash2 size={12} />
+                <span>Remover</span>
+              </button>
+            </div>
           </div>
-          <span className="ai-picker__label">
-            {procData ? `${procData.clientName}  ·  ${procData.phase}` : "+ Selecionar processo"}
-          </span>
-          <ChevronDown size={14} className={`ai-picker__chevron ${pickerOpen ? "ai-picker__chevron--open" : ""}`} />
-        </button>
-        {pickerOpen && <div className="ai-picker__dropdown">
-            <button onClick={() => { setProc(null); setPickerOpen(false); }} className="ai-picker__option ai-picker__option--clear">
-              Sem processo — pergunta geral
-            </button>
-            {mockProcesses.map(p => <button key={p.id} onClick={() => { setProc(p.id); setPickerOpen(false); }} className={`ai-picker__option ${selectedProcess === p.id ? "ai-picker__option--selected" : ""}`}>
-                <p className="ai-picker__option-cnj">{p.cnj}</p>
-                <p className="ai-picker__option-name">{p.clientName}</p>
-              </button>)}
-          </div>}
+        ) : (
+          <button
+            type="button"
+            onClick={() => setIsSelectModalOpen(true)}
+            className="ai-picker-trigger-compact"
+          >
+            <div className="ai-picker-trigger-compact-left">
+              <div className="ai-picker-trigger-compact-icon-wrap">
+                <Scale size={14} />
+              </div>
+              <span className="ai-picker-trigger-compact-label">
+                + Vincular processo para análise personalizada
+              </span>
+            </div>
+            <div className="ai-picker-trigger-compact-btn">
+              <Search size={13} />
+              <span>Buscar</span>
+            </div>
+          </button>
+        )}
+
+        <SelectProcessModal
+          open={isSelectModalOpen}
+          onOpenChange={setIsSelectModalOpen}
+          selectedProcessId={selectedProcess}
+          onSelect={(proc) => setProc(proc.id)}
+        />
       </div>
 
       <div className="ai-messages">
@@ -127,5 +204,6 @@ export default function AIAssistantPage() {
           <Send size={16} className="ai-send-btn__icon" />
         </button>
       </div>
-    </div>;
+    </div>
+  );
 }
