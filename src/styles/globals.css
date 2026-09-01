@@ -12,6 +12,15 @@ input, textarea, select, button {
   font-family: inherit;
 }
 
+/* Vários campos do app usam menos de 16px. No iOS Safari isso força um zoom
+   automático ao focar o campo, que às vezes não desfaz sozinho depois — trava
+   o layout "zoomado". Forçamos 16px em telas pequenas para nunca disparar isso. */
+@media (max-width: 640px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
 /* ── Shared pagination ── */
 
 .pagination {

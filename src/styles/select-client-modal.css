@@ -117,13 +117,13 @@
 /* ── Dialog Layout & Responsive Behavior ── */
 .select-client-dialog-content {
   position: fixed !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
+  inset: 0 !important;
+  margin: auto !important;
   max-width: 52rem !important;
   width: min(94vw, 52rem) !important;
   max-height: 90vh !important;
-  height: auto !important;
+  max-height: 90dvh !important;
+  height: fit-content !important;
   display: flex !important;
   flex-direction: column !important;
   padding: 1.25rem !important;
@@ -139,6 +139,7 @@
     width: calc(100vw - 1rem) !important;
     padding: 1rem !important;
     max-height: 94vh !important;
+    max-height: 94dvh !important;
   }
 }
 
