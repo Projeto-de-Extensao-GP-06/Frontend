@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router";
-import { Menu, X, Instagram, MessageCircle, Linkedin, Phone, Mail, ChevronRight, CheckCircle, Send, FileText, Shield, Home, Briefcase, Users, User, Building2, Check } from "lucide-react";
+import { Menu, X, Instagram, Linkedin, Phone, Mail, ChevronRight, CheckCircle, Send, Shield, Briefcase, Users, User, Building2, Check, HeartHandshake, Landmark } from "lucide-react";
+import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
@@ -13,21 +14,21 @@ import siteLogoImage from "../../imports/Captura_de_tela_2026-05-29_235111-1.png
 import "../../styles/public-site-page.css";
 const areas = [{
   icon: Briefcase,
-  title: "Direito Trabalhista",
-  desc: "Defesa de direitos nas relações de trabalho, demissões e verbas rescisórias."
-}, {
-  icon: Home,
-  title: "Direito Imobiliário",
-  desc: "Contratos, locações, compra e venda e regularização de imóveis."
+  title: "Direito Empresarial",
+  desc: "Assessoria jurídica estratégica para empresas, com atuação voltada à prevenção e solução de conflitos, segurança nas relações comerciais e redução de riscos.",
+  services: ["Negociação e elaboração de acordos", "Elaboração e revisão de contratos", "Recuperação de crédito", "Cobrança judicial e extrajudicial", "Análise e gestão de riscos jurídicos", "Assessoria em relações comerciais"]
 }, {
   icon: Shield,
   title: "Direito Civil",
-  desc: "Contratos, indenizações, família e sucessões."
+  desc: "Atuação na prevenção e resolução de conflitos envolvendo relações patrimoniais, contratuais e de consumo, buscando soluções jurídicas eficientes e adequadas a cada caso.",
+  services: ["Responsabilidade civil", "Direito do consumidor", "Cobrança judicial e extrajudicial", "Contratos e obrigações", "Questões relacionadas a locação", "Indenizações e reparação de danos"]
 }, {
-  icon: FileText,
-  title: "Direito Empresarial",
-  desc: "Assessoria jurídica para empresas, contratos e disputas societárias."
+  icon: Landmark,
+  title: "Direito de Família e Sucessões",
+  desc: "Atuação jurídica individualizada em questões familiares e sucessórias, com orientação técnica em momentos que exigem segurança jurídica e cuidado na condução do processo.",
+  services: ["Inventário judicial e extrajudicial", "Partilha de bens", "Alimentos", "Revisão de alimentos", "Guarda e regularização de guarda", "Questões relacionadas à sucessão e patrimônio"]
 }];
+const whatsappUrl = "https://wa.me/5511987664030";
 const steps = [{
   num: "01",
   title: "Envie seu caso",
@@ -165,7 +166,7 @@ export default function PublicSitePage() {
           </div>
           <h1 className="site-hero__title">Thauany<br /><span className="site-hero__title-accent">Bezerra</span></h1>
           <p className="site-hero__subtitle">Advocacia</p>
-          <p className="site-hero__desc">Atendimento jurídico com segurança e confidencialidade. Seu direito, nossa prioridade.</p>
+          <p className="site-hero__desc">Orientação jurídica segura para decisões importantes da sua vida e do seu negócio.</p>
           <div className="site-hero__actions">
             <Button onClick={() => scrollTo("contato")} className="site-hero__cta">Entrar em contato</Button>
             <button onClick={() => scrollTo("como-funciona")} className="site-hero__link">Como funciona?</button>
@@ -184,8 +185,11 @@ export default function PublicSitePage() {
             const Icon = area.icon;
             return <div key={i} className="site-area-card">
                   <div className="site-area-card__icon-wrap"><Icon size={18} className="site-area-card__icon" /></div>
-                  <h3 className="site-area-card__title">{area.title}</h3>
-                  <p className="site-area-card__desc">{area.desc}</p>
+                   <h3 className="site-area-card__title">{area.title}</h3>
+                   <p className="site-area-card__desc">{area.desc}</p>
+                  <ul className="site-area-card__services">
+                    {area.services.map(service => <li key={service}>{service}</li>)}
+                  </ul>
                 </div>;
           })}
           </div>
@@ -218,9 +222,23 @@ export default function PublicSitePage() {
           <p className="site-section__kicker">Quem sou eu</p>
           <h2 className="site-section__title site-section__title--light">Sobre</h2>
           <div className="site-about__avatar"><Users size={36} className="site-about__avatar-icon" /></div>
-          <p className="site-about__text">Advogada com sólida formação e comprometimento com cada cliente. Atuo com foco em resultados concretos, sempre pautada pela ética, sigilo e transparência no atendimento.</p>
-          <p className="site-about__text site-about__text--muted">Minha missão é garantir que cada pessoa tenha acesso a uma defesa jurídica de qualidade, independente da complexidade do caso.</p>
-          <div className="site-about__oab"><CheckCircle size={16} className="site-about__oab-icon" /><span className="site-about__oab-text">OAB/SP 000.000</span></div>
+          <p className="site-about__text">Sou advogada, especializada em Direito Contratual pela PUC Campinas, com sólida experiência na área de recuperação de crédito e ativos.</p>
+          <p className="site-about__text site-about__text--muted">Minha atuação é pautada pela busca de soluções jurídicas estratégicas, personalizadas e eficientes, sempre com foco nas necessidades e objetivos de cada cliente.</p>
+          <p className="site-about__text site-about__text--muted">Acredito em uma advocacia baseada em ética, transparência, responsabilidade e sigilo, construída por meio de relações de confiança e de um atendimento próximo e humanizado.</p>
+        </div>
+      </section>
+
+      <section className="site-section site-section--white">
+        <div className="site-section__inner">
+          <div className="site-section__head">
+            <p className="site-section__kicker">Compromisso</p>
+            <h2 className="site-section__title">Missão, Visão e Valores</h2>
+          </div>
+          <div className="site-principles">
+            <article className="site-principle-card"><HeartHandshake size={22} className="site-principle-card__icon" /><h3>Missão</h3><p>Oferecer soluções jurídicas estratégicas e personalizadas, unindo conhecimento técnico, ética e atendimento próximo para proporcionar segurança e resultados aos meus clientes.</p></article>
+            <article className="site-principle-card"><Building2 size={22} className="site-principle-card__icon" /><h3>Visão</h3><p>Ser referência em uma advocacia estratégica, reconhecida pela excelência técnica, confiança e qualidade na prestação dos serviços jurídicos.</p></article>
+            <article className="site-principle-card"><Shield size={22} className="site-principle-card__icon" /><h3>Valores</h3><p><strong>Ética:</strong> atuar com integridade, responsabilidade e respeito.</p><p><strong>Transparência:</strong> manter uma comunicação clara e objetiva em todas as etapas da atuação.</p><p><strong>Confiança:</strong> construir relações profissionais pautadas pelo respeito e pela credibilidade.</p></article>
+          </div>
         </div>
       </section>
 
@@ -485,13 +503,13 @@ export default function PublicSitePage() {
         <div className="site-footer__inner">
           <div className="site-footer__logo"><ImageWithFallback src={siteLogoImage} alt="Thauany Bezerra Advocacia" className="site-logo" /></div>
           <div className="site-footer__contacts">
-            <div className="site-footer__contact"><Phone size={16} className="site-footer__contact-icon" /><span className="site-footer__contact-text">(11) 91234-5678</span></div>
-            <div className="site-footer__contact"><Mail size={16} className="site-footer__contact-icon" /><span className="site-footer__contact-text">thauany@thauanybezerra.adv.br</span></div>
+            <a href={whatsappUrl} target="_blank" rel="noreferrer" className="site-footer__contact"><Phone size={16} className="site-footer__contact-icon" /><span className="site-footer__contact-text">(11) 98766-4030</span></a>
+            <a href="mailto:tthauany.bezerra@gmail.com" className="site-footer__contact"><Mail size={16} className="site-footer__contact-icon" /><span className="site-footer__contact-text">tthauany.bezerra@gmail.com</span></a>
           </div>
           <div className="site-footer__social">
-            <a href="#" className="site-footer__social-link"><Instagram size={18} className="site-footer__social-icon" /></a>
-            <a href="#" className="site-footer__social-link"><MessageCircle size={18} className="site-footer__social-icon" /></a>
-            <a href="#" className="site-footer__social-link"><Linkedin size={18} className="site-footer__social-icon" /></a>
+            <a href="https://www.instagram.com/thauanybezerra.adv/" target="_blank" rel="noreferrer" aria-label="Instagram" className="site-footer__social-link"><Instagram size={18} className="site-footer__social-icon" /></a>
+            <a href={whatsappUrl} target="_blank" rel="noreferrer" aria-label="WhatsApp" className="site-footer__social-link"><WhatsAppIcon className="site-footer__social-icon" /></a>
+            <a href="https://www.linkedin.com/in/thauany-santos-8521911a1/" target="_blank" rel="noreferrer" aria-label="LinkedIn" className="site-footer__social-link"><Linkedin size={18} className="site-footer__social-icon" /></a>
           </div>
           <div className="site-footer__legal">
             <div className="site-footer__legal-links">
@@ -502,6 +520,10 @@ export default function PublicSitePage() {
           </div>
         </div>
       </footer>
+
+      <a href={whatsappUrl} target="_blank" rel="noreferrer" className="site-whatsapp-float" aria-label="Conversar pelo WhatsApp" title="Conversar pelo WhatsApp">
+        <WhatsAppIcon />
+      </a>
 
     </div>;
 }

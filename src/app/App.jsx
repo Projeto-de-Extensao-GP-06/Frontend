@@ -17,7 +17,8 @@ export default function App() {
       if (!button) return false;
       button.style.setProperty("top", "auto", "important");
       button.style.setProperty("bottom", "20px", "important");
-      button.style.setProperty("right", "16px", "important");
+      button.style.setProperty("right", "auto", "important");
+      button.style.setProperty("left", "16px", "important");
       return true;
     };
 
