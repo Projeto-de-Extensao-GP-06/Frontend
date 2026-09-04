@@ -118,7 +118,7 @@ export default function PublicSitePage() {
           <div className="site-header__actions">
             {/* Desktop CTA */}
             <Button
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/login")}
               className="site-header__colaborador-btn"
             >
               Área do Colaborador
@@ -148,7 +148,7 @@ export default function PublicSitePage() {
                   </button>;
           })}
               <div className="site-drawer__cta">
-                <Button onClick={() => { navigate("/"); setMenuOpen(false); }} className="site-drawer__cta-btn">
+                <Button onClick={() => { navigate("/login"); setMenuOpen(false); }} className="site-drawer__cta-btn">
                   Área do Colaborador
                 </Button>
               </div>

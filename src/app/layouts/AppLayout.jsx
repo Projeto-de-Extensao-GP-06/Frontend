@@ -224,7 +224,7 @@ export default function AppLayout() {
             </Button>
             <Button className="app-logout-primary" onClick={() => {
             setLogoutOpen(false);
-            navigate("/");
+            navigate("/login");
           }}>
               Sim, sair
             </Button>

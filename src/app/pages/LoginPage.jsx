@@ -108,7 +108,7 @@ export default function LoginPage() {
         </div>
 
         {/* Site público link */}
-        <button onClick={() => navigate("/site")} className="login-site-link">
+        <button onClick={() => navigate("/")} className="login-site-link">
           Conhecer o escritório
           <ArrowRight size={11} />
         </button>
