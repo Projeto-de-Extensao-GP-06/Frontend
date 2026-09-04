@@ -34,6 +34,15 @@ const navItems = [{
   label: "Perfil",
   icon: User
 }];
+
+const isActiveNavItem = (pathname, itemPath) => {
+  if (itemPath === "/app/inicio") {
+    return pathname === "/app" || pathname.startsWith(itemPath);
+  }
+
+  return pathname.startsWith(itemPath);
+};
+
 export default function AppLayout() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
@@ -70,7 +79,7 @@ export default function AppLayout() {
           <nav className="app-desktop-nav" aria-label="Navegação principal">
             {navItems.filter(item => item.path !== "/app/perfil").map(item => {
               const Icon = item.icon;
-              const active = location.pathname.startsWith(item.path);
+              const active = isActiveNavItem(location.pathname, item.path);
               return (
                 <button
                   key={item.path}
@@ -171,7 +180,7 @@ export default function AppLayout() {
           <nav className="app-drawer-nav">
             {navItems.map(item => {
             const Icon = item.icon;
-            const active = location.pathname.startsWith(item.path);
+            const active = isActiveNavItem(location.pathname, item.path);
             return <button key={item.path} onClick={() => go(item.path)} className={`app-drawer-link ${active ? "is-active" : ""}`}>
                   <Icon size={18} className={`app-drawer-link-icon ${active ? "is-active" : ""}`} />
                   <span className="app-drawer-link-label">{item.label}</span>
@@ -224,7 +233,7 @@ export default function AppLayout() {
             </Button>
             <Button className="app-logout-primary" onClick={() => {
             setLogoutOpen(false);
-            navigate("/");
+            navigate("/login");
           }}>
               Sim, sair
             </Button>

@@ -455,6 +455,21 @@
   line-height: 1.5;
 }
 
+.site-area-card__services {
+  display: grid;
+  gap: 0.4rem;
+  margin: 1rem 0 0;
+  padding: 1rem 0 0 1.1rem;
+  border-top: 1px solid #e8ecf4;
+  color: #4b5563;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.site-area-card__services li::marker {
+  color: #c9a96e;
+}
+
 /* ── Steps ── */
 
 .site-steps {
@@ -546,6 +561,9 @@
 
 .site-about__text--muted {
   color: rgba(255, 255, 255, 0.6);
+}
+
+.site-about__text:last-child {
   margin-bottom: 0;
 }
 
@@ -565,6 +583,45 @@
   color: #c9a96e;
   font-size: 1rem;
   font-weight: 500;
+}
+
+/* ── Mission, vision and values ── */
+
+.site-principles {
+  display: grid;
+  gap: 1rem;
+}
+
+.site-principle-card {
+  padding: 1.5rem;
+  border: 1px solid #e8ecf4;
+  border-top: 3px solid #c9a96e;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(17, 24, 39, 0.06);
+}
+
+.site-principle-card__icon {
+  margin-bottom: 1rem;
+  color: #0f2357;
+}
+
+.site-principle-card h3 {
+  margin: 0 0 0.75rem;
+  color: #0f2357;
+  font-family: "Playfair Display", serif;
+  font-size: 1.25rem;
+}
+
+.site-principle-card p {
+  margin: 0 0 0.75rem;
+  color: #6b7280;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.site-principle-card p:last-child {
+  margin-bottom: 0;
 }
 
 /* ── Contact form ── */
@@ -899,6 +956,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  text-decoration: none;
 }
 
 .site-footer__contact-icon {
@@ -908,6 +966,10 @@
 .site-footer__contact-text {
   color: rgba(255, 255, 255, 0.8);
   font-size: 1rem;
+}
+
+.site-footer__contact:hover .site-footer__contact-text {
+  color: #fff;
 }
 
 .site-footer__social {
@@ -933,6 +995,8 @@
 }
 
 .site-footer__social-icon {
+  width: 1.125rem !important;
+  height: 1.125rem !important;
   color: #c9a96e;
 }
 
@@ -964,6 +1028,41 @@
   margin: 0;
   color: rgba(255, 255, 255, 0.3);
   font-size: 0.875rem;
+}
+
+/* ── WhatsApp ── */
+
+.site-whatsapp-float {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #25d366;
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(15, 35, 87, 0.28);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.site-whatsapp-float:hover {
+  background: #1ebe5d;
+  transform: scale(1.06);
+}
+
+.site-whatsapp-float:focus-visible {
+  outline: 3px solid #0f2357;
+  outline-offset: 3px;
+}
+
+.site-whatsapp-float svg {
+  width: 1.75rem;
+  height: 1.75rem;
 }
 
 @media (min-width: 48rem) {
@@ -1020,6 +1119,14 @@
 
   .site-area-card__desc {
     font-size: 1rem;
+  }
+
+  .site-area-card__services {
+    font-size: 0.875rem;
+  }
+
+  .site-principles {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .site-steps {

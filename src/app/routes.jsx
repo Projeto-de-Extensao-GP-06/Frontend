@@ -22,13 +22,13 @@ import RolesPage from "./pages/RolesPage";
 import ProfilePage from "./pages/ProfilePage";
 import LegalPage from "./pages/LegalPage";
 export const router = createBrowserRouter([{
-  path: "/",
+  path: "/login",
   Component: LoginPage
 }, {
   path: "/redefinir-senha",
   Component: PasswordResetPage
 }, {
-  path: "/site",
+  path: "/",
   Component: PublicSitePage
 }, {
   path: "/politica-de-privacidade",
