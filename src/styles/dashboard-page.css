@@ -491,7 +491,7 @@
 
 .dashboard-fab {
   position: fixed;
-  left: 1rem;
+  right: 1rem;
   bottom: 1.5rem;
   z-index: 40;
   display: inline-flex;
