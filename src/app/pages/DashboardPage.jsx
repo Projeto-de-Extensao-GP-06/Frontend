@@ -35,7 +35,7 @@ function monthsBetween(start, end) { const months = []; const cursor = new Date(
 const FUNNEL_BASE_DAYS = Math.round((TODAY - periodStart("Últimos 3 meses")) / 86400000) + 1;
 const FUNNEL_BASE = [{ etapa: "Recebidas", total: 42 }, { etapa: "Aceitas", total: 19 }, { etapa: "Novos clientes", total: 14 }, { etapa: "Processos", total: 11 }];
 function CustomTip({ active, payload, label }) { if (!active || !payload?.length) return null; return <div className="dashboard-tooltip"><p className="dashboard-tooltip-title">{label}</p>{payload.map((item, index) => <p key={index} style={{ color: item.color ?? "#C9A96E" }}>{item.name}: {item.value}</p>)}</div>; }
-const PROCESS_PHASES = ["Inicial", "Emenda-inicial", "Citação", "Defesa", "Saneamento", "Julgamento", "Cumprimento de sentença", "Penhora", "Acordo", "Suspenso"];
+const PROCESS_PHASES = ["Inicial", "Emenda-inicial", "Citação", "Defesa", "Saneamento", "Julgamento","Sentença", "Cumprimento de sentença", "Penhora", "Acordo", "Suspenso"];
 const toHomePhase = phase => phase;
 // Rotas de destino do drill-down: cada etapa do funil aponta para a tela que concentra aquele dado.
 const FUNNEL_ROUTES = { Recebidas: "/app/solicitacoes?tab=todas", Aceitas: "/app/solicitacoes?tab=aceita", "Novos clientes": "/app/clientes", Processos: "/app?status=ativo" };
