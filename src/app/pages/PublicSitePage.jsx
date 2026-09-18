@@ -9,7 +9,6 @@ import { Label } from "../components/ui/label";
 import { Checkbox } from "../components/ui/checkbox";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { maskPhone, maskCNJ } from "../utils/masks";
-import { brazilStates } from "../data/mockData";
 import siteLogoImage from "../../imports/Captura_de_tela_2026-05-29_235111-1.png";
 import "../../styles/public-site-page.css";
 const areas = [{
@@ -42,28 +41,99 @@ const steps = [{
   title: "Entramos em contato",
   desc: "Retornamos com orientações claras e próximos passos personalizados."
 }];
+const STORAGE_KEY_FORM = "public_site_contact_form";
+const STORAGE_KEY_SCROLL = "public_site_scroll_pos";
+
+const getSavedFormData = () => {
+  try {
+    const saved = sessionStorage.getItem(STORAGE_KEY_FORM);
+    return saved ? JSON.parse(saved) : null;
+  } catch {
+    return null;
+  }
+};
+
 export default function PublicSitePage() {
+  const savedData = getSavedFormData();
+
   useEffect(() => {
     document.title = "Thauany Bezerra Advogada";
   }, []);
 
   const [menuOpen, setMenuOpen] = useState(false);
-  const [accepted, setAccepted] = useState(false);
-  const [clientType, setClientType] = useState("PF");
+  const [accepted, setAccepted] = useState(savedData?.accepted ?? false);
+  const [clientType, setClientType] = useState(savedData?.clientType ?? "PF");
   const [submitted, setSubmitted] = useState(false);
 
   // Form states
-  const [name, setName] = useState("");
-  const [companyName, setCompanyName] = useState("");
-  const [contactName, setContactName] = useState("");
-  const [profession, setProfession] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [state, setState] = useState("");
-  const [processNumber, setProcessNumber] = useState("");
-  const [description, setDescription] = useState("");
+  const [name, setName] = useState(savedData?.name ?? "");
+  const [companyName, setCompanyName] = useState(savedData?.companyName ?? "");
+  const [contactName, setContactName] = useState(savedData?.contactName ?? "");
+  const [profession, setProfession] = useState(savedData?.profession ?? "");
+  const [email, setEmail] = useState(savedData?.email ?? "");
+  const [phone, setPhone] = useState(savedData?.phone ?? "");
+  const [state, setState] = useState(savedData?.state ?? "");
+  const [processNumber, setProcessNumber] = useState(savedData?.processNumber ?? "");
+  const [description, setDescription] = useState(savedData?.description ?? "");
 
   const navigate = useNavigate();
+
+  // Scroll restoration & tracking
+  useEffect(() => {
+    try {
+      const savedScroll = sessionStorage.getItem(STORAGE_KEY_SCROLL);
+      if (savedScroll !== null) {
+        const scrollY = parseFloat(savedScroll);
+        if (!isNaN(scrollY) && scrollY > 0) {
+          requestAnimationFrame(() => {
+            window.scrollTo({ top: scrollY, behavior: "instant" });
+          });
+          const t = setTimeout(() => {
+            window.scrollTo({ top: scrollY, behavior: "instant" });
+          }, 50);
+          return () => clearTimeout(t);
+        }
+      }
+    } catch {}
+
+    const saveScroll = () => {
+      try {
+        sessionStorage.setItem(STORAGE_KEY_SCROLL, String(window.scrollY));
+      } catch {}
+    };
+
+    window.addEventListener("scroll", saveScroll, { passive: true });
+    window.addEventListener("beforeunload", saveScroll);
+
+    return () => {
+      saveScroll();
+      window.removeEventListener("scroll", saveScroll);
+      window.removeEventListener("beforeunload", saveScroll);
+    };
+  }, []);
+
+  // Save form data continuously
+  useEffect(() => {
+    if (!submitted) {
+      const formData = {
+        clientType,
+        name,
+        companyName,
+        contactName,
+        profession,
+        email,
+        phone,
+        state,
+        processNumber,
+        description,
+        accepted,
+      };
+      try {
+        sessionStorage.setItem(STORAGE_KEY_FORM, JSON.stringify(formData));
+      } catch {}
+    }
+  }, [clientType, name, companyName, contactName, profession, email, phone, state, processNumber, description, accepted, submitted]);
+
   const scrollTo = id => {
     document.getElementById(id)?.scrollIntoView({
       behavior: "smooth"
@@ -74,6 +144,10 @@ export default function PublicSitePage() {
   const handleSubmit = (e) => {
     e.preventDefault();
     setSubmitted(true);
+    try {
+      sessionStorage.removeItem(STORAGE_KEY_FORM);
+      sessionStorage.removeItem(STORAGE_KEY_SCROLL);
+    } catch {}
   };
 
   const handleReset = () => {
@@ -88,6 +162,10 @@ export default function PublicSitePage() {
     setDescription("");
     setAccepted(false);
     setSubmitted(false);
+    try {
+      sessionStorage.removeItem(STORAGE_KEY_FORM);
+      sessionStorage.removeItem(STORAGE_KEY_SCROLL);
+    } catch {}
   };
   return <div className="public-site">
 
@@ -365,9 +443,6 @@ export default function PublicSitePage() {
                             <User size={16} style={{ color: "#0f2357" }} />
                             <h4 className="site-contact-pj-title">Contato Principal da Empresa</h4>
                           </div>
-                          <span className="site-contact-pj-badge">
-                            <Check size={11} /> Contato Principal
-                          </span>
                         </div>
                         <p className="site-contact-pj-notice">
                           Informe abaixo o responsável que será registrado como o <strong>contato principal</strong> para o acompanhamento deste caso.
