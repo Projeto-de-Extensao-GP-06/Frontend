@@ -424,24 +424,7 @@ export default function PublicSitePage() {
                     </>
                   )}
 
-                  <div>
-                    <Label className="site-contact-label">Estado *</Label>
-                    <select
-                      required
-                      value={state}
-                      onChange={(e) => setState(e.target.value)}
-                      className="site-contact-select"
-                    >
-                      <option value="">Selecione...</option>
-                      {brazilStates.map((st) => (
-                        <option key={st} value={st}>
-                          {st}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
+                  <div className="site-contact-grid__full">
                     <Label className="site-contact-label">N° do Processo (CNJ)</Label>
                     <Input
                       value={processNumber}
