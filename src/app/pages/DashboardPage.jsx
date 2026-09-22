@@ -301,6 +301,47 @@ export default function DashboardPage() {
           <p className="dashboard-empty">Nenhum processo ativo no momento.</p>
         )}
       </ChartCard>
+    <div className="dashboard-charts-grid dashboard-charts-grid--split">
+  <ChartCard
+    title="Processos encerrados"
+    sub="Distribuição atual de carteira de processos encerrados"
+    info="Faz a listagem de quantos processos foram encerrados em que ocasião específica."
+  >
+    <ResponsiveContainer width="100%" height={220}>
+      <BarChart data={MOCK_MONTHLY_DATA} margin={{ top: 4, right: 4, left: -26, bottom: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} />
+        <XAxis dataKey="mes" axisLine={false} tickLine={false} />
+        <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
+        <Tooltip content={<CustomTip />} />
+        <Legend iconType="circle" />
+        <Bar dataKey="ativos" name="Ativos" fill="#1D4ED8" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="encerrados" name="Encerrados" fill="#c96e6e" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="suspensos" name="Suspensos" fill="#d8c21d" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="novos" name="Novos" fill="#88c96e" radius={[4, 4, 0, 0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  </ChartCard>
+
+  <ChartCard
+    title="Processos encerrados"
+    sub="Distribuição atual de carteira de processos encerrados"
+    info="Faz a listagem de quantos processos foram encerrados em que ocasião específica."
+  >
+    <ResponsiveContainer width="100%" height={220}>
+      <BarChart data={MOCK_MONTHLY_DATA} margin={{ top: 4, right: 4, left: -26, bottom: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} />
+        <XAxis dataKey="mes" axisLine={false} tickLine={false} />
+        <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
+        <Tooltip content={<CustomTip />} />
+        <Legend iconType="circle" />
+        <Bar dataKey="ativos" name="Ativos" fill="#1D4ED8" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="encerrados" name="Encerrados" fill="#c96e6e" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="suspensos" name="Suspensos" fill="#d8c21d" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="novos" name="Novos" fill="#88c96e" radius={[4, 4, 0, 0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  </ChartCard>
+</div>
        <div className="dashboard-panel">
         <div className="dashboard-panel-header">
           <p className="dashboard-panel-title">Análise de desempenho</p>
