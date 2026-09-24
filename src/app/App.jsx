@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { RouterProvider } from "react-router";
 import { router } from "./routes";
+import { AuthProvider } from "./contexts/AuthContext";
 
 const VLIBRAS_SCRIPT_URL = "https://vlibras.gov.br/app/vlibras-plugin.js";
 const VLIBRAS_WIDGET_URL = "https://vlibras.gov.br/app";
@@ -58,6 +59,9 @@ export default function App() {
         <div className="vw-plugin-top-wrapper" />
       </div>
     </div>
-    <RouterProvider router={router} />
+
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
   </>;
 }
