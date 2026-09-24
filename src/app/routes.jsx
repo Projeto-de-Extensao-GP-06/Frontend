@@ -21,6 +21,7 @@ import UserDetailPage from "./pages/UserDetailPage";
 import RolesPage from "./pages/RolesPage";
 import ProfilePage from "./pages/ProfilePage";
 import LegalPage from "./pages/LegalPage";
+import ProtectedRoute from "./components/ProtectedRoute";
 export const router = createBrowserRouter([{
   path: "/login",
   Component: LoginPage
@@ -38,60 +39,63 @@ export const router = createBrowserRouter([{
   Component: LegalPage
 }, {
   path: "/app",
-  Component: AppLayout,
+  Component: ProtectedRoute,
   children: [{
-    index: true,
-    Component: HomePage
-  }, {
-    path: "inicio",
-    Component: HomePage
-  }, {
-    path: "dashboard",
-    Component: DashboardPage
-  }, {
-    path: "assistente",
-    Component: AIAssistantPage
-  }, {
-    path: "clientes",
-    Component: ClientsPage
-  }, {
-    path: "clientes/novo",
-    Component: NewClientWizardPage
-  }, {
-    path: "clientes/:id",
-    Component: ClientDetailPage
-  }, {
-    path: "clientes/:id/editar",
-    Component: EditClientPage
-  }, {
-    path: "processos/novo",
-    Component: NewProcessPage
-  }, {
-    path: "processos/:id",
-    Component: ProcessDetailPage
-  }, {
-    path: "processos/:id/editar",
-    Component: EditProcessPage
-  }, {
-    path: "solicitacoes",
-    Component: RequestsPage
-  }, {
-    path: "solicitacoes/:id",
-    Component: RequestDetailPage
-  }, {
-    path: "usuarios",
-    Component: UsersPage
-  }, {
-    path: "usuarios/novo",
-    Component: NewUserPage,
-  }, {
-    path: "usuarios/:id",
-    Component: UserDetailPage,
-  }, {
-    path: "cargos",
-    Component: RolesPage
-  }, {
-    path: "perfil",
-    Component: ProfilePage
+    Component: AppLayout,
+    children: [{
+      index: true,
+      Component: HomePage
+    }, {
+      path: "inicio",
+      Component: HomePage
+    }, {
+      path: "dashboard",
+      Component: DashboardPage
+    }, {
+      path: "assistente",
+      Component: AIAssistantPage
+    }, {
+      path: "clientes",
+      Component: ClientsPage
+    }, {
+      path: "clientes/novo",
+      Component: NewClientWizardPage
+    }, {
+      path: "clientes/:id",
+      Component: ClientDetailPage
+    }, {
+      path: "clientes/:id/editar",
+      Component: EditClientPage
+    }, {
+      path: "processos/novo",
+      Component: NewProcessPage
+    }, {
+      path: "processos/:id",
+      Component: ProcessDetailPage
+    }, {
+      path: "processos/:id/editar",
+      Component: EditProcessPage
+    }, {
+      path: "solicitacoes",
+      Component: RequestsPage
+    }, {
+      path: "solicitacoes/:id",
+      Component: RequestDetailPage
+    }, {
+      path: "usuarios",
+      Component: UsersPage
+    }, {
+      path: "usuarios/novo",
+      Component: NewUserPage,
+    }, {
+      path: "usuarios/:id",
+      Component: UserDetailPage,
+    }, {
+      path: "cargos",
+      Component: RolesPage
+    }, {
+      path: "perfil",
+      Component: ProfilePage
+    }]
   }]
 }]);
