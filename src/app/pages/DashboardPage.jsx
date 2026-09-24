@@ -72,6 +72,20 @@ const MOCK_MONTHLY_DATA = [
   { mes: "ago", ativos: 2, encerrados: 1, suspensos: 1, novos: 3 },
 ];
 
+const MOCK_ENCERRADOS_DATA = [
+  { mes: "mai", acordo: 1, sem_resolucao: 0, penhora: 4, pagamento: 1 },
+  { mes: "jun", acordo: 2, sem_resolucao: 1, penhora: 3, pagamento: 3 },
+  { mes: "jul", acordo: 2, sem_resolucao: 1, penhora: 2, pagamento: 2 },
+  { mes: "ago", acordo: 2, sem_resolucao: 1, penhora: 1, pagamento: 3 },
+];
+
+
+const MOCK_SUSPENSAS_DATA = [
+  { mes: "mai", acordo_parcelado: 1, tratativas: 0, audencia_bens: 4, determinacao_judicial: 1 },
+  { mes: "jun", acordo_parcelado: 2, tratativas: 1, audencia_bens: 3, determinacao_judicial: 3 },
+  { mes: "jul", acordo_parcelado: 2, tratativas: 1, audencia_bens: 2, determinacao_judicial: 2 },
+  { mes: "ago", acordo_parcelado: 2, tratativas: 1, audencia_bens: 1, determinacao_judicial: 3 },
+];
 // Funil de atendimento já calculado para o período selecionado.
 const MOCK_REQUEST_FUNNEL = [
   { etapa: "Recebidas", total: 42 },
@@ -308,36 +322,36 @@ export default function DashboardPage() {
     info="Faz a listagem de quantos processos foram encerrados em que ocasião específica."
   >
     <ResponsiveContainer width="100%" height={220}>
-      <BarChart data={MOCK_MONTHLY_DATA} margin={{ top: 4, right: 4, left: -26, bottom: 0 }}>
+      <BarChart data={MOCK_ENCERRADOS_DATA} margin={{ top: 4, right: 4, left: -26, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} />
         <XAxis dataKey="mes" axisLine={false} tickLine={false} />
         <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
         <Tooltip content={<CustomTip />} />
         <Legend iconType="circle" />
-        <Bar dataKey="ativos" name="Ativos" fill="#1D4ED8" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="encerrados" name="Encerrados" fill="#c96e6e" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="suspensos" name="Suspensos" fill="#d8c21d" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="novos" name="Novos" fill="#88c96e" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="acordo" name="Acordo" fill="#e12a2a" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="sem_resolucao" name="Sem resolução" fill="#b31f1f" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="penhora" name="Penhora Total" fill="#771515" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="pagamento" name="Pagamento voluntário" fill="#480f0f" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   </ChartCard>
 
   <ChartCard
-    title="Processos encerrados"
-    sub="Distribuição atual de carteira de processos encerrados"
-    info="Faz a listagem de quantos processos foram encerrados em que ocasião específica."
+    title="Processos suspensos"
+    sub="Distribuição atual de carteira de processos suspensos"
+    info="Faz a listagem de quantos processos foram suspensos em que ocasião específica."
   >
     <ResponsiveContainer width="100%" height={220}>
-      <BarChart data={MOCK_MONTHLY_DATA} margin={{ top: 4, right: 4, left: -26, bottom: 0 }}>
+      <BarChart data={MOCK_SUSPENSAS_DATA} margin={{ top: 4, right: 4, left: -26, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} />
         <XAxis dataKey="mes" axisLine={false} tickLine={false} />
         <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
         <Tooltip content={<CustomTip />} />
         <Legend iconType="circle" />
-        <Bar dataKey="ativos" name="Ativos" fill="#1D4ED8" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="encerrados" name="Encerrados" fill="#c96e6e" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="suspensos" name="Suspensos" fill="#d8c21d" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="novos" name="Novos" fill="#88c96e" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="acordo_parcelado" name="Acordo Parcelado" fill="#d7d429" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="tratativas" name="Tratativas" fill="#aeb31f" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="audencia_bens" name="Ausência de Bens" fill="#776d15" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="determinacao_judicial" name="Determinação Judicial" fill="#48420f" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   </ChartCard>
