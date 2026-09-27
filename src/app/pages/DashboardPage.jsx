@@ -32,128 +32,70 @@ import {
 import "../../styles/dashboard-page.css";
 
 // ---------------------------------------------------------------------------
-// MOCK DATA
-// Tudo abaixo simula o formato que a API deve devolver pronto para renderizar.
-// O front não filtra, ordena, soma nem calcula nada: apenas exibe.
-// Quando o backend estiver pronto, troque estes objetos por chamadas de API
-// (ex.: useEffect + fetch, react-query, etc.), mantendo o mesmo formato.
+// CONSTANTES & CONFIGURAÇÕES DE CORES
 // ---------------------------------------------------------------------------
 
-const PRESETS = ["Hoje", "Esta semana", "Último mês", "Últimos 3 meses", "Último ano"];
+const PRESETS = ["Hoje", "Esta semana", "Mês atual", "Ano atual"];
 const COLORS = ["#1D4ED8", "#3B82F6", "#0F766E", "#C9A96E", "#B45309"];
 
-const MOCK_KPIS = {
-  processosAtivos: { value: "3", sub: "+2 este mês" },
-  solicitacoes: { value: "3", sub: "Pendentes hoje" },
-  clientes: { value: "4", sub: "Cadastrados" },
-  comAudiencia: { value: "3", sub: "Agendadas" },
+const ENTRY_COLORS = ["#1D4ED8", "#0F766E", "#C9A96E"];
+const DURATION_COLORS = ["#1D4ED8", "#3B82F6", "#0F766E", "#C9A96E", "#B45309"];
+
+// ---------------------------------------------------------------------------
+// ESTRUTURA INICIAL VAZIA (Pronta para integração com Backend API)
+// ---------------------------------------------------------------------------
+
+const INITIAL_DASHBOARD_DATA = {
+  kpis: {
+    processosAtivos: { value: "0", sub: "" },
+    solicitacoes: { value: "0", sub: "" },
+    clientes: { value: "0", sub: "" },
+    comAudiencia: { value: "0", sub: "" },
+  },
+  phaseData: [],
+  encerradosData: [
+    { categoria: "Acordo", total: 0, fill: "#c96e6e" },
+    { categoria: "Sem resolução", total: 0, fill: "#b35353" },
+    { categoria: "Penhora Total", total: 0, fill: "#8b3a3a" },
+    { categoria: "Pagamento voluntário", total: 0, fill: "#df8f8f" },
+  ],
+  suspensasData: [
+    { categoria: "Acordo Parcelado", total: 0, fill: "#d8c21d" },
+    { categoria: "Tratativas", total: 0, fill: "#bfa915" },
+    { categoria: "Ausência de Bens", total: 0, fill: "#94830c" },
+    { categoria: "Determinação Judicial", total: 0, fill: "#e8d752" },
+  ],
+  formaEntradaData: [
+    { origem: "Instagram", clientes: 0 },
+    { origem: "Site", clientes: 0 },
+    { origem: "Indicação", clientes: 0 },
+  ],
+  tempoDuracaoData: [
+    { faixa: "0–6 meses", processos: 0 },
+    { faixa: "6–12 meses", processos: 0 },
+    { faixa: "1–2 anos", processos: 0 },
+    { faixa: "2–5 anos", processos: 0 },
+    { faixa: "+5 anos", processos: 0 },
+  ],
+  monthlyData: [],
+  requestFunnel: [
+    { etapa: "Recebidas", total: 0 },
+    { etapa: "Aceitas", total: 0 },
+    { etapa: "Novos clientes", total: 0 },
+  ],
+  upcomingHearings: [],
 };
 
-// Já vem filtrada/agrupada por fase da carteira ativa, na ordem que deve ser exibida.
-const MOCK_PHASE_DATA = [
-  { fase: "Inicial", processos: 4 },
-  { fase: "Emenda a inicial", processos: 3 },
-  { fase: "Citação", processos: 2 },
-  { fase: "Defesa", processos: 1 },
-  { fase: "Saneamento", processos: 0 },
-  { fase: "Julgamento", processos: 2 },
-  { fase: "Sentença", processos: 3 },
-  { fase: "Cumprimento de sentença", processos: 0 },
-  { fase: "Penhora", processos: 0 },
-  { fase: "Acordo", processos: 0 },
-  { fase: "Suspenso", processos: 0 },
-];
-
-// Aberturas/encerramentos já agregados por mês para o período selecionado.
-const MOCK_MONTHLY_DATA = [
-  { mes: "mai", ativos: 1, encerrados: 0, suspensos: 4, novos: 1 },
-  { mes: "jun", ativos: 2, encerrados: 1, suspensos: 3, novos: 3 },
-  { mes: "jul", ativos: 2, encerrados: 1, suspensos: 2, novos: 2 },
-  { mes: "ago", ativos: 2, encerrados: 1, suspensos: 1, novos: 3 },
-];
-
-const MOCK_ENCERRADOS_DATA = [
-  { mes: "mai", acordo: 1, sem_resolucao: 0, penhora: 4, pagamento: 1 },
-  { mes: "jun", acordo: 2, sem_resolucao: 1, penhora: 3, pagamento: 3 },
-  { mes: "jul", acordo: 2, sem_resolucao: 1, penhora: 2, pagamento: 2 },
-  { mes: "ago", acordo: 2, sem_resolucao: 1, penhora: 1, pagamento: 3 },
-];
 
 
-const MOCK_SUSPENSAS_DATA = [
-  { mes: "mai", acordo_parcelado: 1, tratativas: 0, audencia_bens: 4, determinacao_judicial: 1 },
-  { mes: "jun", acordo_parcelado: 2, tratativas: 1, audencia_bens: 3, determinacao_judicial: 3 },
-  { mes: "jul", acordo_parcelado: 2, tratativas: 1, audencia_bens: 2, determinacao_judicial: 2 },
-  { mes: "ago", acordo_parcelado: 2, tratativas: 1, audencia_bens: 1, determinacao_judicial: 3 },
-];
-// Funil de atendimento já calculado para o período selecionado.
-const MOCK_REQUEST_FUNNEL = [
-  { etapa: "Recebidas", total: 42 },
-  { etapa: "Aceitas", total: 19 },
-  { etapa: "Novos clientes", total: 14 },
-  { etapa: "Processos", total: 11 },
-];
 
-// Já vem filtrada (apenas futuras), ordenada por data e limitada ao topo N.
-const MOCK_UPCOMING_HEARINGS = [
-  { id: 2, hearing: "27 ago", phase: "Citação", responsible: "Rafael Monteiro", priority: "Alta" },
-  { id: 12, hearing: "29 ago", phase: "Citação", responsible: "Thauany Bezerra", priority: "Alta" },
-  {
-    id: 7,
-    hearing: "31 ago",
-    phase: "Julgamento",
-    responsible: "Carolina Almeida",
-    priority: "Alta",
-  },
-  {
-    id: 4,
-    hearing: "11 set",
-    phase: "Saneamento",
-    responsible: "Carolina Almeida",
-    priority: "Média",
-  },
-  {
-    id: 10,
-    hearing: "18 set",
-    phase: "Inicial",
-    responsible: "Carolina Almeida",
-    priority: "Alta",
-  },
-];
-
-// Já vem filtrada (>= 15 dias parados), ordenada por dias parados e limitada ao topo N.
-const MOCK_STALE_PROCESSES = [
-  {
-    id: 10,
-    phase: "Inicial",
-    value: "R$ 95.000",
-    responsible: "Carolina Almeida",
-    daysStopped: 30,
-  },
-  {
-    id: 4,
-    phase: "Saneamento",
-    value: "R$ 320.000",
-    responsible: "Carolina Almeida",
-    daysStopped: 22,
-  },
-  {
-    id: 7,
-    phase: "Julgamento",
-    value: "R$ 260.000",
-    responsible: "Carolina Almeida",
-    daysStopped: 20,
-  },
-  { id: 8, phase: "Citação", value: "R$ 75.000", responsible: "Rafael Monteiro", daysStopped: 16 },
-];
 
 const toHomePhase = (phase) => phase;
-// Rotas de destino do drill-down: cada etapa do funil aponta para a tela que concentra aquele dado.
+
 const FUNNEL_ROUTES = {
-  Recebidas: "/app/solicitacoes?tab=todas",
-  Aceitas: "/app/solicitacoes?tab=aceita",
+  "Recebidas": "/app/solicitacoes?tab=todas",
+  "Aceitas": "/app/solicitacoes?tab=aceita",
   "Novos clientes": "/app/clientes",
-  Processos: "/app?status=ativo",
 };
 
 function CustomTip({ active, payload, label }) {
@@ -176,29 +118,51 @@ export default function DashboardPage() {
   }, []);
   const navigate = useNavigate();
 
-  // Estado só de UI: qual período está selecionado. A troca de período deve
-  // disparar uma nova busca no backend (não implementada aqui) — os dados
-  // mockados acima não mudam com essa seleção.
+  // Estados de filtro de UI
   const [periodMode, setPeriodMode] = useState("preset");
-  const [preset, setPreset] = useState("Últimos 3 meses");
+  const [preset, setPreset] = useState("Mês atual");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [appliedPeriod, setAppliedPeriod] = useState("Últimos 3 meses");
+  const [appliedPeriod, setAppliedPeriod] = useState("Mês atual");
   const [showEmptyPhases, setShowEmptyPhases] = useState(false);
 
-  const hasPhaseData = MOCK_PHASE_DATA.length > 0;
-  const maxPhaseCount = Math.max(0, ...MOCK_PHASE_DATA.map((item) => item.processos));
+  // Estado principal dos dados do Dashboard (Popule via useEffect / fetch API)
+  const [dashboardData] = useState(INITIAL_DASHBOARD_DATA);
+
+  // TODO: Conectar com o Backend API ao mudar filtro ou carregar pág:
+  // useEffect(() => {
+  //   async function fetchDashboard() {
+  //     const data = await api.get('/dashboard', { params: { periodMode, preset, dateFrom, dateTo } });
+  //     setDashboardData(data);
+  //   }
+  //   fetchDashboard();
+  // }, [periodMode, preset, dateFrom, dateTo]);
+
+  const currentEncerradosData = dashboardData.encerradosData;
+  const currentSuspensasData = dashboardData.suspensasData;
+  const currentFormaEntradaData = dashboardData.formaEntradaData;
+  const currentTempoDuracaoData = dashboardData.tempoDuracaoData;
+  const currentMonthlyData = dashboardData.monthlyData;
+  const currentRequestFunnel = dashboardData.requestFunnel;
+
+  // Processos por fase
+  const phaseData = dashboardData.phaseData;
+  const hasPhaseData = phaseData.length > 0;
+  const maxPhaseCount = hasPhaseData ? Math.max(0, ...phaseData.map((item) => item.processos)) : 0;
   const displayedPhaseData = showEmptyPhases
-    ? MOCK_PHASE_DATA
-    : MOCK_PHASE_DATA.filter((item) => item.processos > 0);
+    ? phaseData
+    : phaseData.filter((item) => item.processos > 0);
   const phaseChartHeight = Math.max(180, displayedPhaseData.length * 34 + 44);
 
   const applyCustom = () => {
-    if (dateFrom && dateTo)
-      setAppliedPeriod(
-        `${dateFrom.split("-").reverse().join("/")} - ${dateTo.split("-").reverse().join("/")}`,
-      );
+    if (dateFrom && dateTo) {
+      const formattedFrom = dateFrom.split("-").reverse().join("/");
+      const formattedTo = dateTo.split("-").reverse().join("/");
+      setAppliedPeriod(`${formattedFrom} - ${formattedTo}`);
+      setPeriodMode("custom");
+    }
   };
+
   const selectPreset = (value) => {
     setPeriodMode("preset");
     setPreset(value);
@@ -211,154 +175,55 @@ export default function DashboardPage() {
         <p className="page-kicker">SGPJ</p>
         <h1 className="page-title">Dashboard</h1>
       </div>
+
+      {/* KPI GRID */}
       <div className="dashboard-kpi-grid">
         <KpiCard
           label="Processos ativos"
-          value={MOCK_KPIS.processosAtivos.value}
+          value={dashboardData.kpis.processosAtivos.value}
           icon={<Scale size={15} className="kpi-card-icon kpi-card-icon--blue" />}
           iconVariant="kpi-card-badge--blue"
-          sub={MOCK_KPIS.processosAtivos.sub}
+          sub={dashboardData.kpis.processosAtivos.sub}
           subIcon={<TrendingUp size={10} />}
           subVariant="kpi-card-sub--success"
           onClick={() => navigate("/app?status=ativo")}
         />
         <KpiCard
           label="Solicitações"
-          value={MOCK_KPIS.solicitacoes.value}
+          value={dashboardData.kpis.solicitacoes.value}
           icon={<Zap size={15} className="kpi-card-icon kpi-card-icon--amber" />}
           iconVariant="kpi-card-badge--amber"
-          sub={MOCK_KPIS.solicitacoes.sub}
+          sub={dashboardData.kpis.solicitacoes.sub}
           subIcon={<ArrowUpRight size={10} />}
           subVariant="kpi-card-sub--amber"
           onClick={() => navigate("/app/solicitacoes?tab=pendente")}
         />
         <KpiCard
           label="Clientes"
-          value={MOCK_KPIS.clientes.value}
+          value={dashboardData.kpis.clientes.value}
           icon={<Users size={15} className="kpi-card-icon kpi-card-icon--green" />}
           iconVariant="kpi-card-badge--green"
-          sub={MOCK_KPIS.clientes.sub}
+          sub={dashboardData.kpis.clientes.sub}
           subIcon={<Users size={10} />}
           subVariant="kpi-card-sub--muted"
           onClick={() => navigate("/app/clientes")}
         />
         <KpiCard
           label="Com audiência"
-          value={MOCK_KPIS.comAudiencia.value}
+          value={dashboardData.kpis.comAudiencia.value}
           icon={<Calendar size={15} className="kpi-card-icon kpi-card-icon--gold" />}
           iconVariant="kpi-card-badge--gold"
-          sub={MOCK_KPIS.comAudiencia.sub}
+          sub={dashboardData.kpis.comAudiencia.sub}
           subIcon={<Calendar size={10} />}
           subVariant="kpi-card-sub--muted"
           onClick={() => navigate("/app?audiencia=com")}
         />
       </div>
-     
-      <ChartCard
-        title="Processos por fase"
-        sub="Distribuição atual da carteira ativa"
-        info="Distribui os processos ativos entre as etapas processuais. É uma fotografia do momento atual, por isso não muda com o período selecionado acima. Uma concentração alta em uma fase pode indicar um gargalo que merece acompanhamento — a barra em destaque é a que tem mais processos parados. Clique em uma fase para ver a lista correspondente."
-      >
-        {hasPhaseData ? (
-          <>
-            <div className="dashboard-phase-toggle">
-              <button
-                type="button"
-                aria-pressed={showEmptyPhases}
-                onClick={() => setShowEmptyPhases((value) => !value)}
-              >
-                {showEmptyPhases ? <EyeOff size={13} /> : <Eye size={13} />}
-                {showEmptyPhases ? "Ocultar fases sem processos" : "Mostrar fases sem processos"}
-              </button>
-            </div>
-            <ResponsiveContainer width="100%" height={phaseChartHeight}>
-              <BarChart
-                data={displayedPhaseData}
-                layout="vertical"
-                margin={{ top: 8, right: 28, left: 0, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" horizontal={false} />
-                <XAxis type="number" allowDecimals={false} axisLine={false} tickLine={false} />
-                <YAxis
-                  dataKey="fase"
-                  type="category"
-                  width={150}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 11 }}
-                />
-                <Bar
-                  dataKey="processos"
-                  name="Processos"
-                  radius={[0, 4, 4, 0]}
-                  cursor="pointer"
-                  onClick={(data) =>
-                    navigate(`/app?fase=${encodeURIComponent(toHomePhase(data.fase))}`)
-                  }
-                >
-                  <LabelList
-                    dataKey="processos"
-                    position="right"
-                    style={{ fill: "#0f2357", fontSize: 11, fontWeight: 700 }}
-                  />
-                  {displayedPhaseData.map((entry, index) => (
-                    <Cell
-                      key={index}
-                      fill={entry.processos === maxPhaseCount ? "#C9A96E" : "#0F2357"}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </>
-        ) : (
-          <p className="dashboard-empty">Nenhum processo ativo no momento.</p>
-        )}
-      </ChartCard>
-    <div className="dashboard-charts-grid dashboard-charts-grid--split">
-  <ChartCard
-    title="Processos encerrados"
-    sub="Distribuição atual de carteira de processos encerrados"
-    info="Faz a listagem de quantos processos foram encerrados em que ocasião específica."
-  >
-    <ResponsiveContainer width="100%" height={220}>
-      <BarChart data={MOCK_ENCERRADOS_DATA} margin={{ top: 4, right: 4, left: -26, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} />
-        <XAxis dataKey="mes" axisLine={false} tickLine={false} />
-        <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
-        <Tooltip content={<CustomTip />} />
-        <Legend iconType="circle" />
-        <Bar dataKey="acordo" name="Acordo" fill="#e12a2a" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="sem_resolucao" name="Sem resolução" fill="#b31f1f" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="penhora" name="Penhora Total" fill="#771515" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="pagamento" name="Pagamento voluntário" fill="#480f0f" radius={[4, 4, 0, 0]} />
-      </BarChart>
-    </ResponsiveContainer>
-  </ChartCard>
 
-  <ChartCard
-    title="Processos suspensos"
-    sub="Distribuição atual de carteira de processos suspensos"
-    info="Faz a listagem de quantos processos foram suspensos em que ocasião específica."
-  >
-    <ResponsiveContainer width="100%" height={220}>
-      <BarChart data={MOCK_SUSPENSAS_DATA} margin={{ top: 4, right: 4, left: -26, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} />
-        <XAxis dataKey="mes" axisLine={false} tickLine={false} />
-        <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
-        <Tooltip content={<CustomTip />} />
-        <Legend iconType="circle" />
-        <Bar dataKey="acordo_parcelado" name="Acordo Parcelado" fill="#d7d429" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="tratativas" name="Tratativas" fill="#aeb31f" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="audencia_bens" name="Ausência de Bens" fill="#776d15" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="determinacao_judicial" name="Determinação Judicial" fill="#48420f" radius={[4, 4, 0, 0]} />
-      </BarChart>
-    </ResponsiveContainer>
-  </ChartCard>
-</div>
-       <div className="dashboard-panel">
+      {/* PAINEL DE FILTRO DE PERÍODO (No topo) */}
+      <div className="dashboard-panel">
         <div className="dashboard-panel-header">
-          <p className="dashboard-panel-title">Análise de desempenho</p>
+          <p className="dashboard-panel-title">Filtro por período</p>
           <span className="dashboard-period-badge">
             <CalendarRange size={11} />
             {appliedPeriod}
@@ -419,6 +284,7 @@ export default function DashboardPage() {
                     setPeriodMode("preset");
                     setDateFrom("");
                     setDateTo("");
+                    setAppliedPeriod(preset);
                   }}
                   className="dashboard-icon-button"
                   title="Limpar"
@@ -430,62 +296,222 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* PROCESSOS POR FASE (Total do sistema) */}
+      <ChartCard
+        title="Processos por fase"
+        sub="Distribuição atual da carteira ativa (Total do sistema)"
+        info="Distribui os processos ativos entre as etapas processuais. É uma fotografia do momento atual do sistema."
+      >
+        {hasPhaseData ? (
+          <>
+            <div className="dashboard-phase-toggle">
+              <button
+                type="button"
+                aria-pressed={showEmptyPhases}
+                onClick={() => setShowEmptyPhases((value) => !value)}
+              >
+                {showEmptyPhases ? <EyeOff size={13} /> : <Eye size={13} />}
+                {showEmptyPhases ? "Ocultar fases sem processos" : "Mostrar fases sem processos"}
+              </button>
+            </div>
+            <ResponsiveContainer width="100%" height={phaseChartHeight}>
+              <BarChart
+                data={displayedPhaseData}
+                layout="vertical"
+                margin={{ top: 8, right: 28, left: 0, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" horizontal={false} />
+                <XAxis type="number" allowDecimals={false} axisLine={false} tickLine={false} />
+                <YAxis
+                  dataKey="fase"
+                  type="category"
+                  width={150}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 11 }}
+                />
+                <Bar
+                  dataKey="processos"
+                  name="Processos"
+                  radius={[0, 4, 4, 0]}
+                  cursor="pointer"
+                  onClick={(data) =>
+                    navigate(`/app?fase=${encodeURIComponent(toHomePhase(data.fase))}`)
+                  }
+                >
+                  <LabelList
+                    dataKey="processos"
+                    position="right"
+                    style={{ fill: "#0f2357", fontSize: 11, fontWeight: 700 }}
+                  />
+                  {displayedPhaseData.map((entry, index) => (
+                    <Cell
+                      key={index}
+                      fill={entry.processos === maxPhaseCount ? "#C9A96E" : "#0F2357"}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </>
+        ) : (
+          <p className="dashboard-empty">Nenhum processo ativo no momento.</p>
+        )}
+      </ChartCard>
+
+      {/* PROCESSOS ENCERRADOS & SUSPENSOS */}
+      <div className="dashboard-charts-grid dashboard-charts-grid--split">
+        <ChartCard
+          title="Processos encerrados"
+          sub={`Total por categoria - ${appliedPeriod}`}
+          info="Exibe o total de processos encerrados por motivo/ocasião específica no período selecionado."
+        >
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={currentEncerradosData} margin={{ top: 16, right: 16, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} />
+              <XAxis dataKey="categoria" axisLine={false} tickLine={false} interval={0} tick={{ fontSize: 10 }} />
+              <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
+              <Tooltip content={<CustomTip />} />
+              <Bar dataKey="total" name="Processos" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="total" position="top" style={{ fill: "#0f2357", fontSize: 11, fontWeight: 700 }} />
+                {currentEncerradosData.map((entry, index) => (
+                  <Cell key={index} fill={entry.fill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        <ChartCard
+          title="Processos suspensos"
+          sub={`Total por categoria - ${appliedPeriod}`}
+          info="Exibe o total de processos suspensos por motivo/ocasião específica no período selecionado."
+        >
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={currentSuspensasData} margin={{ top: 16, right: 16, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} />
+              <XAxis dataKey="categoria" axisLine={false} tickLine={false} interval={0} tick={{ fontSize: 9 }} />
+              <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
+              <Tooltip content={<CustomTip />} />
+              <Bar dataKey="total" name="Processos" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="total" position="top" style={{ fill: "#0f2357", fontSize: 11, fontWeight: 700 }} />
+                {currentSuspensasData.map((entry, index) => (
+                  <Cell key={index} fill={entry.fill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      </div>
+
+      {/* FORMA DE ENTRADA & TEMPO DE DURAÇÃO */}
+      <div className="dashboard-charts-grid dashboard-charts-grid--split">
+        <ChartCard
+          title="Forma de entrada"
+          sub={`Total de clientes por canal - ${appliedPeriod}`}
+          info="Mede o total de clientes que entraram no escritório por cada canal específico (Instagram, Site ou Indicação) no período selecionado."
+        >
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={currentFormaEntradaData} margin={{ top: 16, right: 16, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} />
+              <XAxis dataKey="origem" axisLine={false} tickLine={false} interval={0} tick={{ fontSize: 11 }} />
+              <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
+              <Tooltip content={<CustomTip />} />
+              <Bar dataKey="clientes" name="Clientes" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="clientes" position="top" style={{ fill: "#0f2357", fontSize: 11, fontWeight: 700 }} />
+                {currentFormaEntradaData.map((entry, index) => (
+                  <Cell key={index} fill={ENTRY_COLORS[index % ENTRY_COLORS.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        <ChartCard
+          title="Tempo de duração"
+          sub={`Processos por tempo de tramitação - ${appliedPeriod}`}
+          info="Distribui os processos ativos de acordo com a sua duração total em tramitação para o período selecionado."
+        >
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={currentTempoDuracaoData} margin={{ top: 16, right: 16, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} />
+              <XAxis dataKey="faixa" axisLine={false} tickLine={false} interval={0} tick={{ fontSize: 10 }} />
+              <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
+              <Tooltip content={<CustomTip />} />
+              <Bar dataKey="processos" name="Processos" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="processos" position="top" style={{ fill: "#0f2357", fontSize: 11, fontWeight: 700 }} />
+                {currentTempoDuracaoData.map((entry, index) => (
+                  <Cell key={index} fill={DURATION_COLORS[index % DURATION_COLORS.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      </div>
+
+      {/* EVOLUÇÃO DA CARTEIRA & FUNIL DE ATENDIMENTO */}
       <div className="dashboard-charts-grid dashboard-charts-grid--split">
         <ChartCard
           title="Evolução da carteira"
-          sub={`Aberturas e encerramentos por mês - ${appliedPeriod}`}
-          info="Compara, mês a mês, os processos abertos com os processos encerrados. Quando as aberturas superam os encerramentos, a carteira tende a crescer; o inverso indica redução do estoque."
+          sub={`Aberturas e encerramentos - ${appliedPeriod}`}
+          info="Compara os processos abertos com os processos encerrados e suspensos no período selecionado."
         >
-          <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={MOCK_MONTHLY_DATA} margin={{ top: 4, right: 4, left: -26, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} />
-              <XAxis dataKey="mes" axisLine={false} tickLine={false} />
-              <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
-              <Tooltip content={<CustomTip />} />
-              <Legend iconType="circle" />
-              <Line
-                type="monotone"
-                dataKey="ativos"
-                name="Ativos"
-                stroke="#1D4ED8"
-                strokeWidth={2.5}
-                dot={{ r: 3 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="encerrados"
-                name="Encerrados"
-                stroke="#c96e6e"
-                strokeWidth={2.5}
-                dot={{ r: 3 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="suspensos"
-                name="Suspensos"
-                stroke="#d8c21d"
-                strokeWidth={2.5}
-                dot={{ r: 3 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="novos"
-                name="Novos"
-                stroke="#88c96e"
-                strokeWidth={2.5}
-                dot={{ r: 3 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          {currentMonthlyData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={currentMonthlyData} margin={{ top: 4, right: 4, left: -26, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} />
+                <XAxis dataKey="mes" axisLine={false} tickLine={false} interval={0} tick={{ fontSize: 10 }} />
+                <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
+                <Tooltip content={<CustomTip />} />
+                <Legend iconType="circle" />
+                <Line
+                  type="monotone"
+                  dataKey="ativos"
+                  name="Ativos"
+                  stroke="#1D4ED8"
+                  strokeWidth={2.5}
+                  dot={{ r: 3 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="encerrados"
+                  name="Encerrados"
+                  stroke="#c96e6e"
+                  strokeWidth={2.5}
+                  dot={{ r: 3 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="suspensos"
+                  name="Suspensos"
+                  stroke="#d8c21d"
+                  strokeWidth={2.5}
+                  dot={{ r: 3 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="novos"
+                  name="Novos"
+                  stroke="#88c96e"
+                  strokeWidth={2.5}
+                  dot={{ r: 3 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="dashboard-empty">Nenhum dado de evolução no momento.</p>
+          )}
         </ChartCard>
+
         <ChartCard
           title="Funil de atendimento"
           sub={`Solicitações até a abertura do processo - ${appliedPeriod}`}
-          info="Mostra a passagem das solicitações recebidas, aceitas, transformadas em novos clientes e, por fim, em processos, estimada para o período selecionado. A diferença entre etapas revela onde há maior perda ou demora no atendimento. Clique em uma etapa para ver a lista correspondente."
+          info="Mostra a passagem das solicitações recebidas, aceitas, transformadas em novos clientes e processos no período selecionado."
         >
           <ResponsiveContainer width="100%" height={220}>
             <BarChart
-              data={MOCK_REQUEST_FUNNEL}
+              data={currentRequestFunnel}
               layout="vertical"
               margin={{ top: 0, right: 12, left: 22, bottom: 0 }}
             >
@@ -503,7 +529,7 @@ export default function DashboardPage() {
                   if (route) navigate(route);
                 }}
               >
-                {MOCK_REQUEST_FUNNEL.map((_, index) => (
+                {currentRequestFunnel.map((_, index) => (
                   <Cell key={index} fill={COLORS[index]} />
                 ))}
               </Bar>
@@ -511,16 +537,18 @@ export default function DashboardPage() {
           </ResponsiveContainer>
         </ChartCard>
       </div>
-      <div className="dashboard-charts-grid dashboard-charts-grid--split">
+
+      {/* AGENDA DE RISCO */}
+      <div className="dashboard-charts-grid">
         <ListCard
           title="Agenda de risco"
           sub="Audiências futuras ordenadas por data"
           empty="Não há audiências futuras."
-          info="Lista as próximas audiências dos processos ativos em ordem de data. A prioridade ajuda a destacar os casos que exigem preparação imediata. Clique em um item para ver a fase e a prioridade filtradas em Processos."
+          info="Lista as próximas audiências dos processos ativos em ordem de data."
         >
-          {MOCK_UPCOMING_HEARINGS.map((process) => (
+          {dashboardData.upcomingHearings.map((process) => (
             <div
-              key={process.id}
+              // key={process.id}
               className="dashboard-list-item dashboard-list-item--clickable"
               role="button"
               tabIndex={0}
@@ -550,37 +578,8 @@ export default function DashboardPage() {
             </div>
           ))}
         </ListCard>
-        <ListCard
-          title="Processos sem atualização"
-          sub="Priorize os casos que ficaram parados"
-          empty="Nenhum processo parado no momento."
-          info="Exibe processos ativos sem atualização há pelo menos 15 dias. O número de dias indica há quanto tempo o caso não recebeu movimentação interna registrada. Clique em um item para ver a fase filtrada em Processos."
-        >
-          {MOCK_STALE_PROCESSES.map((process) => (
-            <div
-              key={process.id}
-              className="dashboard-list-item dashboard-list-item--clickable"
-              role="button"
-              tabIndex={0}
-              onClick={() =>
-                navigate(`/app?fase=${encodeURIComponent(toHomePhase(process.phase))}`)
-              }
-              onKeyDown={(event) => {
-                if (event.key === "Enter")
-                  navigate(`/app?fase=${encodeURIComponent(toHomePhase(process.phase))}`);
-              }}
-            >
-              <div>
-                <strong>
-                  {process.phase} · {process.value}
-                </strong>
-                <span>{process.responsible}</span>
-              </div>
-              <span className="dashboard-stale-days">{process.daysStopped} dias</span>
-            </div>
-          ))}
-        </ListCard>
       </div>
+
       <button onClick={() => navigate("/app/assistente")} className="dashboard-fab">
         <div className="dashboard-fab-icon-wrap">
           <MessageSquare size={14} className="dashboard-fab-icon" />
@@ -590,6 +589,7 @@ export default function DashboardPage() {
     </div>
   );
 }
+
 function KpiCard({ label, value, icon, iconVariant, sub, subIcon, subVariant, onClick }) {
   return (
     <div
@@ -615,6 +615,7 @@ function KpiCard({ label, value, icon, iconVariant, sub, subIcon, subVariant, on
     </div>
   );
 }
+
 function ChartCard({ title, sub, children, info }) {
   return (
     <FlipCard title={title} sub={sub} info={info}>
@@ -622,6 +623,7 @@ function ChartCard({ title, sub, children, info }) {
     </FlipCard>
   );
 }
+
 function ListCard({ title, sub, children, empty, info }) {
   const items = Array.isArray(children) ? children : [children];
   return (
@@ -632,6 +634,7 @@ function ListCard({ title, sub, children, empty, info }) {
     </FlipCard>
   );
 }
+
 function FlipCard({ title, sub, info, children }) {
   const [flipped, setFlipped] = useState(false);
   return (
@@ -660,6 +663,7 @@ function FlipCard({ title, sub, info, children }) {
     </div>
   );
 }
+
 function InfoButton({ title, onClick }) {
   return (
     <button
