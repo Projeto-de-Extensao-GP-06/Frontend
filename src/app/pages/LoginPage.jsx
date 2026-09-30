@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Eye, EyeOff, ArrowRight, Lock, Mail, Scale } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { ApiErrorBanner } from "../components/ApiErrorBanner";
 import "../../styles/login-page.css";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -20,6 +21,14 @@ export default function LoginPage() {
   const [apiError, setApiError] = useState("");
   const navigate = useNavigate();
 
+  // Proteção contra brute-force: bloqueia temporariamente após 5 tentativas falhas
+  const [failCount, setFailCount] = useState(0);
+  const [blockedUntil, setBlockedUntil] = useState(null);
+
+  const isBlocked = blockedUntil && Date.now() < blockedUntil;
+  const BLOCK_DURATION_MS = 30_000; // 30 segundos
+  const MAX_ATTEMPTS = 5;
+
   const validate = () => {
     const newErrors = {};
     const trimmedEmail = email.trim();
@@ -32,8 +41,6 @@ export default function LoginPage() {
 
     if (!password) {
       newErrors.password = "Informe sua senha.";
-    } else if (password.length < 6) {
-      newErrors.password = "A senha deve ter pelo menos 6 caracteres.";
     }
 
     setErrors(newErrors);
@@ -44,6 +51,12 @@ export default function LoginPage() {
     e.preventDefault();
     setApiError("");
 
+    if (isBlocked) {
+      const remaining = Math.ceil((blockedUntil - Date.now()) / 1000);
+      setApiError(`Muitas tentativas. Aguarde ${remaining} segundos.`);
+      return;
+    }
+
     if (!validate()) return;
     setLoading(true);
 
@@ -51,11 +64,21 @@ export default function LoginPage() {
       // Chama o authService através do AuthProvider                                                                                                                                                       
       await login(email.trim(), password);
 
-      // Sucesso! Redireciona para a área interna                                                                                                                                                          
+      // Sucesso! Reseta o contador e redireciona para a área interna                                                                                                                                                          
+      setFailCount(0);
+      setBlockedUntil(null);
       navigate("/app/inicio");
     } catch (err) {
       // O interceptor do axios já formatou a mensagem amigável em err.message                                                                                                                             
-      setApiError(err.message || "Falha ao realizar login. Tente novamente.");
+      const newCount = failCount + 1;
+      setFailCount(newCount);
+
+      if (newCount >= MAX_ATTEMPTS) {
+        setBlockedUntil(Date.now() + BLOCK_DURATION_MS);
+        setApiError(`Muitas tentativas incorretas. Tente novamente em 30 segundos.`);
+      } else {
+        setApiError(err.message || "Falha ao realizar login. Tente novamente.");
+      }
     } finally {
       setLoading(false);
     }
@@ -112,22 +135,8 @@ export default function LoginPage() {
 
         <div className="login-card__body">
           <form onSubmit={handleLogin} className="login-form" noValidate>
-            {apiError && (
-              <div
-                role="alert"
-                style={{
-                  backgroundColor: "rgba(220, 38, 38, 0.15)",
-                  border: "1px solid rgba(220, 38, 38, 0.4)",
-                  borderRadius: "0.625rem",
-                  padding: "0.625rem 0.875rem",
-                  color: "#fca5a5",
-                  fontSize: "0.8125rem",
-                  textAlign: "center",
-                }}
-              >
-                {apiError}
-              </div>
-            )}
+            <ApiErrorBanner message={apiError} />
+
 
             {/* Email field */}
             <div className="login-field">
@@ -171,7 +180,12 @@ export default function LoginPage() {
                   aria-invalid={!!errors.password}
                   aria-describedby={errors.password ? "login-password-error" : undefined}
                 />
-                <button type="button" onClick={() => setShowPass(!showPass)} className="login-field__toggle">
+                <button
+                  type="button"
+                  onClick={() => setShowPass(!showPass)}
+                  className="login-field__toggle"
+                  aria-label={showPass ? "Ocultar senha" : "Ver senha"}
+                >
                   {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
@@ -181,7 +195,7 @@ export default function LoginPage() {
             </div>
 
             {/* Submit */}
-            <button type="submit" disabled={loading} className="login-submit">
+            <button type="submit" disabled={loading || isBlocked} className="login-submit">
               {loading ? <div className="login-submit__spinner" /> : <>
                 Entrar
                 <ArrowRight size={17} />

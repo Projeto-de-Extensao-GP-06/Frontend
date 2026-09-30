@@ -8,7 +8,6 @@ import { PaginationBar } from "../components/PaginationBar";
 import { mockProcesses, mockRequests } from "../data/mockData";
 import { listarProcessos } from "../services/processoService";
 import { toast } from "sonner";
-import { setDevToken } from "../provider/api";
 import "../../styles/home-page.css";
 
 const STATUS_OPTS = [
@@ -49,8 +48,6 @@ const parseDateToTimestamp = (dateStr) => {
 };
 
 export default function HomePage() {
-  setDevToken();
-
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 

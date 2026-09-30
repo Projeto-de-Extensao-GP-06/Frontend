@@ -1,4 +1,4 @@
-import { api } from "./api";
+import { api } from "@/app/provider/api";
 
 export const authService = {
     /**                                                                                                                                                                                                    
@@ -8,6 +8,17 @@ export const authService = {
     async login(email, senha) {
         const response = await api.post("/auth/login", { email, senha });
         return response.data; // Retorna { id, nome, email, cargo, permissoes }                                                                                                                              
+    },
+
+    /**
+     * Valida a sessão ativa do usuário junto ao backend.
+     * Usa o cookie HttpOnly de sessão (enviado automaticamente via withCredentials).
+     * Retorna os dados atualizados do usuário se a sessão for válida.
+     * Lança erro (401) se o cookie estiver ausente, inválido ou expirado.
+     */
+    async me() {
+        const response = await api.get("/auth/me");
+        return response.data; // Retorna { id, nome, email, cargo, permissoes }
     },
 
     /**                                                                                                                                                                                                    

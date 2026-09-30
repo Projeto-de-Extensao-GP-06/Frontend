@@ -5,6 +5,8 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { authService } from "../services/authService";
+import { ApiErrorBanner } from "../components/ApiErrorBanner";
+import { toast } from "sonner";
 import "../../styles/password-reset-page.css";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -170,6 +172,7 @@ export default function PasswordResetPage() {
       } else {
         await authService.enviarRedefinirSenhaOtp(email.trim());
       }
+      toast.success(`Código enviado para ${email.trim()}. Verifique sua caixa de entrada.`);
       setErrors({});
       setStep("code");
     } catch (err) {
@@ -251,23 +254,8 @@ export default function PasswordResetPage() {
           </button>
 
           {/* Banner de Erro Geral da API */}
-          {apiError && (
-            <div
-              role="alert"
-              style={{
-                backgroundColor: "rgba(220, 38, 38, 0.15)",
-                border: "1px solid rgba(220, 38, 38, 0.4)",
-                borderRadius: "0.625rem",
-                padding: "0.625rem 0.875rem",
-                color: "#fca5a5",
-                fontSize: "0.8125rem",
-                textAlign: "center",
-                marginBottom: "1rem",
-              }}
-            >
-              {apiError}
-            </div>
-          )}
+          <ApiErrorBanner message={apiError} />
+
 
           {/* ── ETAPA 1: SOLICITAÇÃO DO E-MAIL ── */}
           {step === "email" && (

@@ -1,4 +1,4 @@
-import { api } from "../provider/api";
+import { api } from "@/app/provider/api";
 
 function formatarData(dataIso) {
   if (!dataIso) return "—";

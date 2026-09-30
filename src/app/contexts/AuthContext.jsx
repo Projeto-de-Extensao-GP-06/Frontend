@@ -5,32 +5,54 @@ const AuthContext = createContext({});
 
 const STORAGE_USER_KEY = "@sgpj:user";
 
+/**
+ * Seleciona apenas os campos mínimos necessários para UX antes de salvar no localStorage.
+ * Permissões e dados sensíveis não devem ser persistidos localmente — a autorização
+ * real deve sempre ser validada pelo backend.
+ */
+function pickStorageData({ id, nome, email, cargo }) {
+    return { id, nome, email, cargo };
+}
+
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Efeito executado apenas uma vez quando a aplicação inicializa                                                                                                                                       
+    // Efeito executado apenas uma vez quando a aplicação inicializa
     useEffect(() => {
-        // Recupera dados do usuário do localStorage se já existirem                                                                                                                                         
-        const storedUser = localStorage.getItem(STORAGE_USER_KEY);
-        if (storedUser) {
+        async function validarSessao() {
+            const storedUser = localStorage.getItem(STORAGE_USER_KEY);
+
+            // Se não há dados locais, não há sessão para validar
+            if (!storedUser) {
+                setLoading(false);
+                return;
+            }
+
             try {
-                setUser(JSON.parse(storedUser));
+                // Valida com o backend se o cookie de sessão ainda é válido
+                const userData = await authService.me();
+                setUser(userData);
+                localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(pickStorageData(userData)));
             } catch (err) {
-                console.error("Erro ao carregar dados do usuário do storage:", err);
+                // Sessão expirada ou inválida no backend — limpa dados locais
+                console.warn("Sessão inválida ou expirada:", err.message);
                 localStorage.removeItem(STORAGE_USER_KEY);
+            } finally {
+                setLoading(false);
             }
         }
-        setLoading(false);
+
+        validarSessao();
     }, []);
 
     // Função de Login                                                                                                                                                                                     
     const login = async (email, senha) => {
         const userData = await authService.login(email, senha);
 
-        // Atualiza estado e persiste dados do usuário para UX                                                                                                                                               
+        // Atualiza estado e persiste apenas dados mínimos de UX no localStorage                                                                                                                               
         setUser(userData);
-        localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(userData));
+        localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(pickStorageData(userData)));
 
         return userData;
     };
