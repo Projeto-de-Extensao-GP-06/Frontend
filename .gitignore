@@ -30,3 +30,15 @@ Thumbs.db
 
 # Diretório de exemplos
 src/app/examples/
+
+# AI Context & Tooling
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+.agents/
+.claude/
+.codex/
+.cursor/
+.gemini/
+.opencode/
+graphify-out/
