@@ -1,0 +1,264 @@
+/* Process Creation Progress Dialog Styles */
+
+.creation-progress-dialog {
+  max-width: 490px;
+  width: 90vw;
+  padding: 1.5rem;
+  background: #ffffff;
+  border-radius: 1rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  position: relative;
+}
+
+.creation-progress-dialog .dialog-close {
+  display: none !important;
+}
+
+.creation-progress-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.creation-progress-dialog-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 0.25rem;
+}
+
+.creation-progress-dialog-desc {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin-bottom: 1.25rem;
+  line-height: 1.4;
+}
+
+.creation-progress-close-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #64748b;
+  padding: 0.375rem;
+  border-radius: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.creation-progress-close-btn:hover {
+  color: #0f172a;
+  background: #f1f5f9;
+}
+
+.creation-progress-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.creation-progress-step-item {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.875rem 1rem;
+  border-radius: 0.625rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.creation-progress-step-item.status-em_andamento {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.creation-progress-step-item.status-concluida {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.creation-progress-step-item.status-falha {
+  background: #fefce8;
+  border-color: #fef08a;
+}
+
+.creation-progress-step-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.creation-progress-step-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.creation-progress-step-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1e293b;
+  display: block;
+}
+
+.progress-step-status {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  flex-shrink: 0;
+}
+
+.progress-step-status.is-pending {
+  background: #e2e8f0;
+  color: #64748b;
+}
+
+.progress-step-status.is-active {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.progress-step-status.is-done {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.progress-step-status.is-warning {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.creation-progress-footer {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.creation-progress-hint {
+  font-size: 0.8125rem;
+  color: #64748b;
+  text-align: center;
+  line-height: 1.35;
+}
+
+.creation-progress-minimize-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  background: #f1f5f9;
+  color: #1e293b;
+  border: 1px solid #cbd5e1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.creation-progress-minimize-btn:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.creation-progress-success-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  background: #0f172a;
+  color: #ffffff;
+  border: 1px solid #0f172a;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.creation-progress-success-btn:hover {
+  background: #1e293b;
+}
+
+/* Floating indicator when minimized */
+.creation-floating-indicator {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 99999;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 0.875rem 1.25rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.35), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  max-width: 380px;
+  animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.creation-floating-indicator:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 25px 30px -5px rgba(0, 0, 0, 0.4);
+}
+
+.creation-floating-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.creation-floating-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.creation-floating-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #f8fafc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.creation-floating-subtitle {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
