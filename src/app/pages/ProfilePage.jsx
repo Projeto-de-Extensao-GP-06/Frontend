@@ -1,29 +1,73 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { Key, Shield, CheckCircle, AlertCircle, Cloud, RefreshCw, Loader2, User, Save } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { Button } from "../components/ui/button";
+import { useAuth } from "../contexts/AuthContext";
 import { startOneDriveLogin } from "../services/oneDriveService";
+import { buscarPerfilAtual, atualizarUsuario, salvarUsuarioLogado } from "../services/usuarioService";
 import "../../styles/profile-page.css";
 
 export default function ProfilePage() {
-  useEffect(() => {
-    document.title = "Perfil";
-  }, []);
-
-  // TODO: substituir por role vinda de autenticação real quando existir.
-  const userRole = "Administrador";
-  const isAdmin = userRole === "Administrador";
-
-  const [name, setName] = useState("Thauany Bezerra");
-  const [email, setEmail] = useState("thauany@thauanybezerra.adv.br");
+  const [currentUser, setCurrentUser] = useState(null);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(true);
   const [confirmPassDialogOpen, setConfirmPassDialogOpen] = useState(false);
   const [confirmSaveDialogOpen, setConfirmSaveDialogOpen] = useState(false);
   const [oneDriveLoading, setOneDriveLoading] = useState(false);
   const [oneDriveError, setOneDriveError] = useState("");
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { updateUser } = useAuth();
+
+  useEffect(() => {
+    const onedriveStatus = searchParams.get("onedrive");
+    if (!onedriveStatus) return;
+
+    if (onedriveStatus === "connected") {
+      toast.success("OneDrive reconectado com sucesso!");
+    } else if (onedriveStatus === "error") {
+      toast.error("Não foi possível reconectar o OneDrive. Tente novamente.");
+    }
+
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("onedrive");
+      return next;
+    }, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    document.title = "Perfil";
+
+    async function carregarPerfil() {
+      try {
+        setLoadingProfile(true);
+        const usuario = await buscarPerfilAtual();
+        if (usuario) {
+          setCurrentUser(usuario);
+          setName(usuario.nome || "");
+          setEmail(usuario.email || "");
+        }
+      } catch (err) {
+        console.error("Erro ao carregar perfil:", err);
+        toast.error("Não foi possível carregar os dados do perfil.");
+      } finally {
+        setLoadingProfile(false);
+      }
+    }
+
+    carregarPerfil();
+  }, []);
+
+  const userRole = currentUser?.cargo?.nome || currentUser?.cargoNome || "Cargo não informado";
+  const isAdmin = userRole?.toUpperCase() === "ADMIN" || userRole?.toLowerCase() === "administrador";
+  const isActive = currentUser ? currentUser.ativo !== false : null;
+  const permissions = Array.isArray(currentUser?.permissoes) ? currentUser.permissoes : [];
 
   const initials = name
     .trim()
@@ -32,7 +76,7 @@ export default function ProfilePage() {
     .map((n) => n[0])
     .slice(0, 2)
     .join("")
-    .toUpperCase() || "TB";
+    .toUpperCase() || "US";
 
   const handleOpenSaveDialog = (e) => {
     e.preventDefault();
@@ -40,13 +84,52 @@ export default function ProfilePage() {
     setConfirmSaveDialogOpen(true);
   };
 
-  const handleConfirmSaveChange = () => {
+  const handleConfirmSaveChange = async () => {
     setConfirmSaveDialogOpen(false);
-    setSaved(true);
-    toast.success("Informações salvas com sucesso!");
-    setTimeout(() => {
-      setSaved(false);
-    }, 3500);
+    if (!currentUser?.id) {
+      toast.error("Identificador do usuário não encontrado.");
+      return;
+    }
+    const cargoId = currentUser.cargo?.id || currentUser.cargoId;
+    if (!cargoId) {
+      toast.error("Não foi possível identificar o cargo da sua conta para salvar as alterações.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const payload = {
+        nome: name.trim(),
+        email: email.trim(),
+        cargoId,
+        ativo: currentUser.ativo ?? true,
+      };
+
+      const atualizado = await atualizarUsuario(currentUser.id, payload);
+
+      const novoUsuario = {
+        ...currentUser,
+        ...atualizado,
+        nome: atualizado.nome || payload.nome,
+        email: atualizado.email || payload.email,
+        cargoNome: atualizado.cargoNome || currentUser.cargo?.nome || currentUser.cargoNome,
+      };
+
+      salvarUsuarioLogado(novoUsuario);
+      updateUser(novoUsuario);
+      setCurrentUser(novoUsuario);
+      setSaved(true);
+      toast.success("Informações salvas com sucesso!");
+      setTimeout(() => {
+        setSaved(false);
+      }, 3500);
+    } catch (err) {
+      console.error("Erro ao atualizar perfil:", err);
+      const message = err?.response?.data?.message || err?.message || "Não foi possível salvar as alterações.";
+      toast.error(message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleConnectOneDrive = async () => {
@@ -55,10 +138,13 @@ export default function ProfilePage() {
     try {
       const { authUrl } = await startOneDriveLogin();
       window.location.href = authUrl;
+
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Não foi possível conectar ao OneDrive.";
+      console.error("Erro ao iniciar OneDrive:", err);
+      const message = err?.response?.data?.message || (err instanceof Error ? err.message : "Não foi possível conectar ao OneDrive.");
       setOneDriveError(message);
       toast.error(message);
+    } finally {
       setOneDriveLoading(false);
     }
   };
@@ -76,11 +162,11 @@ export default function ProfilePage() {
               <span className="profile-avatar__initials">{initials}</span>
             </div>
             <div className="profile-hero__copy">
-              <h1 className="profile-hero__name">{name || "Thauany Bezerra"}</h1>
-              <p className="profile-hero__role">Administrador</p>
+               <h1 className="profile-hero__name">{name || (loadingProfile ? "Carregando..." : "Perfil")}</h1>
+              <p className="profile-hero__role">{userRole}</p>
               <div className="profile-hero__status">
                 <div className="profile-hero__status-dot" />
-                <span className="profile-hero__status-label">Ativo</span>
+                 <span className="profile-hero__status-label">{loadingProfile ? "Carregando..." : isActive ? "Ativo" : "Inativo"}</span>
               </div>
             </div>
           </div>
@@ -102,6 +188,7 @@ export default function ProfilePage() {
                 type="text"
                 className="profile-field__input"
                 value={name}
+                disabled={loadingProfile || saving}
                 onChange={(e) => {
                   setName(e.target.value);
                   if (saved) setSaved(false);
@@ -118,6 +205,7 @@ export default function ProfilePage() {
                 type="email"
                 className="profile-field__input"
                 value={email}
+                disabled={loadingProfile || saving}
                 onChange={(e) => {
                   setEmail(e.target.value);
                   if (saved) setSaved(false);
@@ -135,9 +223,9 @@ export default function ProfilePage() {
             )}
 
             <div className="profile-card__actions">
-              <button type="submit" className="profile-save-email-btn">
-                <Save size={15} />
-                Salvar alterações
+              <button type="submit" disabled={loadingProfile || saving} className="profile-save-email-btn">
+                {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+                {saving ? "Salvando..." : "Salvar alterações"}
               </button>
               <button
                 type="button"
@@ -161,12 +249,20 @@ export default function ProfilePage() {
               <Shield size={16} className="profile-role-badge__icon" />
             </div>
             <div className="profile-role-info">
-              <p className="profile-role-info__name">Administrador</p>
+              <p className="profile-role-info__name">{userRole}</p>
             </div>
             <CheckCircle size={16} className="profile-role-check" />
           </div>
           <div className="profile-permissions">
-            {["Processos", "Clientes", "Usuários", "Cargos", "Documentos"].map(perm => <span key={perm} className="profile-permission-chip">{perm}</span>)}
+            {permissions.length > 0
+              ? permissions.map((permission) => (
+                <span key={permission} className="profile-permission-chip">
+                  {permission === "TODAS AS PERMISSÕES"
+                    ? "Todas as permissões"
+                    : permission.toLocaleLowerCase("pt-BR").replace(/(^|\s)\S/g, (letter) => letter.toLocaleUpperCase("pt-BR"))}
+                </span>
+              ))
+              : <span className="profile-permission-chip">Nenhuma permissão informada</span>}
           </div>
         </div>
 
@@ -205,7 +301,7 @@ export default function ProfilePage() {
         )}
 
         <div className="profile-footer">
-          <p className="profile-footer__text">Thauany Bezerra Advocacia · SGPJ v1.0</p>
+          <p className="profile-footer__text">SGPJ · Perfil da conta</p>
         </div>
       </div>
 
@@ -224,8 +320,10 @@ export default function ProfilePage() {
             Tem certeza de que deseja salvar as alterações nas informações da sua conta?
           </p>
           <DialogFooter className="profile-dialog__footer">
-            <Button variant="outline" className="profile-dialog-button profile-dialog-button--outline" onClick={() => setConfirmSaveDialogOpen(false)}>Cancelar</Button>
-            <Button className="profile-dialog-button profile-dialog-button--primary" onClick={handleConfirmSaveChange}>Confirmar</Button>
+            <Button variant="outline" className="profile-dialog-button profile-dialog-button--outline" onClick={() => setConfirmSaveDialogOpen(false)} disabled={saving}>Cancelar</Button>
+            <Button className="profile-dialog-button profile-dialog-button--primary" onClick={handleConfirmSaveChange} disabled={saving}>
+              {saving ? "Salvando..." : "Confirmar"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
