@@ -1,18 +1,26 @@
 import "../../styles/status-badge.css";
+import { formatLabel } from "../utils/format";
 
-export function StatusBadge({
-  status,
-  className = ""
-}) {
+// "Média" / "MEDIA" / "média" -> "media" (evita depender de como o banco grava)
+const normalizar = (valor) =>
+  String(valor ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+export function StatusBadge({ status, className = "" }) {
   const styles = {
     ativo: "status-badge--active",
     ativa: "status-badge--active",
     encerrado: "status-badge--closed",
     inativo: "status-badge--inactive",
     inativa: "status-badge--inactive",
+    suspenso: "status-badge--inactive",
+    suspensa: "status-badge--inactive",
     pendente: "status-badge--pending",
     aceita: "status-badge--accepted",
-    negada: "status-badge--denied"
+    negada: "status-badge--denied",
   };
   const labels = {
     ativo: "Ativo",
@@ -20,37 +28,41 @@ export function StatusBadge({
     encerrado: "Encerrado",
     inativo: "Inativo",
     inativa: "Inativa",
+    suspenso: "Suspenso",
+    suspensa: "Suspensa",
     pendente: "Pendente",
     aceita: "Aceita",
-    negada: "Negada"
+    negada: "Negada",
   };
-  return <span className={`status-badge ${styles[status] || styles.inativo} ${className}`.trim()}>
-      {labels[status] || status}
-    </span>;
+  const key = normalizar(status);
+
+  return (
+    <span className={`status-badge ${styles[key] || styles.inativo} ${className}`.trim()}>
+      {labels[key] || formatLabel(status)}
+    </span>
+  );
 }
-export function PriorityBadge({
-  priority,
-  className = ""
-}) {
+
+export function PriorityBadge({ priority, className = "" }) {
   const styles = {
     alta: "priority-badge--high",
-    média: "priority-badge--medium",
-    baixa: "priority-badge--low"
+    media: "priority-badge--medium",
+    baixa: "priority-badge--low",
   };
   const labels = {
     alta: "Alta",
-    média: "Média",
-    baixa: "Baixa"
+    media: "Média",
+    baixa: "Baixa",
   };
-  return <span className={`priority-badge ${styles[priority] || styles.baixa} ${className}`.trim()}>
-      {labels[priority] || priority}
-    </span>;
+  const key = normalizar(priority);
+
+  return (
+    <span className={`priority-badge ${styles[key] || styles.baixa} ${className}`.trim()}>
+      {labels[key] || formatLabel(priority)}
+    </span>
+  );
 }
-export function PhaseBadge({
-  phase,
-  className = ""
-}) {
-  return <span className={`phase-badge ${className}`.trim()}>
-      {phase}
-    </span>;
+
+export function PhaseBadge({ phase, className = "" }) {
+  return <span className={`phase-badge ${className}`.trim()}>{formatLabel(phase)}</span>;
 }
