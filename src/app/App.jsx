@@ -17,7 +17,7 @@ export default function App() {
       const button = wrapper?.shadowRoot?.getElementById("vlibras-access");
       if (!button) return false;
       button.style.setProperty("top", "auto", "important");
-      button.style.setProperty("bottom", "20px", "important");
+      button.style.setProperty("bottom", "65%", "important");
       button.style.setProperty("right", "auto", "important");
       button.style.setProperty("left", "16px", "important");
       return true;

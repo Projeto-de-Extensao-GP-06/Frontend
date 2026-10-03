@@ -22,7 +22,7 @@ export default function ProfilePage() {
   const [oneDriveError, setOneDriveError] = useState("");
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { updateUser } = useAuth();
+  const { updateUser, logout } = useAuth();
 
   useEffect(() => {
     const onedriveStatus = searchParams.get("onedrive");
@@ -105,7 +105,22 @@ export default function ProfilePage() {
         ativo: currentUser.ativo ?? true,
       };
 
+      const emailMudou = email.trim().toLowerCase() !== (currentUser.email || "").trim().toLowerCase();
       const atualizado = await atualizarUsuario(currentUser.id, payload);
+
+      if (emailMudou) {
+        toast.success("E-mail atualizado com sucesso! Por segurança, faça login novamente com seu novo e-mail.", {
+          duration: 6000,
+        });
+        setTimeout(async () => {
+          try {
+            await logout();
+          } finally {
+            navigate("/login");
+          }
+        }, 1800);
+        return;
+      }
 
       const novoUsuario = {
         ...currentUser,
