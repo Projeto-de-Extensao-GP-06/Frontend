@@ -220,6 +220,130 @@ export default function DashboardPage() {
         />
       </div>
 
+      {/* PROCESSOS POR FASE (Total do sistema) */}
+      <ChartCard
+        title="Processos por fase"
+        sub="Distribuição atual da carteira ativa (Total do sistema)"
+        info="Distribui os processos ativos entre as etapas processuais. É uma fotografia do momento atual do sistema."
+      >
+        {hasPhaseData ? (
+          <>
+            <div className="dashboard-phase-toggle">
+              <button
+                type="button"
+                aria-pressed={showEmptyPhases}
+                onClick={() => setShowEmptyPhases((value) => !value)}
+              >
+                {showEmptyPhases ? <EyeOff size={13} /> : <Eye size={13} />}
+                {showEmptyPhases ? "Ocultar fases sem processos" : "Mostrar fases sem processos"}
+              </button>
+            </div>
+            <ResponsiveContainer width="100%" height={phaseChartHeight}>
+              <BarChart
+                data={displayedPhaseData}
+                layout="vertical"
+                margin={{ top: 8, right: 28, left: 0, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" horizontal={false} />
+                <XAxis type="number" allowDecimals={false} axisLine={false} tickLine={false} />
+                <YAxis
+                  dataKey="fase"
+                  type="category"
+                  width={150}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 11 }}
+                />
+                <Bar
+                  dataKey="processos"
+                  name="Processos"
+                  radius={[0, 4, 4, 0]}
+                  cursor="pointer"
+                  onClick={(data) =>
+                    navigate(`/app?fase=${encodeURIComponent(toHomePhase(data.fase))}`)
+                  }
+                >
+                  <LabelList
+                    dataKey="processos"
+                    position="right"
+                    style={{ fill: "#0f2357", fontSize: 11, fontWeight: 700 }}
+                  />
+                  {displayedPhaseData.map((entry, index) => (
+                    <Cell
+                      key={index}
+                      fill={entry.processos === maxPhaseCount ? "#C9A96E" : "#0F2357"}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </>
+        ) : (
+          <p className="dashboard-empty">Nenhum processo ativo no momento.</p>
+        )}
+      </ChartCard>
+
+      {/* AGENDA DE RISCO */}
+      <div className="dashboard-charts-grid dashboard-charts-grid--split">
+        <ListCard
+          title="Agenda de risco"
+          sub="Audiências futuras ordenadas por data"
+          empty="Não há audiências futuras."
+          info="Lista as próximas audiências dos processos ativos em ordem de data."
+        >
+          {dashboardData.upcomingHearings.map((process) => (
+            <div
+              // key={process.id}
+              className="dashboard-list-item dashboard-list-item--clickable"
+              role="button"
+              tabIndex={0}
+              onClick={() =>
+                navigate(
+                  `/app?fase=${encodeURIComponent(toHomePhase(process.phase))}&prioridade=${encodeURIComponent(process.priority.toLowerCase())}`,
+                )
+              }
+              onKeyDown={(event) => {
+                if (event.key === "Enter")
+                  navigate(
+                    `/app?fase=${encodeURIComponent(toHomePhase(process.phase))}&prioridade=${encodeURIComponent(process.priority.toLowerCase())}`,
+                  );
+              }}
+            >
+              <div>
+                <strong>{process.hearing}</strong>
+                <span>
+                  {process.phase} · {process.responsible}
+                </span>
+              </div>
+              <span
+                className={`dashboard-priority dashboard-priority--${process.priority.toLowerCase()}`}
+              >
+                {process.priority}
+              </span>
+            </div>
+          ))}
+        </ListCard>
+        <ChartCard
+          title="Tempo de duração"
+          sub={`Processos por tempo de tramitação - Média total do sistema`}
+          info="Distribui os processos ativos de acordo com a sua duração total em tramitação para o período selecionado."
+        >
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={currentTempoDuracaoData} margin={{ top: 16, right: 16, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} />
+              <XAxis dataKey="faixa" axisLine={false} tickLine={false} interval={0} tick={{ fontSize: 10 }} />
+              <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
+              <Tooltip content={<CustomTip />} />
+              <Bar dataKey="processos" name="Processos" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="processos" position="top" style={{ fill: "#0f2357", fontSize: 11, fontWeight: 700 }} />
+                {currentTempoDuracaoData.map((entry, index) => (
+                  <Cell key={index} fill={DURATION_COLORS[index % DURATION_COLORS.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      </div>
       {/* PAINEL DE FILTRO DE PERÍODO (No topo) */}
       <div className="dashboard-panel">
         <div className="dashboard-panel-header">
@@ -296,162 +420,7 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
-
-      {/* PROCESSOS POR FASE (Total do sistema) */}
-      <ChartCard
-        title="Processos por fase"
-        sub="Distribuição atual da carteira ativa (Total do sistema)"
-        info="Distribui os processos ativos entre as etapas processuais. É uma fotografia do momento atual do sistema."
-      >
-        {hasPhaseData ? (
-          <>
-            <div className="dashboard-phase-toggle">
-              <button
-                type="button"
-                aria-pressed={showEmptyPhases}
-                onClick={() => setShowEmptyPhases((value) => !value)}
-              >
-                {showEmptyPhases ? <EyeOff size={13} /> : <Eye size={13} />}
-                {showEmptyPhases ? "Ocultar fases sem processos" : "Mostrar fases sem processos"}
-              </button>
-            </div>
-            <ResponsiveContainer width="100%" height={phaseChartHeight}>
-              <BarChart
-                data={displayedPhaseData}
-                layout="vertical"
-                margin={{ top: 8, right: 28, left: 0, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" horizontal={false} />
-                <XAxis type="number" allowDecimals={false} axisLine={false} tickLine={false} />
-                <YAxis
-                  dataKey="fase"
-                  type="category"
-                  width={150}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 11 }}
-                />
-                <Bar
-                  dataKey="processos"
-                  name="Processos"
-                  radius={[0, 4, 4, 0]}
-                  cursor="pointer"
-                  onClick={(data) =>
-                    navigate(`/app?fase=${encodeURIComponent(toHomePhase(data.fase))}`)
-                  }
-                >
-                  <LabelList
-                    dataKey="processos"
-                    position="right"
-                    style={{ fill: "#0f2357", fontSize: 11, fontWeight: 700 }}
-                  />
-                  {displayedPhaseData.map((entry, index) => (
-                    <Cell
-                      key={index}
-                      fill={entry.processos === maxPhaseCount ? "#C9A96E" : "#0F2357"}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </>
-        ) : (
-          <p className="dashboard-empty">Nenhum processo ativo no momento.</p>
-        )}
-      </ChartCard>
-
-      {/* PROCESSOS ENCERRADOS & SUSPENSOS */}
-      <div className="dashboard-charts-grid dashboard-charts-grid--split">
-        <ChartCard
-          title="Processos encerrados"
-          sub={`Total por categoria - ${appliedPeriod}`}
-          info="Exibe o total de processos encerrados por motivo/ocasião específica no período selecionado."
-        >
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={currentEncerradosData} margin={{ top: 16, right: 16, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} />
-              <XAxis dataKey="categoria" axisLine={false} tickLine={false} interval={0} tick={{ fontSize: 10 }} />
-              <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
-              <Tooltip content={<CustomTip />} />
-              <Bar dataKey="total" name="Processos" radius={[4, 4, 0, 0]}>
-                <LabelList dataKey="total" position="top" style={{ fill: "#0f2357", fontSize: 11, fontWeight: 700 }} />
-                {currentEncerradosData.map((entry, index) => (
-                  <Cell key={index} fill={entry.fill} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
-
-        <ChartCard
-          title="Processos suspensos"
-          sub={`Total por categoria - ${appliedPeriod}`}
-          info="Exibe o total de processos suspensos por motivo/ocasião específica no período selecionado."
-        >
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={currentSuspensasData} margin={{ top: 16, right: 16, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} />
-              <XAxis dataKey="categoria" axisLine={false} tickLine={false} interval={0} tick={{ fontSize: 9 }} />
-              <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
-              <Tooltip content={<CustomTip />} />
-              <Bar dataKey="total" name="Processos" radius={[4, 4, 0, 0]}>
-                <LabelList dataKey="total" position="top" style={{ fill: "#0f2357", fontSize: 11, fontWeight: 700 }} />
-                {currentSuspensasData.map((entry, index) => (
-                  <Cell key={index} fill={entry.fill} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
-      </div>
-
-      {/* FORMA DE ENTRADA & TEMPO DE DURAÇÃO */}
-      <div className="dashboard-charts-grid dashboard-charts-grid--split">
-        <ChartCard
-          title="Forma de entrada"
-          sub={`Total de clientes por canal - ${appliedPeriod}`}
-          info="Mede o total de clientes que entraram no escritório por cada canal específico (Instagram, Site ou Indicação) no período selecionado."
-        >
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={currentFormaEntradaData} margin={{ top: 16, right: 16, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} />
-              <XAxis dataKey="origem" axisLine={false} tickLine={false} interval={0} tick={{ fontSize: 11 }} />
-              <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
-              <Tooltip content={<CustomTip />} />
-              <Bar dataKey="clientes" name="Clientes" radius={[4, 4, 0, 0]}>
-                <LabelList dataKey="clientes" position="top" style={{ fill: "#0f2357", fontSize: 11, fontWeight: 700 }} />
-                {currentFormaEntradaData.map((entry, index) => (
-                  <Cell key={index} fill={ENTRY_COLORS[index % ENTRY_COLORS.length]} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
-
-        <ChartCard
-          title="Tempo de duração"
-          sub={`Processos por tempo de tramitação - ${appliedPeriod}`}
-          info="Distribui os processos ativos de acordo com a sua duração total em tramitação para o período selecionado."
-        >
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={currentTempoDuracaoData} margin={{ top: 16, right: 16, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} />
-              <XAxis dataKey="faixa" axisLine={false} tickLine={false} interval={0} tick={{ fontSize: 10 }} />
-              <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
-              <Tooltip content={<CustomTip />} />
-              <Bar dataKey="processos" name="Processos" radius={[4, 4, 0, 0]}>
-                <LabelList dataKey="processos" position="top" style={{ fill: "#0f2357", fontSize: 11, fontWeight: 700 }} />
-                {currentTempoDuracaoData.map((entry, index) => (
-                  <Cell key={index} fill={DURATION_COLORS[index % DURATION_COLORS.length]} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
-      </div>
-
-      {/* EVOLUÇÃO DA CARTEIRA & FUNIL DE ATENDIMENTO */}
-      <div className="dashboard-charts-grid dashboard-charts-grid--split">
+      <div className="dashboard-charts-grid">
         <ChartCard
           title="Evolução da carteira"
           sub={`Aberturas e encerramentos - ${appliedPeriod}`}
@@ -503,8 +472,76 @@ export default function DashboardPage() {
             <p className="dashboard-empty">Nenhum dado de evolução no momento.</p>
           )}
         </ChartCard>
+      </div>
+      {/* PROCESSOS ENCERRADOS & SUSPENSOS */}
+      <div className="dashboard-charts-grid dashboard-charts-grid--split">
+        <ChartCard
+          title="Processos encerrados"
+          sub={`Total por categoria - ${appliedPeriod}`}
+          info="Exibe o total de processos encerrados por motivo/ocasião específica no período selecionado."
+        >
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={currentEncerradosData} margin={{ top: 16, right: 16, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} />
+              <XAxis dataKey="categoria" axisLine={false} tickLine={false} interval={0} tick={{ fontSize: 10 }} />
+              <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
+              <Tooltip content={<CustomTip />} />
+              <Bar dataKey="total" name="Processos" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="total" position="top" style={{ fill: "#0f2357", fontSize: 11, fontWeight: 700 }} />
+                {currentEncerradosData.map((entry, index) => (
+                  <Cell key={index} fill={entry.fill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
 
         <ChartCard
+          title="Processos suspensos"
+          sub={`Total por categoria - ${appliedPeriod}`}
+          info="Exibe o total de processos suspensos por motivo/ocasião específica no período selecionado."
+        >
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={currentSuspensasData} margin={{ top: 16, right: 16, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} />
+              <XAxis dataKey="categoria" axisLine={false} tickLine={false} interval={0} tick={{ fontSize: 9 }} />
+              <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
+              <Tooltip content={<CustomTip />} />
+              <Bar dataKey="total" name="Processos" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="total" position="top" style={{ fill: "#0f2357", fontSize: 11, fontWeight: 700 }} />
+                {currentSuspensasData.map((entry, index) => (
+                  <Cell key={index} fill={entry.fill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      </div>
+      
+      {/* FORMA DE ENTRADA*/}
+      <div className="dashboard-charts-grid dashboard-charts-grid--split">
+        <ChartCard
+          title="Forma de entrada"
+          sub={`Total de clientes por canal - ${appliedPeriod}`}
+          info="Mede o total de clientes que entraram no escritório por cada canal específico (Instagram, Site ou Indicação) no período selecionado."
+        >
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={currentFormaEntradaData} margin={{ top: 16, right: 16, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} />
+              <XAxis dataKey="origem" axisLine={false} tickLine={false} interval={0} tick={{ fontSize: 11 }} />
+              <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
+              <Tooltip content={<CustomTip />} />
+              <Bar dataKey="clientes" name="Clientes" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="clientes" position="top" style={{ fill: "#0f2357", fontSize: 11, fontWeight: 700 }} />
+                {currentFormaEntradaData.map((entry, index) => (
+                  <Cell key={index} fill={ENTRY_COLORS[index % ENTRY_COLORS.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+        {/*FUNIL DE ATENDIMENTO */}
+      <ChartCard
           title="Funil de atendimento"
           sub={`Solicitações até a abertura do processo - ${appliedPeriod}`}
           info="Mostra a passagem das solicitações recebidas, aceitas, transformadas em novos clientes e processos no período selecionado."
@@ -538,48 +575,7 @@ export default function DashboardPage() {
         </ChartCard>
       </div>
 
-      {/* AGENDA DE RISCO */}
-      <div className="dashboard-charts-grid">
-        <ListCard
-          title="Agenda de risco"
-          sub="Audiências futuras ordenadas por data"
-          empty="Não há audiências futuras."
-          info="Lista as próximas audiências dos processos ativos em ordem de data."
-        >
-          {dashboardData.upcomingHearings.map((process) => (
-            <div
-              // key={process.id}
-              className="dashboard-list-item dashboard-list-item--clickable"
-              role="button"
-              tabIndex={0}
-              onClick={() =>
-                navigate(
-                  `/app?fase=${encodeURIComponent(toHomePhase(process.phase))}&prioridade=${encodeURIComponent(process.priority.toLowerCase())}`,
-                )
-              }
-              onKeyDown={(event) => {
-                if (event.key === "Enter")
-                  navigate(
-                    `/app?fase=${encodeURIComponent(toHomePhase(process.phase))}&prioridade=${encodeURIComponent(process.priority.toLowerCase())}`,
-                  );
-              }}
-            >
-              <div>
-                <strong>{process.hearing}</strong>
-                <span>
-                  {process.phase} · {process.responsible}
-                </span>
-              </div>
-              <span
-                className={`dashboard-priority dashboard-priority--${process.priority.toLowerCase()}`}
-              >
-                {process.priority}
-              </span>
-            </div>
-          ))}
-        </ListCard>
-      </div>
-
+      
       <button onClick={() => navigate("/app/assistente")} className="dashboard-fab">
         <div className="dashboard-fab-icon-wrap">
           <MessageSquare size={14} className="dashboard-fab-icon" />
