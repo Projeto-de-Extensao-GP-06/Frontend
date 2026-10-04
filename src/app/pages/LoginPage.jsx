@@ -1,16 +1,23 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useLocation } from "react-router";
 import { Eye, EyeOff, ArrowRight, Lock, Mail, Scale } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { ApiErrorBanner } from "../components/ApiErrorBanner";
+import { toast } from "sonner";
 import "../../styles/login-page.css";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LoginPage() {
+  const location = useLocation();
+
   useEffect(() => {
     document.title = "Login";
-  }, []);
+    if (location.state?.message) {
+      toast.success(location.state.message);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

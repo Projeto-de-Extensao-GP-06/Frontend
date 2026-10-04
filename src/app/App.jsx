@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { RouterProvider } from "react-router";
 import { router } from "./routes";
 import { AuthProvider } from "./contexts/AuthContext";
+import { Toaster } from "./components/ui/sonner";
 
 const VLIBRAS_SCRIPT_URL = "https://vlibras.gov.br/app/vlibras-plugin.js";
 const VLIBRAS_WIDGET_URL = "https://vlibras.gov.br/app";
@@ -62,6 +63,7 @@ export default function App() {
 
     <AuthProvider>
       <RouterProvider router={router} />
+      <Toaster position="top-right" richColors />
     </AuthProvider>
   </>;
 }
