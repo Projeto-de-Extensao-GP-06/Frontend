@@ -1,6 +1,7 @@
 import axios from "axios";
 
 export const api = axios.create({
+<<<<<<< HEAD
     baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080",
     // OBRIGATÓRIO: permite envio e recebimento de cookies HttpOnly entre portas/domínios diferentes
     withCredentials: true,
@@ -49,3 +50,8 @@ api.interceptors.response.use(
 
         return Promise.reject(customError);
     });
+=======
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080",
+  withCredentials: true, // Instrui o navegador a enviar cookies (incluindo HttpOnly) automaticamente
+});
+>>>>>>> 50268c9bdd9923b8efd0449bc51bf1804bbedcc5

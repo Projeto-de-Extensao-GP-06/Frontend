@@ -5,8 +5,9 @@ import { StatusBadge, PriorityBadge, PhaseBadge } from "../components/StatusBadg
 import { CalendarEventModal } from "../components/CalendarEventModal";
 import { FilterSelect } from "../components/FilterSelect";
 import { PaginationBar } from "../components/PaginationBar";
-import { mockProcesses, mockRequests } from "../data/mockData";
 import { listarProcessos } from "../services/processoService";
+import { api } from "../provider/api";
+import { maskCNJ } from "../utils/masks";
 import { toast } from "sonner";
 import "../../styles/home-page.css";
 
@@ -54,6 +55,7 @@ export default function HomePage() {
   // 1. Estados da API
   const [processes, setProcesses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [pendingRequests, setPendingRequests] = useState(null);
 
   // 2. Estados de Filtro e Busca
   const [search, setSearch] = useState("");
@@ -87,6 +89,14 @@ export default function HomePage() {
         setLoading(true);
         const dados = await listarProcessos();
         setProcesses(dados);
+
+        try {
+          const response = await api.get("/solicitacoes");
+          setPendingRequests(Array.isArray(response.data) ? response.data : []);
+        } catch (requestError) {
+          console.error("Erro ao carregar solicitações:", requestError);
+          setPendingRequests([]);
+        }
       } catch (err) {
         console.error("Erro ao carregar processos:", err);
         if (err.response?.status === 401) {
@@ -102,17 +112,29 @@ export default function HomePage() {
     carregar();
   }, []);
 
-  // 4. Cálculos das KPIs mantidas com dados mockados (serão migradas para kpiService futuramente)
-  const activeProcesses = mockProcesses.filter(p => p.status === "ativo");
-  const encerrados = mockProcesses.filter(p => p.status === "encerrado");
-  const comAudiencia = mockProcesses.filter(p => p.hearingDate !== "—");
-  const pendingRequests = mockRequests.filter(r => r.status === "pendente");
-  const tribunalOptions = ["Todos", ...Array.from(new Set(mockProcesses.map(p => p.tribunal).filter(Boolean)))];
+  // 4. KPIs calculadas a partir dos dados reais carregados na página.
+  const activeProcesses = processes.filter(p => p.status === "ativo");
+  const encerrados = processes.filter(p => p.status === "encerrado");
+  const tribunalOptions = ["Todos", ...Array.from(new Set(processes.map(p => p.tribunal).filter(Boolean)))];
+  
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const comAudiencia = processes.filter(p => {
+    if (p.hearingDate === "—") return false;
+
+    const [dia, mes, ano] = p.hearingDate.split("/");
+    const dataAudiencia = new Date(ano, mes - 1, dia);
+    dataAudiencia.setHours(0, 0, 0, 0);
+
+    return dataAudiencia >= hoje;
+  });
+
 
   // 5. Filtros aplicados sobre a lista do backend
   const filtered = processes.filter(p => {
     const q = search.toLowerCase();
-    const matchQ = !search || p.clientName.toLowerCase().includes(q) || p.cnj.includes(q);
+    const cnjBusca = search.replace(/\D/g, "");
+    const matchQ = !search || p.clientName.toLowerCase().includes(q) || p.cnj.replace(/\D/g, "").includes(cnjBusca);
     const matchS = filterStatus === "Todos" || p.status === filterStatus;
     const matchT = filterTribunal === "Todos" || p.tribunal === filterTribunal;
     const matchP = filterPhase === "Todas" || p.phase === filterPhase;
@@ -202,36 +224,28 @@ export default function HomePage() {
           iconVariant="metric-card-badge--blue"
           value={activeProcesses.length}
           label="Processos ativos"
-          trend="+1 esta semana"
           trendVariant="metric-trend--success"
-          trendIcon={<TrendingUp size={10} />}
         />
         <MetricCard
           icon={<Zap size={15} className="metric-card-icon metric-card-icon--amber" />}
           iconVariant="metric-card-badge--amber"
-          value={pendingRequests.length}
-          label="Solicitações"
-          trend="Aguardando análise"
+          value={pendingRequests?.length ?? "—"}
+          label="Solicitações pendentes"
           trendVariant="metric-trend--amber"
-          trendIcon={<Clock size={10} />}
         />
         <MetricCard
           icon={<BarChart3 size={15} className="metric-card-icon metric-card-icon--green" />}
           iconVariant="metric-card-badge--green"
           value={encerrados.length}
-          label="Encerrados"
-          trend="Total histórico"
+          label="Processos encerrados"
           trendVariant="metric-trend--muted"
-          trendIcon={<FileText size={10} />}
         />
         <MetricCard
           icon={<Calendar size={15} className="metric-card-icon metric-card-icon--gold" />}
           iconVariant="metric-card-badge--gold"
           value={comAudiencia.length}
-          label="Com audiência"
-          trend="Agendadas"
+          label="Processos com audiência"
           trendVariant="metric-trend--muted"
-          trendIcon={<Calendar size={10} />}
         />
       </div>
 
@@ -373,21 +387,16 @@ function MetricCard({
   icon,
   iconVariant,
   value,
-  label,
-  trend,
-  trendVariant,
-  trendIcon
+  label
 }) {
   return (
     <div className="metric-card">
       <div className={`metric-card-badge ${iconVariant}`}>
         {icon}
       </div>
-      <p className="metric-card-value">{value}</p>
-      <p className="metric-card-label">{label}</p>
-      <div className={`metric-card-trend ${trendVariant}`}>
-        {trendIcon}
-        <span className="metric-card-trend-text">{trend}</span>
+      <div className="metric-card-content">
+        <p className="metric-card-value">{value}</p>
+        <p className="metric-card-label">{label}</p>
       </div>
     </div>
   );
@@ -404,7 +413,7 @@ function ProcessCard({ process, onClick }) {
     >
       <div className="process-card-body">
         <div className="process-card-topline">
-          <p className="process-card-cnj">{process.cnj}</p>
+          <p className="process-card-cnj">{maskCNJ(process.cnj) || "-"}</p>
           <span className="process-card-tribunal">{process.tribunal}</span>
         </div>
 
