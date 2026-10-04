@@ -42,6 +42,23 @@ export default function PasswordResetPage() {
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState("");
 
+  // Cooldown de reenvio de código OTP (60 segundos)
+  const [resendTimer, setResendTimer] = useState(0);
+  const [resending, setResending] = useState(false);
+
+  // Efeito de contagem regressiva para o cooldown de envio e reenvio
+  useEffect(() => {
+    let interval = null;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [resendTimer]);
+
   // Regras de validação da nova senha
   const passwordRules = [
     {
@@ -172,14 +189,44 @@ export default function PasswordResetPage() {
       } else {
         await authService.enviarRedefinirSenhaOtp(email.trim());
       }
-      toast.success(`Código enviado para ${email.trim()}. Verifique sua caixa de entrada.`);
+      toast.success("Se o email informado estiver apto a receber o código, você o receberá em alguns minutos. Verifique também a caixa de spam.");
       setErrors({});
+      setResendTimer(60);
       setStep("code");
     } catch (err) {
       setApiError(err.message || "Erro ao solicitar código. Tente novamente.");
     } finally {
       setLoading(false);
     }
+  };
+
+  // ── Reenvio do Código OTP com Cooldown de 60s ─────────────────────────────
+  const handleResendCode = async () => {
+    if (resendTimer > 0 || resending || loading) return;
+    setResending(true);
+    setApiError("");
+
+    try {
+      if (isFirstAccess) {
+        await authService.enviarDefinirSenhaOtp(email.trim());
+      } else {
+        await authService.enviarRedefinirSenhaOtp(email.trim());
+      }
+      toast.success(`Novo código enviado para ${email.trim()}.`);
+      setResendTimer(60);
+    } catch (err) {
+      setApiError(err.message || "Erro ao reenviar código. Tente novamente.");
+    } finally {
+      setResending(false);
+    }
+  };
+
+  // ── Alternar para Primeiro Acesso a partir do Card Informativo ────────────
+  const handleSwitchToFirstAccess = () => {
+    setErrors({});
+    setApiError("");
+    setStep("email");
+    navigate("/redefinir-senha?mode=primeiro-acesso", { replace: true });
   };
 
   const handleCodeSubmit = async (e) => {
@@ -192,6 +239,7 @@ export default function PasswordResetPage() {
     try {
       // Esta chamada grava no navegador o cookie temporário HttpOnly (Path=/auth)
       await authService.validarOtp(email.trim(), code.trim());
+      toast.success(`Código validado com sucesso!`);
       setErrors({});
       setStep("newpass");
     } catch (err) {
@@ -211,7 +259,7 @@ export default function PasswordResetPage() {
     try {
       // O Axios envia o cookie temporário gerado no validarOtp automaticamente (withCredentials: true)
       await authService.definirNovaSenha(newPass);
-
+      
       // Sucesso! Redireciona para o login com mensagem no state
       navigate("/login", {
         state: { message: "Senha cadastrada com sucesso! Acesse sua conta." },
@@ -231,6 +279,15 @@ export default function PasswordResetPage() {
             <Scale size={26} className="pwd-brand__icon" />
           </div>
           <h1 className="pwd-brand__title">SGPJ</h1>
+          <p className="login-page__subtitle">
+            Sistema Gerenciador de Processos Judiciais
+          </p>
+
+          <div className="login-page__divider">
+            <div className="login-page__divider-line" />
+            <div className="login-page__divider-dot" />
+            <div className="login-page__divider-line" />
+          </div>
         </div>
 
         <div className="pwd-card">
@@ -333,7 +390,48 @@ export default function PasswordResetPage() {
                 <Button type="submit" disabled={loading} className="pwd-submit">
                   {loading ? "Validando..." : "Verificar"}
                 </Button>
+
+                {/* Botão de reenvio com cooldown de 60 segundos */}
+                <div className="pwd-resend-wrap">
+                  <button
+                    type="button"
+                    onClick={handleResendCode}
+                    disabled={resendTimer > 0 || resending || loading}
+                    className="pwd-resend-button"
+                  >
+                    {resending
+                      ? "Reenviando..."
+                      : resendTimer > 0
+                        ? `Reenviar código (${resendTimer}s)`
+                        : "Reenviar código"}
+                  </button>
+                </div>
               </form>
+
+              {/* Card informativo sobre recebimento do código */}
+              <div className="pwd-info-card">
+                <p className="pwd-info-card__highlight">
+                  Se o email informado estiver apto a receber o código, você o receberá em instantes.
+                </p>
+                <div className="pwd-info-card__section">
+                  <span className="pwd-info-card__subtitle">Não recebeu? Confira:</span>
+                  <ul className="pwd-info-card__list">
+                    <li>se o email digitado está correto e a caixa de spam;</li>
+                    <li>
+                      se você nunca definiu uma senha antes: nesse caso, use{" "}
+                      <button
+                        type="button"
+                        onClick={handleSwitchToFirstAccess}
+                        className="pwd-info-card__link"
+                      >
+                        [Primeiro acesso]
+                      </button>
+                      ;
+                    </li>
+                    <li>se o problema continuar, contate um administrador.</li>
+                  </ul>
+                </div>
+              </div>
             </>
           )}
 
@@ -440,8 +538,8 @@ export default function PasswordResetPage() {
                   {loading
                     ? "Salvando..."
                     : isFirstAccess
-                    ? "Definir senha"
-                    : "Redefinir senha"}
+                      ? "Definir senha"
+                      : "Redefinir senha"}
                 </Button>
               </form>
             </>
