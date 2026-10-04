@@ -10,8 +10,10 @@ const STORAGE_USER_KEY = "@sgpj:user";
  * Permissões e dados sensíveis não devem ser persistidos localmente — a autorização
  * real deve sempre ser validada pelo backend.
  */
-function pickStorageData({ id, nome, email, cargo }) {
-    return { id, nome, email, cargo };
+function pickStorageData(data) {
+    if (!data) return {};
+    const { id, nome, email, cargo, cargoNome } = data;
+    return { id, nome, email, cargo, cargoNome };
 }
 
 export function AuthProvider({ children }) {
@@ -30,13 +32,22 @@ export function AuthProvider({ children }) {
             }
 
             try {
+                // Carrega dados prévios para manter a interface consistente durante a checagem
+                try {
+                    setUser(JSON.parse(storedUser));
+                } catch {
+                    // ignora falha de parse
+                }
+
                 // Valida com o backend se o cookie de sessão ainda é válido
+                // (se o access token estiver expirado, o interceptor renovará automaticamente via refresh-token)
                 const userData = await authService.me();
                 setUser(userData);
                 localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(pickStorageData(userData)));
             } catch (err) {
-                // Sessão expirada ou inválida no backend — limpa dados locais
+                // Sessão expirada ou inválida no backend (refresh token também expirou/revogado) — limpa dados locais
                 console.warn("Sessão inválida ou expirada:", err.message);
+                setUser(null);
                 localStorage.removeItem(STORAGE_USER_KEY);
             } finally {
                 setLoading(false);
@@ -46,28 +57,37 @@ export function AuthProvider({ children }) {
         validarSessao();
     }, []);
 
-    // Função de Login                                                                                                                                                                                     
+    // Função de Login
     const login = async (email, senha) => {
         const userData = await authService.login(email, senha);
 
-        // Atualiza estado e persiste apenas dados mínimos de UX no localStorage                                                                                                                               
+        // Atualiza estado e persiste apenas dados mínimos de UX no localStorage
         setUser(userData);
         localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(pickStorageData(userData)));
 
         return userData;
     };
 
-    // Função de Logout                                                                                                                                                                                    
+    // Função de Logout
     const logout = async () => {
         try {
             await authService.logout();
         } catch (err) {
             console.warn("Erro ao deslogar no backend:", err);
         } finally {
-            // Sempre limpa os dados locais, mesmo se o backend falhar                                                                                                                                         
+            // Sempre limpa os dados locais, mesmo se o backend falhar
             setUser(null);
             localStorage.removeItem(STORAGE_USER_KEY);
         }
+    };
+
+    // Atualiza dados locais do usuário (ex: após salvar perfil)
+    const updateUser = (updatedUser) => {
+        setUser((currentUser) => {
+            const nextUser = { ...currentUser, ...updatedUser };
+            localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(pickStorageData(nextUser)));
+            return nextUser;
+        });
     };
 
     return (
@@ -78,6 +98,8 @@ export function AuthProvider({ children }) {
                 loading,
                 login,
                 logout,
+                updateUser,
+                refreshToken: authService.refreshToken,
             }}
         >
             {children}
@@ -85,7 +107,7 @@ export function AuthProvider({ children }) {
     );
 }
 
-// Hook customizado para facilitar o uso nos componentes                                                                                                                                                 
+// Hook customizado para facilitar o uso nos componentes
 export function useAuth() {
     const context = useContext(AuthContext);
 

@@ -1,13 +1,13 @@
 import { api } from "@/app/provider/api";
 
 export const authService = {
-    /**                                                                                                                                                                                                    
-       * Realiza login enviando email e senha.                                                                                                                                                               
-       * O backend grava os cookies HttpOnly e retorna os dados de sessão do usuário.                                                                                                                        
-       */
+    /**
+     * Realiza login enviando email e senha.
+     * O backend grava os cookies HttpOnly e retorna os dados de sessão do usuário.
+     */
     async login(email, senha) {
         const response = await api.post("/auth/login", { email, senha });
-        return response.data; // Retorna { id, nome, email, cargo, permissoes }                                                                                                                              
+        return response.data; // Retorna { id, nome, email, cargo, permissoes }
     },
 
     /**
@@ -21,8 +21,17 @@ export const authService = {
         return response.data; // Retorna { id, nome, email, cargo, permissoes }
     },
 
-    /**                                                                                                                                                                                                    
-     * Encerra a sessão no backend e limpa os cookies HttpOnly.                                                                                                                                            
+    /**
+     * Atualiza os tokens de autenticação via cookie HttpOnly refreshToken.
+     * O backend valida o refreshToken atual, rotaciona e emite novos cookies (authToken e refreshToken).
+     */
+    async refreshToken() {
+        const response = await api.post("/auth/refresh-token");
+        return response.data;
+    },
+
+    /**
+     * Encerra a sessão no backend e limpa os cookies HttpOnly.
      */
     async logout() {
         await api.post("/auth/logout");
