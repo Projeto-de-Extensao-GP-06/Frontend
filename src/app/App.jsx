@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { RouterProvider } from "react-router";
 import { router } from "./routes";
+import { AuthProvider } from "./contexts/AuthContext";
+import { Toaster } from "./components/ui/sonner";
 
 const VLIBRAS_SCRIPT_URL = "https://vlibras.gov.br/app/vlibras-plugin.js";
 const VLIBRAS_WIDGET_URL = "https://vlibras.gov.br/app";
@@ -16,7 +18,7 @@ export default function App() {
       const button = wrapper?.shadowRoot?.getElementById("vlibras-access");
       if (!button) return false;
       button.style.setProperty("top", "auto", "important");
-      button.style.setProperty("bottom", "20px", "important");
+      button.style.setProperty("bottom", "65%", "important");
       button.style.setProperty("right", "auto", "important");
       button.style.setProperty("left", "16px", "important");
       return true;
@@ -58,6 +60,10 @@ export default function App() {
         <div className="vw-plugin-top-wrapper" />
       </div>
     </div>
-    <RouterProvider router={router} />
+
+    <AuthProvider>
+      <RouterProvider router={router} />
+      <Toaster position="top-right" richColors />
+    </AuthProvider>
   </>;
 }

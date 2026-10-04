@@ -3,7 +3,7 @@ import { Outlet, useNavigate, useLocation } from "react-router";
 import { Home, LayoutDashboard, FileText, Users, UserCog, Shield, User, LogOut, X, Menu, ChevronRight, MessageSquare } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { Button } from "../components/ui/button";
-import { Toaster } from "../components/ui/sonner";
+import { useAuth } from "../contexts/AuthContext";
 import "../../styles/app-layout.css";
 const navItems = [{
   path: "/app/inicio",
@@ -43,9 +43,15 @@ const isActiveNavItem = (pathname, itemPath) => {
   return pathname.startsWith(itemPath);
 };
 
+const getInitials = (name) => {                                                                                                                                                                        
+  if (!name) return "US";                                                                                                                                                                              
+  return name.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase();                                                                                                                            
+};
+
 export default function AppLayout() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -64,181 +70,181 @@ export default function AppLayout() {
 
   return <div className="app-shell">
 
-      {/* ── Fixed Top Header ── */}
-      <header className="app-header">
-        <div className="app-header-inner">
+    {/* ── Fixed Top Header ── */}
+    <header className="app-header">
+      <div className="app-header-inner">
 
-          {/* Logo SGPJ */}
-          <div className="app-brand-wrap" onClick={() => go("/app/inicio")} role="button" tabIndex={0} title="Ir para o início">
-            <span className="app-brand">
-              SGPJ
-            </span>
-          </div>
+        {/* Logo SGPJ */}
+        <div className="app-brand-wrap" onClick={() => go("/app/inicio")} role="button" tabIndex={0} title="Ir para o início">
+          <span className="app-brand">
+            SGPJ
+          </span>
+        </div>
 
-          {/* ── Desktop Navigation (visível apenas em telas maiores) ── */}
-          <nav className="app-desktop-nav" aria-label="Navegação principal">
-            {navItems.filter(item => item.path !== "/app/perfil").map(item => {
-              const Icon = item.icon;
-              const active = isActiveNavItem(location.pathname, item.path);
-              return (
-                <button
-                  key={item.path}
-                  onClick={() => go(item.path)}
-                  className={`app-desktop-nav-link ${active ? "is-active" : ""}`}
-                >
-                  <Icon size={16} className="app-desktop-nav-icon" />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
+        {/* ── Desktop Navigation (visível apenas em telas maiores) ── */}
+        <nav className="app-desktop-nav" aria-label="Navegação principal">
+          {navItems.filter(item => item.path !== "/app/perfil").map(item => {
+            const Icon = item.icon;
+            const active = isActiveNavItem(location.pathname, item.path);
+            return (
+              <button
+                key={item.path}
+                onClick={() => go(item.path)}
+                className={`app-desktop-nav-link ${active ? "is-active" : ""}`}
+              >
+                <Icon size={16} className="app-desktop-nav-icon" />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
 
-            {/* Assistente IA */}
-            <button
-              onClick={() => go("/app/assistente")}
-              className={`app-desktop-nav-link app-desktop-nav-link--assistant ${
-                location.pathname === "/app/assistente" ? "is-active" : ""
+          {/* Assistente IA */}
+          <button
+            onClick={() => go("/app/assistente")}
+            className={`app-desktop-nav-link app-desktop-nav-link--assistant ${location.pathname === "/app/assistente" ? "is-active" : ""
               }`}
-            >
-              <MessageSquare size={16} className="app-desktop-nav-icon" />
-              <span>Assistente IA</span>
-              <span className="app-desktop-badge">NOVO</span>
-            </button>
-          </nav>
+          >
+            <MessageSquare size={16} className="app-desktop-nav-icon" />
+            <span>Assistente IA</span>
+            <span className="app-desktop-badge">NOVO</span>
+          </button>
+        </nav>
 
-          {/* ── Desktop User Profile & Logout (visível apenas em telas maiores) ── */}
-          <div className="app-desktop-user-actions">
-            <button
-              onClick={() => go("/app/perfil")}
-              className={`app-desktop-profile-btn ${
-                location.pathname.startsWith("/app/perfil") ? "is-active" : ""
+        {/* ── Desktop User Profile & Logout (visível apenas em telas maiores) ── */}
+        <div className="app-desktop-user-actions">
+          <button
+            onClick={() => go("/app/perfil")}
+            className={`app-desktop-profile-btn ${location.pathname.startsWith("/app/perfil") ? "is-active" : ""
               }`}
-              title="Meu Perfil"
-            >
-              <div className="app-desktop-avatar">
-                <span>TB</span>
-              </div>
-              <div className="app-desktop-user-info">
-                <span className="app-desktop-user-name">Thauany</span>
-                <span className="app-desktop-user-role">Administrador</span>
-              </div>
-            </button>
+            title="Meu Perfil"
+          >
+            <div className="app-desktop-avatar">
+              <span>{getInitials(user?.nome)}</span>
+            </div>
+            <div className="app-desktop-user-info">
+              <span className="app-desktop-user-name">{user?.nome || "Usuário"}</span>
+              <span className="app-desktop-user-role">{user?.cargo?.nome || "Acesso"}</span>
+            </div>
+          </button>
 
-            <div className="app-desktop-divider" />
+          <div className="app-desktop-divider" />
 
-            <button
-              onClick={() => setLogoutOpen(true)}
-              className="app-desktop-logout-btn"
-              title="Sair do sistema"
-              aria-label="Sair"
-            >
-              <LogOut size={16} />
-              <span className="app-desktop-logout-label">Sair</span>
-            </button>
-          </div>
-
-          {/* Menu hamburguer à direita (visível apenas em mobile/telas menores) */}
-          <button onClick={() => setDrawerOpen(true)} className="app-menu-button" aria-label="Abrir menu">
-            <Menu size={22} />
+          <button
+            onClick={() => setLogoutOpen(true)}
+            className="app-desktop-logout-btn"
+            title="Sair do sistema"
+            aria-label="Sair"
+          >
+            <LogOut size={16} />
+            <span className="app-desktop-logout-label">Sair</span>
           </button>
         </div>
-      </header>
 
-      {/* ── Scrollable Content ── */}
-      <main className={`app-main ${isAssistant ? "app-main--assistant" : ""}`}>
-        <Outlet />
-      </main>
+        {/* Menu hamburguer à direita (visível apenas em mobile/telas menores) */}
+        <button onClick={() => setDrawerOpen(true)} className="app-menu-button" aria-label="Abrir menu">
+          <Menu size={22} />
+        </button>
+      </div>
+    </header>
 
-      <Toaster position="top-right" richColors />
+    {/* ── Scrollable Content ── */}
+    <main className={`app-main ${isAssistant ? "app-main--assistant" : ""}`}>
+      <Outlet />
+    </main>
 
-      {/* ── Custom Side Drawer (Mobile) ── */}
-      <div className={`app-drawer-layer ${drawerOpen ? "is-open" : ""}`}>
-        {/* Overlay */}
-        <div className={`app-drawer-overlay ${drawerOpen ? "is-open" : ""}`} onClick={() => setDrawerOpen(false)} />
+    {/* ── Custom Side Drawer (Mobile) ── */}
+    <div className={`app-drawer-layer ${drawerOpen ? "is-open" : ""}`}>
+      {/* Overlay */}
+      <div className={`app-drawer-overlay ${drawerOpen ? "is-open" : ""}`} onClick={() => setDrawerOpen(false)} />
 
-        {/* Panel */}
-        <div className={`app-drawer ${drawerOpen ? "is-open" : ""}`}>
-          {/* Drawer Header — navy */}
-          <div className="app-drawer-header">
-            {/* Close */}
-            <button onClick={() => setDrawerOpen(false)} className="app-drawer-close" aria-label="Fechar menu">
-              <X size={18} />
-            </button>
+      {/* Panel */}
+      <div className={`app-drawer ${drawerOpen ? "is-open" : ""}`}>
+        {/* Drawer Header — navy */}
+        <div className="app-drawer-header">
+          {/* Close */}
+          <button onClick={() => setDrawerOpen(false)} className="app-drawer-close" aria-label="Fechar menu">
+            <X size={18} />
+          </button>
 
-            {/* User avatar */}
-            <div className="app-drawer-profile">
-              <div className="app-drawer-avatar">
-                <span className="app-drawer-initials">TB</span>
-              </div>
-              <div className="app-drawer-profile-text">
-                <p className="app-drawer-name">Thauany</p>
-                <p className="app-drawer-role">Administrador</p>
-              </div>
+          {/* User avatar */}
+          <div className="app-drawer-profile">
+            <div className="app-drawer-avatar">
+              <span className="app-drawer-initials">{getInitials(user?.nome)}</span>
+            </div>
+            <div className="app-drawer-profile-text">
+              <p className="app-drawer-name">{user?.nome || "Usuário"}</p>
+              <p className="app-drawer-role">{user?.cargo?.nome || "Acesso"}</p>
             </div>
           </div>
+        </div>
 
-          {/* Nav links */}
-          <nav className="app-drawer-nav">
-            {navItems.map(item => {
+        {/* Nav links */}
+        <nav className="app-drawer-nav">
+          {navItems.map(item => {
             const Icon = item.icon;
             const active = isActiveNavItem(location.pathname, item.path);
             return <button key={item.path} onClick={() => go(item.path)} className={`app-drawer-link ${active ? "is-active" : ""}`}>
-                  <Icon size={18} className={`app-drawer-link-icon ${active ? "is-active" : ""}`} />
-                  <span className="app-drawer-link-label">{item.label}</span>
-                  {active && <ChevronRight size={13} className="app-drawer-link-chevron" />}
-                </button>;
+              <Icon size={18} className={`app-drawer-link-icon ${active ? "is-active" : ""}`} />
+              <span className="app-drawer-link-label">{item.label}</span>
+              {active && <ChevronRight size={13} className="app-drawer-link-chevron" />}
+            </button>;
           })}
 
-            {/* Assistente IA — quick link */}
-            <button onClick={() => go("/app/assistente")} className={`app-drawer-link app-drawer-link--assistant ${location.pathname === "/app/assistente" ? "is-active" : ""}`}>
-              <MessageSquare size={18} className={`app-drawer-link-icon ${location.pathname === "/app/assistente" ? "is-active" : ""}`} />
-              <span className="app-drawer-link-label">Assistente IA</span>
-              <span className="app-drawer-pill">NOVO</span>
-            </button>
+          {/* Assistente IA — quick link */}
+          <button onClick={() => go("/app/assistente")} className={`app-drawer-link app-drawer-link--assistant ${location.pathname === "/app/assistente" ? "is-active" : ""}`}>
+            <MessageSquare size={18} className={`app-drawer-link-icon ${location.pathname === "/app/assistente" ? "is-active" : ""}`} />
+            <span className="app-drawer-link-label">Assistente IA</span>
+            <span className="app-drawer-pill">NOVO</span>
+          </button>
 
-            <div className="app-drawer-divider" />
+          <div className="app-drawer-divider" />
 
-            <button onClick={() => {
+          <button onClick={() => {
             setDrawerOpen(false);
             setLogoutOpen(true);
           }} className="app-drawer-logout">
-              <LogOut size={18} className="app-drawer-logout-icon" />
-              <span className="app-drawer-logout-label">Sair</span>
-            </button>
-          </nav>
+            <LogOut size={18} className="app-drawer-logout-icon" />
+            <span className="app-drawer-logout-label">Sair</span>
+          </button>
+        </nav>
 
-          {/* Footer */}
-          <div className="app-drawer-footer">
-            <p className="app-drawer-footer-title">
-              Thauany Bezerra Advocacia
-            </p>
-            <p className="app-drawer-footer-version">SGPJ v1.0</p>
-          </div>
+        {/* Footer */}
+        <div className="app-drawer-footer">
+          <p className="app-drawer-footer-title">
+            Thauany Bezerra Advocacia
+          </p>
+          <p className="app-drawer-footer-version">SGPJ v1.0</p>
         </div>
       </div>
+    </div>
 
-      {/* ── Logout Confirm Dialog ── */}
-      <Dialog open={logoutOpen} onOpenChange={setLogoutOpen}>
-        <DialogContent className="app-logout-dialog">
-          <DialogHeader>
-            <DialogTitle className="app-logout-title">
-              Sair do sistema?
-            </DialogTitle>
-          </DialogHeader>
-          <p className="app-logout-text">
-            Você será desconectado(a) e redirecionado para a tela de login. Tem certeza?
-          </p>
-          <DialogFooter className="app-logout-actions">
-            <Button variant="outline" className="app-logout-secondary" onClick={() => setLogoutOpen(false)}>
-              Cancelar
-            </Button>
-            <Button className="app-logout-primary" onClick={() => {
-            setLogoutOpen(false);
-            navigate("/login");
-          }}>
-              Sim, sair
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>;
+    {/* ── Logout Confirm Dialog ── */}
+    <Dialog open={logoutOpen} onOpenChange={setLogoutOpen}>
+      <DialogContent className="app-logout-dialog">
+        <DialogHeader>
+          <DialogTitle className="app-logout-title">
+            Sair do sistema?
+          </DialogTitle>
+        </DialogHeader>
+        <p className="app-logout-text">
+          Você será desconectado(a) e redirecionado para a tela de login. Tem certeza?
+        </p>
+        <DialogFooter className="app-logout-actions">
+          <Button variant="outline" className="app-logout-secondary" onClick={() => setLogoutOpen(false)}>
+            Cancelar
+          </Button>
+          <Button
+            className="app-logout-primary"
+            onClick={async () => {
+              setLogoutOpen(false);
+              await logout();
+              navigate("/login");
+            }}
+          >
+            Sim, sair
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  </div>;
 }

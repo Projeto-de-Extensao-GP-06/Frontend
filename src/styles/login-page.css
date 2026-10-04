@@ -172,6 +172,7 @@
   font-size: 0.875rem;
   outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  color-scheme: dark;
 }
 
 .login-field__input::placeholder {
@@ -335,6 +336,22 @@
     width: 3.25rem;
     height: 3.25rem;
   }
+}
+
+.login-field__error {
+  margin: 6px 0 0;
+  font-size: 0.75rem;
+  color: #dc2626;
+}
+
+.login-field__input[aria-invalid="true"] {
+  border-color: #dc2626;
+}
+
+/* Esconde o botão nativo de revelar senha (Edge) */
+.login-field__input::-ms-reveal,
+.login-field__input::-ms-clear {
+  display: none;
 }
 
 @keyframes login-spin {
