@@ -103,21 +103,20 @@ function mapearProcesso(p) {
   };
 }
 
-export async function listarProcessos() {
-  const response = await api.get("/processos");
-  const conteudo = response.data.content || [];
+export async function listarProcessos(filtros = {}) {
+  const params = {};
+  if (filtros.query)       params.query = filtros.query;
+  if (filtros.status && filtros.status !== "Todos") params.status = filtros.status;
+  if (filtros.faseId)      params.faseId = filtros.faseId;
+  if (filtros.tribunalId)  params.tribunalId = filtros.tribunalId;
+  if (filtros.prioridadeId) params.prioridadeId = filtros.prioridadeId;
+  if (filtros.audiencia && filtros.audiencia !== "Todos") params.audiencia = filtros.audiencia;
+  if (filtros.page != null)    params.page = filtros.page;
+  if (filtros.size != null)    params.size = filtros.size;
+  if (filtros.sort)            params.sort = filtros.sort;
 
-  return conteudo.map((p) => ({
-    id: p.id,
-    cnj: formatarCnj(p.numeroProcesso || p.processoApi?.numeroCnj),
-    clientName: p.clientNomeRazaoSocial || "Sem nome",
-    tribunal: p.siglaTribunal?.nome?.toUpperCase() || "-",
-    hearingDate: formatarData(p.dataAudiencia),
-    status: p.status ? p.status.trim().toLowerCase() : "ativo",
-    priority: p.prioridade?.nome ? p.prioridade.nome.trim().toLowerCase() : "baixa",
-    phase: normalizarTexto(p.faseProcesso?.nome),
-    raw: p
-  }));
+  const response = await api.get("/processos", { params });
+  return response.data;
 }
 
 export async function listarClientesParaProcesso() {
