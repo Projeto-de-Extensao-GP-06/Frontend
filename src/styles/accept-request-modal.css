@@ -403,6 +403,13 @@
   color: #6b7280;
 }
 
+.accept-cep-error {
+  margin: 0.125rem 0 0;
+  color: #b91c1c;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
 /* Footer / Actions */
 .accept-wizard-footer {
   display: flex;

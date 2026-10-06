@@ -19,6 +19,8 @@ npm-debug.log*
 # Editores
 .vscode/
 .idea/
+.opencode/
+graphify-out/
 *.suo
 *.ntvs*
 *.njsproj
