@@ -266,23 +266,45 @@ export default function EditProcessPage() {
       console.error("Erro ao atualizar processo:", err);
       if (err.response?.status === 401) {
         toast.warning("Sessão inválida ou expirada.");
-      } else if (err.response?.data?.message) {
-        toast.error(err.response.data.message);
       } else {
-        toast.error("Não foi possível salvar as alterações.");
+        const mensagemErro =
+          err.response?.data?.message ||
+          (err.response?.data?.errors && Object.values(err.response.data.errors)[0]) ||
+          "Não foi possível salvar as alterações.";
+        toast.error(mensagemErro);
       }
     } finally {
       setSaving(false);
     }
   }
 
+  const validarObservacoes = () => {
+    if (observacoesArray.length > MAX_OBSERVACOES) {
+      toast.warning(`O processo aceita no máximo ${MAX_OBSERVACOES} observações.`);
+      return false;
+    }
+    if (observacoesArray.some((item) => item.trim().length > MAX_CARACTERES_OBSERVACAO)) {
+      toast.warning(`Cada observação pode ter no máximo ${MAX_CARACTERES_OBSERVACAO} caracteres.`);
+      return false;
+    }
+    return true;
+  };
+
   const handleSalvar = () => {
+    if (!validarObservacoes()) {
+      setSaveDialogOpen(false);
+      return;
+    }
     const payload = { ...montarPayloadBase(), status: "ATIVO" };
     enviarAtualizacao(payload, "Processo atualizado com sucesso.", true);
     setSaveDialogOpen(false);
   };
 
   const handleEncerrar = () => {
+    if (!validarObservacoes()) {
+      setCloseDialogOpen(false);
+      return;
+    }
     if (!motivoStatusProcessoId) {
       toast.warning("Selecione o motivo do encerramento.");
       return;
@@ -298,6 +320,10 @@ export default function EditProcessPage() {
   };
 
   const handleDesativar = () => {
+    if (!validarObservacoes()) {
+      setDeactivateDialogOpen(false);
+      return;
+    }
     if (!motivoStatusProcessoId) {
       toast.warning("Selecione o motivo da suspensão.");
       return;
@@ -540,6 +566,9 @@ export default function EditProcessPage() {
             <Label className="edit-process-label" style={{ marginBottom: 0 }}>
               Observações ({observacoesArray.length}/{MAX_OBSERVACOES})
             </Label>
+            <span style={{ fontSize: "0.75rem", color: "#64748b" }}>
+              Até {MAX_CARACTERES_OBSERVACAO} caracteres por observação
+            </span>
           </div>
           <div className="edit-process-observation-list">
             {observacoesArray.map((texto, index) => (
