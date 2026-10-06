@@ -1,4 +1,4 @@
-import { api } from "../provider/api";
+import { api } from "@/app/provider/api";
 import { maskCNJ, maskCPF, maskCNPJ } from "../utils/masks";
 import { abreviarNome } from "../utils/format";
 
