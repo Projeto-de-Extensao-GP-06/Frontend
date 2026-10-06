@@ -373,11 +373,11 @@ export default function ProcessDetailPage() {
       toast.success("Observação adicionada com sucesso.");
     } catch (err) {
       console.error("Erro ao adicionar observação:", err);
-      toast.error(
+      const mensagemErro =
         err.response?.data?.message ||
-          err.message ||
-          "Não foi possível adicionar a observação.",
-      );
+        (err.response?.data?.errors && Object.values(err.response.data.errors)[0]) ||
+        "Não foi possível adicionar a observação.";
+      toast.error(mensagemErro);
     } finally {
       setSavingComment(false);
     }
