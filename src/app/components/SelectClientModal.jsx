@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { Search, Users, X, Check } from "lucide-react";
+import { Search, Users, X, Check, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog";
 import { ClientCard } from "./ClientCard";
 import { PaginationBar } from "./PaginationBar";
-import { mockClients } from "../data/mockData";
+import { listarClientesParaProcesso } from "../services/processoService";
+import { toast } from "sonner";
 import "../../styles/select-client-modal.css";
 import "../../styles/clients-page.css";
 
@@ -13,23 +14,37 @@ export function SelectClientModal({
   selectedClientId,
   onSelect,
 }) {
-  const [selectedClient, setSelectedClient] = useState(() =>
-    mockClients.find((c) => c.id === selectedClientId) || null
-  );
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [clients, setClients] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("todos");
   const [statusFilter, setStatusFilter] = useState("todos");
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    if (open) {
-      setSelectedClient(mockClients.find((c) => c.id === selectedClientId) || null);
-    }
+    if (!open) return;
+    let active = true;
+    setLoading(true);
+    listarClientesParaProcesso()
+      .then((data) => {
+        if (!active) return;
+        setClients(data);
+        setSelectedClient(data.find((client) => String(client.id) === String(selectedClientId)) || null);
+      })
+      .catch((error) => {
+        console.error("Erro ao carregar clientes para processo:", error);
+        if (active) toast.error("Não foi possível carregar os clientes.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
   }, [open, selectedClientId]);
 
   const PAGE_SIZE = 6;
 
-  const filtered = mockClients.filter((c) => {
+  const filtered = clients.filter((c) => {
     const term = search.toLowerCase();
     const doc = c.type === "PF" ? c.cpf : c.cnpj;
     const matchSearch =
@@ -154,9 +169,9 @@ export function SelectClientModal({
           {/* ── Results count + clear ── */}
           <div className="clients-results-row" style={{ marginBottom: "0.25rem" }}>
             <p className="clients-results-count">
-              {filtered.length === mockClients.length
+              {filtered.length === clients.length
                 ? `${filtered.length} clientes`
-                : `${filtered.length} de ${mockClients.length} clientes`}
+                : `${filtered.length} de ${clients.length} clientes`}
             </p>
             {hasActiveFilters && (
               <button type="button" onClick={clearFilters} className="clients-clear-filters">
@@ -167,7 +182,12 @@ export function SelectClientModal({
           </div>
 
           {/* ── Client Grid / Empty State ── */}
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="clients-empty-state" style={{ padding: "2.5rem 1rem" }}>
+              <Loader2 size={24} className="animate-spin" />
+              <p className="clients-empty-title">Carregando clientes...</p>
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="clients-empty-state" style={{ padding: "2.5rem 1rem" }}>
               <div className="clients-empty-icon-wrap">
                 <Users size={24} className="clients-empty-icon" />

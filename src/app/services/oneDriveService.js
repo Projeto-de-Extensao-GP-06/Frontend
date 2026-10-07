@@ -1,24 +1,19 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+import { api } from "../provider/api";
 
-// Inicia o fluxo OAuth2 do OneDrive; o backend faz a troca do code e o refresh_token.
+// Inicia o fluxo OAuth2 do OneDrive; o backend retorna a URL de autorização da Microsoft
 export async function startOneDriveLogin() {
-  const response = await fetch(`${API_BASE_URL}/api-onedrive/auth/login`, {
-    method: "GET",
-    credentials: "include",
-    headers: {
-      Accept: "application/json"
-    }
-  });
+  const response = await api.get("/api-onedrive/auth/login");
+  const data = response.data;
 
-  if (!response.ok) {
-    throw new Error("Não foi possível iniciar a conexão com o OneDrive. Tente novamente.");
+  // O Swagger indica um Map/Objeto (ex: { url: "..." } ou { authUrl: "..." }) ou string direta
+  const authUrl =
+    typeof data === "string"
+      ? data
+      : data?.authUrl || data?.url || data?.loginUrl || data?.redirectUrl || Object.values(data || {})[0];
+
+  if (!authUrl || typeof authUrl !== "string" || !authUrl.startsWith("http")) {
+    throw new Error("O servidor não retornou um link válido de autorização do OneDrive.");
   }
 
-  const data = await response.json();
-
-  if (!data?.authUrl) {
-    throw new Error("O servidor não retornou o link de autorização do OneDrive.");
-  }
-
-  return data;
+  return { authUrl };
 }

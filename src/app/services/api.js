@@ -1,0 +1,1 @@
+export { api, api as default } from "../provider/api";
