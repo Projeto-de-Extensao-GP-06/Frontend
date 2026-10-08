@@ -770,76 +770,9 @@ export default function DashboardPage() {
             </div>
           )}
         </ChartCard>
-      </div>
-      {/* PROCESSOS ENCERRADOS & SUSPENSOS */}
-      <div className="dashboard-charts-grid dashboard-charts-grid--split">
-        <ChartCard
-          title="Processos encerrados"
-          sub={`Total por categoria - ${appliedPeriod}`}
-          info="Exibe o total de processos encerrados por motivo/ocasião específica no período selecionado."
-        >
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={currentEncerradosData} margin={{ top: 16, right: 16, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} />
-              <XAxis dataKey="categoria" axisLine={false} tickLine={false} interval={0} tick={{ fontSize: 10 }} />
-              <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
-              <Tooltip content={<CustomTip />} />
-              <Bar dataKey="total" name="Processos" radius={[4, 4, 0, 0]}>
-                <LabelList dataKey="total" position="top" style={{ fill: "#0f2357", fontSize: 11, fontWeight: 700 }} />
-                {currentEncerradosData.map((entry, index) => (
-                  <Cell key={index} fill={entry.fill} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
 
+        {/* FUNIL DE ATENDIMENTO */}
         <ChartCard
-          title="Processos suspensos"
-          sub={`Total por categoria - ${appliedPeriod}`}
-          info="Exibe o total de processos suspensos por motivo/ocasião específica no período selecionado."
-        >
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={currentSuspensasData} margin={{ top: 16, right: 16, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} />
-              <XAxis dataKey="categoria" axisLine={false} tickLine={false} interval={0} tick={{ fontSize: 9 }} />
-              <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
-              <Tooltip content={<CustomTip />} />
-              <Bar dataKey="total" name="Processos" radius={[4, 4, 0, 0]}>
-                <LabelList dataKey="total" position="top" style={{ fill: "#0f2357", fontSize: 11, fontWeight: 700 }} />
-                {currentSuspensasData.map((entry, index) => (
-                  <Cell key={index} fill={entry.fill} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
-      </div>
-      
-      {/* FORMA DE ENTRADA*/}
-      <div className="dashboard-charts-grid dashboard-charts-grid--split">
-        <ChartCard
-          title="Forma de entrada"
-          sub={`Total de clientes por canal - ${appliedPeriod}`}
-          info="Mede o total de clientes que entraram no escritório por cada canal específico (Instagram, Site ou Indicação) no período selecionado."
-        >
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={currentFormaEntradaData} margin={{ top: 16, right: 16, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F0F4FA" vertical={false} />
-              <XAxis dataKey="origem" axisLine={false} tickLine={false} interval={0} tick={{ fontSize: 11 }} />
-              <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
-              <Tooltip content={<CustomTip />} />
-              <Bar dataKey="clientes" name="Clientes" radius={[4, 4, 0, 0]}>
-                <LabelList dataKey="clientes" position="top" style={{ fill: "#0f2357", fontSize: 11, fontWeight: 700 }} />
-                {currentFormaEntradaData.map((entry, index) => (
-                  <Cell key={index} fill={ENTRY_COLORS[index % ENTRY_COLORS.length]} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
-        {/*FUNIL DE ATENDIMENTO */}
-      <ChartCard
           title="Funil de atendimento"
           sub={`Solicitações até a abertura do processo - ${appliedPeriod}`}
           info="Mostra a passagem das solicitações recebidas até serem aceitas no período selecionado."
