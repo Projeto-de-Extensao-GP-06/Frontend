@@ -3,7 +3,6 @@ import { Outlet, useNavigate, useLocation } from "react-router";
 import { Home, LayoutDashboard, FileText, Users, UserCog, Shield, User, LogOut, X, Menu, ChevronRight, MessageSquare } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { Button } from "../components/ui/button";
-import { Toaster } from "../components/ui/sonner";
 import { useAuth } from "../contexts/AuthContext";
 import "../../styles/app-layout.css";
 const navItems = [{
@@ -152,8 +151,6 @@ export default function AppLayout() {
     <main className={`app-main ${isAssistant ? "app-main--assistant" : ""}`}>
       <Outlet />
     </main>
-
-    <Toaster position="top-right" richColors />
 
     {/* ── Custom Side Drawer (Mobile) ── */}
     <div className={`app-drawer-layer ${drawerOpen ? "is-open" : ""}`}>

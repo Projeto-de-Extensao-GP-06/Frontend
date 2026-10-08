@@ -1,96 +1,212 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { Plus, Search, Scale, Calendar, ChevronRight, FileText, Zap, TrendingUp, Clock, X, BarChart3, Loader2 } from "lucide-react";
 import { StatusBadge, PriorityBadge, PhaseBadge } from "../components/StatusBadge";
 import { CalendarEventModal } from "../components/CalendarEventModal";
 import { FilterSelect } from "../components/FilterSelect";
 import { PaginationBar } from "../components/PaginationBar";
-import { mockProcesses, mockRequests } from "../data/mockData";
 import { listarProcessos } from "../services/processoService";
+import { api } from "../provider/api";
+import { maskCNJ } from "../utils/masks";
 import { toast } from "sonner";
-import { setDevToken } from "../provider/api";
 import "../../styles/home-page.css";
 
+// ── Opções de filtro ────────────────────────────────────────────────────────
 const STATUS_OPTS = [
   { value: "Todos", label: "Todos" },
-  { value: "ativo", label: "Ativo" },
-  { value: "encerrado", label: "Encerrado" },
-  { value: "inativo", label: "Inativo" }
+  { value: "ATIVO", label: "Ativo" },
+  { value: "ENCERRADO", label: "Encerrado" },
+  { value: "SUSPENSO", label: "Suspenso" },
 ];
-
-const PHASE_OPTS = [
-  "Todas", "Inicial", "Citação", "Saneamento", "Sentença", "Cumprimento de sentença", "Penhora"
-];
-
-const PRIORITY_OPTS = [
-  { value: "Todas", label: "Todas" },
-  { value: "alta", label: "Alta" },
-  { value: "média", label: "Média" },
-  { value: "baixa", label: "Baixa" }
-];
-
-const PRIORITY_WEIGHT = {
-  alta: 3,
-  media: 2,
-  média: 2,
-  baixa: 1
-};
 
 const HEARING_OPTS = [
   { value: "Todos", label: "Todos" },
   { value: "com", label: "Com audiência" },
-  { value: "sem", label: "Sem audiência" }
+  { value: "sem", label: "Sem audiência" },
 ];
 
-const parseDateToTimestamp = (dateStr) => {
-  if (!dateStr || dateStr === "—") return null;
-  const [day, month, year] = dateStr.split("/");
-  return new Date(`${year}-${month}-${day}`).getTime();
+// Mapeamento de sortBy (front) → parâmetro Spring Sort
+const SORT_MAP = {
+  cliente_asc:      "cliente.nomeRazaoSocial,asc",
+  cliente_desc:     "cliente.nomeRazaoSocial,desc",
+  audiencia_asc:    "dataAudiencia,asc",
+  audiencia_desc:   "dataAudiencia,desc",
+  prioridade_desc:  "prioridade.id,desc",
+  prioridade_asc:   "prioridade.id,asc",
 };
 
-export default function HomePage() {
-  setDevToken();
+const PAGE_SIZE = 6;
 
+// ── Helpers locais ──────────────────────────────────────────────────────────
+function formatarData(dataIso) {
+  if (!dataIso) return "—";
+  const [data] = dataIso.split("T");
+  const [ano, mes, dia] = data.split("-");
+  return `${dia}/${mes}/${ano}`;
+}
+
+function normalizarTexto(valor) {
+  if (!valor) return "-";
+  const texto = String(valor).trim().toLocaleLowerCase("pt-BR");
+  return texto.replace(/(^|[\s-])\S/g, (letra) => letra.toLocaleUpperCase("pt-BR"));
+}
+
+function mapearProcesso(p) {
+  return {
+    id: p.id,
+    cnj: p.numeroProcesso || p.processoApi?.numeroCnj || "-",
+    clientName: p.clientNomeRazaoSocial || "Sem nome",
+    tribunal: p.siglaTribunal?.nome?.toUpperCase() || "-",
+    hearingDate: formatarData(p.dataAudiencia),
+    status: p.status ? p.status.trim().toLowerCase() : "ativo",
+    priority: p.prioridade?.nome ? p.prioridade.nome.trim().toLowerCase() : "baixa",
+    phase: normalizarTexto(p.faseProcesso?.nome),
+    faseId: p.faseProcesso?.id ?? null,
+    tribunalId: p.siglaTribunal?.id ?? null,
+    prioridadeId: p.prioridade?.id ?? null,
+    raw: p,
+  };
+}
+
+// ── Componente principal ────────────────────────────────────────────────────
+export default function HomePage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // 1. Estados da API
+  // Dados do servidor
   const [processes, setProcesses] = useState([]);
+  const [totalElements, setTotalElements] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [pendingRequests, setPendingRequests] = useState(null);
 
-  // 2. Estados de Filtro e Busca
+  // Filtros
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState(() => {
-    const value = searchParams.get("status");
-    return STATUS_OPTS.some(o => o.value === value) ? value : "Todos";
+    const v = searchParams.get("status");
+    return STATUS_OPTS.some(o => o.value === v) ? v : "Todos";
   });
-  const [filterTribunal, setFilterTribunal] = useState("Todos");
-  const [filterPhase, setFilterPhase] = useState(() => {
-    const value = searchParams.get("fase");
-    return PHASE_OPTS.includes(value) ? value : "Todas";
-  });
-  const [filterPriority, setFilterPriority] = useState(() => {
-    const value = searchParams.get("prioridade");
-    return PRIORITY_OPTS.some(o => o.value === value) ? value : "Todas";
-  });
+  const [filterPhase, setFilterPhase] = useState("Todas");
+  const [filterPriority, setFilterPriority] = useState("Todas");
   const [filterHearing, setFilterHearing] = useState(() => {
-    const value = searchParams.get("audiencia");
-    return HEARING_OPTS.some(o => o.value === value) ? value : "Todos";
+    const v = searchParams.get("audiencia");
+    return HEARING_OPTS.some(o => o.value === v) ? v : "Todos";
   });
   const [sortBy, setSortBy] = useState("cliente_asc");
-  const [calendarModalOpen, setCalendarModalOpen] = useState(false);
   const [page, setPage] = useState(1);
+  const [calendarModalOpen, setCalendarModalOpen] = useState(false);
 
-  // 3. Título da página e chamada ao backend ao montar o componente
+  // Opções dinâmicas de fases/tribunais/prioridades (carregadas uma vez)
+  const [faseOpts, setFaseOpts] = useState([{ value: "Todas", label: "Todas" }]);
+  const [tribunalOpts, setTribunalOpts] = useState([{ value: "Todos", label: "Todos" }]);
+  const [prioridadeOpts, setPrioridadeOpts] = useState([{ value: "Todas", label: "Todas" }]);
+  const [faseId, setFaseId] = useState(null);
+  const [tribunalId, setTribunalId] = useState(null);
+  const [prioridadeId, setPrioridadeId] = useState(null);
+
+  // KPI counters (carregados separadamente, não afetados por filtros)
+  const [kpiAtivos, setKpiAtivos] = useState(0);
+  const [kpiEncerrados, setKpiEncerrados] = useState(0);
+  const [kpiAudiencia, setKpiAudiencia] = useState(0);
+
+  // Debounce do campo de busca
+  const debounceTimer = useRef(null);
+  const handleSearchChange = (e) => {
+    const val = e.target.value;
+    setSearch(val);
+    clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      setDebouncedSearch(val);
+      setPage(1);
+    }, 400);
+  };
+
+  // ── Carregar opções de filtro e KPIs (uma vez) ──────────────────────────
   useEffect(() => {
     document.title = "Início - Processos";
+
+    async function carregarOpcoes() {
+      try {
+        const [fasesRes, tribunaisRes, prioridadesRes] = await Promise.all([
+          api.get("/fasesProcesso").catch(() => ({ data: [] })),
+          api.get("/siglaTribunais").catch(() => ({ data: [] })),
+          api.get("/prioridades").catch(() => ({ data: [] })),
+        ]);
+
+        const fases = Array.isArray(fasesRes.data) ? fasesRes.data : [];
+        const tribunais = Array.isArray(tribunaisRes.data) ? tribunaisRes.data : [];
+        const prioridades = Array.isArray(prioridadesRes.data) ? prioridadesRes.data : [];
+
+        setFaseOpts([
+          { value: "Todas", label: "Todas" },
+          ...fases.map(f => ({ value: String(f.id), label: f.nome })),
+        ]);
+        setTribunalOpts([
+          { value: "Todos", label: "Todos" },
+          ...tribunais.map(t => ({ value: String(t.id), label: t.nome?.toUpperCase() || t.nome })),
+        ]);
+        setPrioridadeOpts([
+          { value: "Todas", label: "Todas" },
+          ...prioridades.map(p => ({ value: String(p.id), label: p.nome })),
+        ]);
+      } catch (e) {
+        console.error("Erro ao carregar opções de filtro:", e);
+      }
+    }
+
+    async function carregarKpis() {
+      try {
+        const [ativosRes, encerradosRes, audienciaRes, solicitacoesRes] = await Promise.all([
+          api.get("/processos", { params: { status: "ATIVO", size: 1 } }).catch(() => null),
+          api.get("/processos", { params: { status: "ENCERRADO", size: 1 } }).catch(() => null),
+          api.get("/processos", { params: { audiencia: "com", size: 1 } }).catch(() => null),
+          api.get("/solicitacoes").catch(() => null),
+        ]);
+        if (ativosRes) setKpiAtivos(ativosRes.data.totalElements ?? 0);
+        if (encerradosRes) setKpiEncerrados(encerradosRes.data.totalElements ?? 0);
+        if (audienciaRes) setKpiAudiencia(audienciaRes.data.totalElements ?? 0);
+        if (solicitacoesRes) {
+          setPendingRequests(Array.isArray(solicitacoesRes.data) ? solicitacoesRes.data : []);
+        } else {
+          setPendingRequests([]);
+        }
+      } catch (e) {
+        console.error("Erro ao carregar KPIs:", e);
+        setPendingRequests([]);
+      }
+    }
+
+    carregarOpcoes();
+    carregarKpis();
+  }, []);
+
+  // ── Carregar processos ao mudar filtros / página / ordenação ────────────
+  useEffect(() => {
+    let cancelled = false;
 
     async function carregar() {
       try {
         setLoading(true);
-        const dados = await listarProcessos();
-        setProcesses(dados);
+        const dados = await listarProcessos({
+          query: debouncedSearch || undefined,
+          status: filterStatus !== "Todos" ? filterStatus : undefined,
+          faseId: faseId ?? undefined,
+          tribunalId: tribunalId ?? undefined,
+          prioridadeId: prioridadeId ?? undefined,
+          audiencia: filterHearing !== "Todos" ? filterHearing : undefined,
+          page: page - 1,  // Spring é 0-based
+          size: PAGE_SIZE,
+          sort: SORT_MAP[sortBy] || "cliente.nomeRazaoSocial,asc",
+        });
+
+        if (cancelled) return;
+        const content = dados.content || [];
+        setProcesses(content.map(mapearProcesso));
+        setTotalElements(dados.totalElements ?? 0);
+        setTotalPages(Math.max(1, dados.totalPages ?? 1));
       } catch (err) {
+        if (cancelled) return;
         console.error("Erro ao carregar processos:", err);
         if (err.response?.status === 401) {
           toast.warning("Sessão inválida ou expirada.");
@@ -98,80 +214,32 @@ export default function HomePage() {
           toast.error("Não foi possível carregar os processos do servidor.");
         }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 
     carregar();
-  }, []);
+    return () => { cancelled = true; };
+  }, [debouncedSearch, filterStatus, faseId, tribunalId, prioridadeId, filterHearing, sortBy, page]);
 
-  // 4. Cálculos das KPIs mantidas com dados mockados (serão migradas para kpiService futuramente)
-  const activeProcesses = mockProcesses.filter(p => p.status === "ativo");
-  const encerrados = mockProcesses.filter(p => p.status === "encerrado");
-  const comAudiencia = mockProcesses.filter(p => p.hearingDate !== "—");
-  const pendingRequests = mockRequests.filter(r => r.status === "pendente");
-  const tribunalOptions = ["Todos", ...Array.from(new Set(mockProcesses.map(p => p.tribunal).filter(Boolean)))];
+  const hasActiveFilters =
+    debouncedSearch !== "" ||
+    filterStatus !== "Todos" ||
+    faseId != null ||
+    tribunalId != null ||
+    prioridadeId != null ||
+    filterHearing !== "Todos";
 
-  // 5. Filtros aplicados sobre a lista do backend
-  const filtered = processes.filter(p => {
-    const q = search.toLowerCase();
-    const matchQ = !search || p.clientName.toLowerCase().includes(q) || p.cnj.includes(q);
-    const matchS = filterStatus === "Todos" || p.status === filterStatus;
-    const matchT = filterTribunal === "Todos" || p.tribunal === filterTribunal;
-    const matchP = filterPhase === "Todas" || p.phase === filterPhase;
-    const matchPriority = filterPriority === "Todas" || p.priority === filterPriority;
-    const matchHearing = filterHearing === "Todos" || (filterHearing === "com" ? p.hearingDate !== "—" : p.hearingDate === "—");
-    return matchQ && matchS && matchT && matchP && matchPriority && matchHearing;
-  });
-
-  const sorted = [...filtered].sort((a, b) => {
-    if (sortBy === "cliente_asc") return a.clientName.localeCompare(b.clientName, "pt");
-    if (sortBy === "cliente_desc") return b.clientName.localeCompare(a.clientName, "pt");
-    if (sortBy === "audiencia_asc") {
-      const timeA = parseDateToTimestamp(a.hearingDate);
-      const timeB = parseDateToTimestamp(b.hearingDate);
-      if (timeA && !timeB) return -1;
-      if (!timeA && timeB) return 1;
-      if (timeA && timeB) return timeA - timeB;
-      return 0;
-    }
-    if (sortBy === "audiencia_desc") {
-      const timeA = parseDateToTimestamp(a.hearingDate);
-      const timeB = parseDateToTimestamp(b.hearingDate);
-      if (timeA && !timeB) return -1;
-      if (!timeA && timeB) return 1;
-      if (timeA && timeB) return timeB - timeA;
-      return 0;
-    }
-    if (sortBy === "prioridade_desc") {
-      const weightA = PRIORITY_WEIGHT[a.priority] || 0;
-      const weightB = PRIORITY_WEIGHT[b.priority] || 0;
-      return weightB - weightA;
-    }
-    if (sortBy === "prioridade_asc") {
-      const weightA = PRIORITY_WEIGHT[a.priority] || 0;
-      const weightB = PRIORITY_WEIGHT[b.priority] || 0;
-      return weightA - weightB;
-    }
-    return 0;
-  });
-
-  const hasActiveFilters = search !== "" || filterStatus !== "Todos" || filterTribunal !== "Todos" || filterPhase !== "Todas" || filterPriority !== "Todas" || filterHearing !== "Todos";
-  
   const clearFilters = () => {
     setSearch("");
+    setDebouncedSearch("");
     setFilterStatus("Todos");
-    setFilterTribunal("Todos");
-    setFilterPhase("Todas");
-    setFilterPriority("Todas");
+    setFaseId(null);
+    setTribunalId(null);
+    setPrioridadeId(null);
     setFilterHearing("Todos");
     setPage(1);
   };
-
-  const PAGE_SIZE = 6;
-  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
-  const safePage = Math.min(page, totalPages);
-  const paginated = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   return (
     <div className="home-page">
@@ -203,38 +271,30 @@ export default function HomePage() {
         <MetricCard
           icon={<Scale size={15} className="metric-card-icon metric-card-icon--blue" />}
           iconVariant="metric-card-badge--blue"
-          value={activeProcesses.length}
+          value={kpiAtivos}
           label="Processos ativos"
-          trend="+1 esta semana"
           trendVariant="metric-trend--success"
-          trendIcon={<TrendingUp size={10} />}
         />
         <MetricCard
           icon={<Zap size={15} className="metric-card-icon metric-card-icon--amber" />}
           iconVariant="metric-card-badge--amber"
-          value={pendingRequests.length}
-          label="Solicitações"
-          trend="Aguardando análise"
+          value={pendingRequests?.length ?? "—"}
+          label="Solicitações pendentes"
           trendVariant="metric-trend--amber"
-          trendIcon={<Clock size={10} />}
         />
         <MetricCard
           icon={<BarChart3 size={15} className="metric-card-icon metric-card-icon--green" />}
           iconVariant="metric-card-badge--green"
-          value={encerrados.length}
-          label="Encerrados"
-          trend="Total histórico"
+          value={kpiEncerrados}
+          label="Processos encerrados"
           trendVariant="metric-trend--muted"
-          trendIcon={<FileText size={10} />}
         />
         <MetricCard
           icon={<Calendar size={15} className="metric-card-icon metric-card-icon--gold" />}
           iconVariant="metric-card-badge--gold"
-          value={comAudiencia.length}
-          label="Com audiência"
-          trend="Agendadas"
+          value={kpiAudiencia}
+          label="Processos com audiência"
           trendVariant="metric-trend--muted"
-          trendIcon={<Calendar size={10} />}
         />
       </div>
 
@@ -247,11 +307,11 @@ export default function HomePage() {
               type="text"
               placeholder="Pesquisar por cliente ou número CNJ..."
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={handleSearchChange}
               className="home-search-input"
             />
           </div>
-          <button className="home-search-button">Buscar</button>
+          <button className="home-search-button" onClick={() => { setDebouncedSearch(search); setPage(1); }}>Buscar</button>
         </div>
 
         <div className="home-divider" />
@@ -260,33 +320,48 @@ export default function HomePage() {
           <div className="home-filter-group-left">
             <span className="home-filter-label">Filtros</span>
 
-            <FilterSelect prefix="home" label="Status" value={filterStatus} onChange={setFilterStatus}>
+            <FilterSelect prefix="home" label="Status" value={filterStatus} onChange={v => { setFilterStatus(v); setPage(1); }}>
               {STATUS_OPTS.map(o => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </FilterSelect>
 
-            <FilterSelect prefix="home" label="Fase" value={filterPhase} onChange={setFilterPhase}>
-              {PHASE_OPTS.map(p => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </FilterSelect>
-
-            <FilterSelect prefix="home" label="Prioridade" value={filterPriority} onChange={setFilterPriority}>
-              {PRIORITY_OPTS.map(o => (
+            <FilterSelect
+              prefix="home"
+              label="Fase"
+              value={faseId != null ? String(faseId) : "Todas"}
+              onChange={v => { setFaseId(v === "Todas" ? null : Number(v)); setPage(1); }}
+            >
+              {faseOpts.map(o => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </FilterSelect>
 
-            <FilterSelect prefix="home" label="Audiência" value={filterHearing} onChange={setFilterHearing}>
+            <FilterSelect
+              prefix="home"
+              label="Prioridade"
+              value={prioridadeId != null ? String(prioridadeId) : "Todas"}
+              onChange={v => { setPrioridadeId(v === "Todas" ? null : Number(v)); setPage(1); }}
+            >
+              {prioridadeOpts.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </FilterSelect>
+
+            <FilterSelect prefix="home" label="Audiência" value={filterHearing} onChange={v => { setFilterHearing(v); setPage(1); }}>
               {HEARING_OPTS.map(o => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </FilterSelect>
 
-            <FilterSelect prefix="home" label="Tribunal" value={filterTribunal} onChange={setFilterTribunal}>
-              {tribunalOptions.map(t => (
-                <option key={t} value={t}>{t}</option>
+            <FilterSelect
+              prefix="home"
+              label="Tribunal"
+              value={tribunalId != null ? String(tribunalId) : "Todos"}
+              onChange={v => { setTribunalId(v === "Todos" ? null : Number(v)); setPage(1); }}
+            >
+              {tribunalOpts.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </FilterSelect>
 
@@ -322,11 +397,11 @@ export default function HomePage() {
       {/* ── Results count ── */}
       <div className="home-results-row">
         <p className="home-results-count">
-          {filtered.length === processes.length
-            ? `${filtered.length} processos`
-            : `${filtered.length} de ${processes.length} processos`}
+          {totalElements === 0
+            ? "Nenhum processo"
+            : `${totalElements} processo${totalElements !== 1 ? "s" : ""}`}
         </p>
-        {filtered.length > 0 && (
+        {processes.length > 0 && (
           <p className="home-results-tip">Clique em um processo para ver detalhes</p>
         )}
       </div>
@@ -337,7 +412,7 @@ export default function HomePage() {
           <Loader2 size={28} className="animate-spin text-blue-600" />
           <p className="home-empty-title">Carregando processos...</p>
         </div>
-      ) : filtered.length === 0 ? (
+      ) : processes.length === 0 ? (
         <div className="home-empty-state">
           <div className="home-empty-icon-wrap">
             <FileText size={24} className="home-empty-icon" />
@@ -352,13 +427,13 @@ export default function HomePage() {
         </div>
       ) : (
         <div className="home-grid">
-          {paginated.map(p => (
+          {processes.map(p => (
             <ProcessCard key={p.id} process={p} onClick={() => navigate(`/app/processos/${p.id}`)} />
           ))}
         </div>
       )}
 
-      {!loading && <PaginationBar page={safePage} total={totalPages} onPage={setPage} />}
+      {!loading && <PaginationBar page={page} total={totalPages} onPage={setPage} />}
 
       <CalendarEventModal
         open={calendarModalOpen}
@@ -376,21 +451,16 @@ function MetricCard({
   icon,
   iconVariant,
   value,
-  label,
-  trend,
-  trendVariant,
-  trendIcon
+  label
 }) {
   return (
     <div className="metric-card">
       <div className={`metric-card-badge ${iconVariant}`}>
         {icon}
       </div>
-      <p className="metric-card-value">{value}</p>
-      <p className="metric-card-label">{label}</p>
-      <div className={`metric-card-trend ${trendVariant}`}>
-        {trendIcon}
-        <span className="metric-card-trend-text">{trend}</span>
+      <div className="metric-card-content">
+        <p className="metric-card-value">{value}</p>
+        <p className="metric-card-label">{label}</p>
       </div>
     </div>
   );
@@ -407,7 +477,7 @@ function ProcessCard({ process, onClick }) {
     >
       <div className="process-card-body">
         <div className="process-card-topline">
-          <p className="process-card-cnj">{process.cnj}</p>
+          <p className="process-card-cnj">{maskCNJ(process.cnj) || "-"}</p>
           <span className="process-card-tribunal">{process.tribunal}</span>
         </div>
 
