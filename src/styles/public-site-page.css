@@ -860,6 +860,7 @@
   color: #374151;
   font-size: 1rem;
   outline: none;
+  cursor: pointer;
 }
 
 .site-contact-select:focus {

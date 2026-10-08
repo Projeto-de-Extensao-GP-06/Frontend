@@ -8,7 +8,7 @@ import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
 import { Checkbox } from "../components/ui/checkbox";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
-import { maskPhone, maskCNJ } from "../utils/masks";
+import { maskPhone, maskCNJ, maskCNPJ } from "../utils/masks";
 import siteLogoImage from "../../imports/Captura_de_tela_2026-05-29_235111-1.png";
 import "../../styles/public-site-page.css";
 const areas = [{
@@ -41,6 +41,13 @@ const steps = [{
   title: "Entramos em contato",
   desc: "Retornamos com orientações claras e próximos passos personalizados."
 }];
+const COMO_CONHECEU_OPTIONS = [
+  { value: "INSTAGRAM", label: "Instagram" },
+  { value: "SITE", label: "Site" },
+  { value: "INDICACAO", label: "Indicação" },
+  { value: "OUTROS", label: "Outros" },
+];
+
 const STORAGE_KEY_FORM = "public_site_contact_form";
 const STORAGE_KEY_SCROLL = "public_site_scroll_pos";
 
@@ -68,12 +75,14 @@ export default function PublicSitePage() {
   // Form states
   const [name, setName] = useState(savedData?.name ?? "");
   const [companyName, setCompanyName] = useState(savedData?.companyName ?? "");
+  const [cnpj, setCnpj] = useState(savedData?.cnpj ?? "");
   const [contactName, setContactName] = useState(savedData?.contactName ?? "");
   const [profession, setProfession] = useState(savedData?.profession ?? "");
   const [email, setEmail] = useState(savedData?.email ?? "");
   const [phone, setPhone] = useState(savedData?.phone ?? "");
   const [state, setState] = useState(savedData?.state ?? "");
   const [processNumber, setProcessNumber] = useState(savedData?.processNumber ?? "");
+  const [comoConheceu, setComoConheceu] = useState(savedData?.comoConheceu ?? "");
   const [description, setDescription] = useState(savedData?.description ?? "");
 
   const navigate = useNavigate();
@@ -119,12 +128,14 @@ export default function PublicSitePage() {
         clientType,
         name,
         companyName,
+        cnpj,
         contactName,
         profession,
         email,
         phone,
         state,
         processNumber,
+        comoConheceu,
         description,
         accepted,
       };
@@ -132,7 +143,7 @@ export default function PublicSitePage() {
         sessionStorage.setItem(STORAGE_KEY_FORM, JSON.stringify(formData));
       } catch {}
     }
-  }, [clientType, name, companyName, contactName, profession, email, phone, state, processNumber, description, accepted, submitted]);
+  }, [clientType, name, companyName, cnpj, contactName, profession, email, phone, state, processNumber, comoConheceu, description, accepted, submitted]);
 
   const scrollTo = id => {
     document.getElementById(id)?.scrollIntoView({
@@ -153,12 +164,14 @@ export default function PublicSitePage() {
   const handleReset = () => {
     setName("");
     setCompanyName("");
+    setCnpj("");
     setContactName("");
     setProfession("");
     setEmail("");
     setPhone("");
     setState("");
     setProcessNumber("");
+    setComoConheceu("");
     setDescription("");
     setAccepted(false);
     setSubmitted(false);
@@ -426,7 +439,7 @@ export default function PublicSitePage() {
                     </>
                   ) : (
                     <>
-                      <div className="site-contact-grid__full">
+                      <div>
                         <Label className="site-contact-label">Razão Social / Nome da Empresa *</Label>
                         <Input
                           required
@@ -434,6 +447,18 @@ export default function PublicSitePage() {
                           onChange={(e) => setCompanyName(e.target.value)}
                           className="site-contact-input"
                           placeholder="Ex: Construtech Soluções e Engenharia LTDA"
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="site-contact-label">CNPJ *</Label>
+                        <Input
+                          required
+                          value={cnpj}
+                          onChange={(e) => setCnpj(maskCNPJ(e.target.value))}
+                          className="site-contact-input site-contact-input--mono"
+                          placeholder="00.000.000/0000-00"
+                          maxLength={18}
                         />
                       </div>
 
@@ -499,7 +524,7 @@ export default function PublicSitePage() {
                     </>
                   )}
 
-                  <div className="site-contact-grid__full">
+                  <div>
                     <Label className="site-contact-label">N° do Processo (CNJ)</Label>
                     <Input
                       value={processNumber}
@@ -508,6 +533,29 @@ export default function PublicSitePage() {
                       placeholder="Opcional"
                       maxLength={25}
                     />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="comoConheceu" className="site-contact-label">
+                      Como conheceu? *
+                    </Label>
+                    <select
+                      id="comoConheceu"
+                      name="comoConheceu"
+                      required
+                      value={comoConheceu}
+                      onChange={(e) => setComoConheceu(e.target.value)}
+                      className="site-contact-select"
+                    >
+                      <option value="" disabled>
+                        Selecione uma opção
+                      </option>
+                      {COMO_CONHECEU_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className="site-contact-grid__full">
@@ -559,7 +607,7 @@ export default function PublicSitePage() {
 
       <footer className="site-footer">
         <div className="site-footer__inner">
-          <div className="site-footer__logo"><ImageWithFallback src={siteLogoImage} alt="Thauany Bezerra Advocacia" className="site-logo" /></div>
+          <div className="site-footer__logo"><ImageWithFallback src={siteLogoImage} alt="Thauany Bezerra Advocacia" style={{ width: '13rem', height: 'auto', marginTop: '1.2rem' }} className="site-logo" /></div>
           <div className="site-footer__contacts">
             <a href={whatsappUrl} target="_blank" rel="noreferrer" className="site-footer__contact"><Phone size={16} className="site-footer__contact-icon" /><span className="site-footer__contact-text">(11) 98766-4030</span></a>
             <a href="mailto:tthauany.bezerra@gmail.com" className="site-footer__contact"><Mail size={16} className="site-footer__contact-icon" /><span className="site-footer__contact-text">tthauany.bezerra@gmail.com</span></a>
