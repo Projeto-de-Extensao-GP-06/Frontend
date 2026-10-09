@@ -74,3 +74,17 @@ input, textarea, select, button {
   color: #9ca3af;
   font-size: 0.75rem;
 }
+
+/* ── Global Animation Utilities ── */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
