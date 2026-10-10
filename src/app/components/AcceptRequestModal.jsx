@@ -70,7 +70,7 @@ export function AcceptRequestModal({ open, onOpenChange, request, onConfirmAccep
       setCompanyName(request.companyName || (isPJ ? request.name : ""));
       setContactName(isPJ ? (request.name || "") : "");
       setEmail(request.email || "");
-      setPhone(request.phone || "");
+      setPhone(request.phone ? maskPhone(request.phone) : "");
       setCpf(request.cpf ? maskCPF(request.cpf) : "");
       setRg(request.rg ? maskRG(request.rg) : "");
       setCnpj(request.cnpj ? maskCNPJ(request.cnpj) : "");
@@ -451,7 +451,7 @@ export function AcceptRequestModal({ open, onOpenChange, request, onConfirmAccep
                           type="text"
                           className="accept-input"
                           value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
+                          onChange={(e) => setPhone(maskPhone(e.target.value))}
                           placeholder="(00) 00000-0000"
                         />
                       </div>
@@ -548,7 +548,7 @@ export function AcceptRequestModal({ open, onOpenChange, request, onConfirmAccep
                               type="text"
                               className="accept-input"
                               value={phone}
-                              onChange={(e) => setPhone(e.target.value)}
+                              onChange={(e) => setPhone(maskPhone(e.target.value))}
                               placeholder="(00) 00000-0000"
                             />
                           </div>

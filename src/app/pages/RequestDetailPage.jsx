@@ -7,6 +7,7 @@ import { mockRequests } from "../data/mockData";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { AcceptRequestModal } from "../components/AcceptRequestModal";
+import { maskPhone, maskCNJ } from "../utils/masks";
 import "../../styles/request-detail-page.css";
 export default function RequestDetailPage() {
   const {
@@ -88,7 +89,7 @@ export default function RequestDetailPage() {
           </div>
           <div className="req-detail-info-row">
             <Phone size={14} className="req-detail-info-row__icon" />
-            <span className="req-detail-info-row__value">{request.phone}</span>
+            <span className="req-detail-info-row__value">{request.phone ? maskPhone(request.phone) : "-"}</span>
           </div>
           <div className="req-detail-info-row">
             <Calendar size={14} className="req-detail-info-row__icon" />
@@ -103,7 +104,7 @@ export default function RequestDetailPage() {
             <h3 className="req-detail-process-header__title">Informações do Processo</h3>
           </div>
           <div className="req-detail-proc-grid">
-            {request.processNumber && <div><p className="req-detail-proc-label">Número CNJ</p><p className="req-detail-proc-value">{request.processNumber}</p></div>}
+            {request.processNumber && <div><p className="req-detail-proc-label">Número CNJ</p><p className="req-detail-proc-value">{maskCNJ(request.processNumber)}</p></div>}
             {request.filingDate && <div><p className="req-detail-proc-label">Data ajuizamento</p><p className="req-detail-proc-value">{request.filingDate}</p></div>}
             {request.instance && <div><p className="req-detail-proc-label">Instância</p><p className="req-detail-proc-value">{request.instance}</p></div>}
             {request.secrecyLevel && <div><p className="req-detail-proc-label">Nível de Sigilo</p><p className="req-detail-proc-value">{request.secrecyLevel}</p></div>}
