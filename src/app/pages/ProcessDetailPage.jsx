@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router";
 import {
   ArrowLeft,
@@ -135,6 +135,15 @@ export default function ProcessDetailPage() {
   const [isAddingComment, setIsAddingComment] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [historyVisible, setHistoryVisible] = useState(HISTORY_INITIAL);
+  const pollingIntervalRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     async function carregar() {
@@ -185,22 +194,98 @@ export default function ProcessDetailPage() {
   const handleAtualizarDados = async () => {
     try {
       setSyncing(true);
-      const dadosAtualizados = await atualizarDadosProcesso(id);
-      const historico = await listarHistoricoDoProcesso(id);
-      setProcess({ ...dadosAtualizados, history: historico });
-      setStatus(dadosAtualizados.status);
-      setObservationsText(dadosAtualizados.observationsText);
-      toast.success("Dados do processo atualizados com sucesso.");
+      const resposta = await atualizarDadosProcesso(id);
+      toast.info(
+        resposta?.mensagem ||
+          "Sincronização iniciada na fila! Buscando dados oficiais no DataJud...",
+      );
+
+      const timestampOriginal = process?.raw?.ultimaAtualizacao || process?.ultimaAtualizacaoIso;
+      const dataSincronizacaoOriginal = process?.lastSyncDate;
+      const inicio = Date.now();
+      const tempoLimiteMs = 30000; // 30 segundos máx
+
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+
+      pollingIntervalRef.current = setInterval(async () => {
+        try {
+          const dadosAtualizados = await buscarProcessoPorId(id);
+          const timestampAtual = dadosAtualizados?.raw?.ultimaAtualizacao || dadosAtualizados?.ultimaAtualizacaoIso;
+
+          // Verifica se o consumer já processou (por timestamp ISO ou por texto ou tempo decorrido de 12s)
+          const atualizouTimestamp = timestampAtual && timestampAtual !== timestampOriginal;
+          const atualizouTexto = dadosAtualizados?.lastSyncDate && dadosAtualizados.lastSyncDate !== dataSincronizacaoOriginal;
+          const tempoDecorrido = Date.now() - inicio;
+
+          if (atualizouTimestamp || atualizouTexto || tempoDecorrido >= 12000) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+
+            const historico = await listarHistoricoDoProcesso(id);
+            setProcess({ ...dadosAtualizados, history: historico });
+            setStatus(dadosAtualizados.status);
+            setObservationsText(dadosAtualizados.observationsText);
+            setSyncing(false);
+
+            toast.success("Dados do processo sincronizados com sucesso!", {
+              duration: 12000,
+              action: {
+                label: "Ver dados",
+                onClick: () => {
+                  const card = document.getElementById("card-dados-processo");
+                  if (card) {
+                    card.scrollIntoView({ behavior: "smooth", block: "center" });
+                    card.classList.add("proc-card--highlight");
+                    setTimeout(() => card.classList.remove("proc-card--highlight"), 2500);
+                  }
+                },
+              },
+            });
+            return;
+          }
+
+          // Se estourar o tempo limite de espera
+          if (tempoDecorrido > tempoLimiteMs) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+            setSyncing(false);
+            const historico = await listarHistoricoDoProcesso(id);
+            setProcess({ ...dadosAtualizados, history: historico });
+            setStatus(dadosAtualizados.status);
+            setObservationsText(dadosAtualizados.observationsText);
+
+            toast.success("Sincronização concluída!", {
+              duration: 10000,
+              action: {
+                label: "Ver dados",
+                onClick: () => {
+                  const card = document.getElementById("card-dados-processo");
+                  if (card) {
+                    card.scrollIntoView({ behavior: "smooth", block: "center" });
+                    card.classList.add("proc-card--highlight");
+                    setTimeout(() => card.classList.remove("proc-card--highlight"), 2500);
+                  }
+                },
+              },
+            });
+          }
+        } catch (_) {
+          // Ignora falhas pontuais de conexão durante o polling
+        }
+      }, 2500);
     } catch (err) {
-      console.error("Erro ao atualizar dados do processo:", err);
+      console.error("Erro ao solicitar sincronização do processo:", err);
+      setSyncing(false);
       if (err.response?.status === 401) {
         toast.warning("Sessão inválida ou expirada.");
       } else {
-        const mensagemErro = err.response?.data?.message || "Não foi possível atualizar os dados do processo.";
+        const mensagemErro =
+          err.response?.data?.message ||
+          "Não foi possível iniciar a sincronização do processo.";
         toast.error(mensagemErro);
       }
-    } finally {
-      setSyncing(false);
     }
   };
 
@@ -470,7 +555,7 @@ export default function ProcessDetailPage() {
       </div>
 
       <div className="proc-content">
-        <div className="proc-card">
+        <div className="proc-card" id="card-dados-processo">
           <div className="proc-sync-bar">
             <div className="proc-sync-bar__info">
               <span className="proc-sync-bar__label">

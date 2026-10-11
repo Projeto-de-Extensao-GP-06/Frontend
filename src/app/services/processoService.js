@@ -98,6 +98,7 @@ function mapearProcesso(p) {
     closedAt: encerramento.data,
     closedBy: p.encerradoSuspensoPorUsuarioNome || "-",
     lastSyncDate: ultimaAtualizacao.hora ? `${ultimaAtualizacao.data} às ${ultimaAtualizacao.hora}` : ultimaAtualizacao.data,
+    ultimaAtualizacaoIso: p.ultimaAtualizacao || null,
     history: mapearHistorico(p.historicoProcessoResponses),
     raw: p
   };
@@ -252,7 +253,7 @@ export async function adicionarObservacaoAoProcesso({ processoId, processo, obse
 
 export async function atualizarDadosProcesso(id) {
   const response = await api.post(`/processos/${id}/atualizar-dados`);
-  return mapearProcesso(response.data);
+  return response.data;
 }
 
 export async function excluirProcesso(id) {
