@@ -1,27 +1,36 @@
 import { api } from "./api";
 
-const normalize = (cliente) => ({
-  ...cliente,
-  name: cliente.nomeRazaoSocial,
-  type: cliente.isPF ? "PF" : "PJ",
-  cpf: cliente.isPF ? cliente.cpfCnpj : undefined,
-  cnpj: cliente.isPF ? undefined : cliente.cpfCnpj,
-  status: (cliente.status?.nome || cliente.statusNome || "").toLowerCase(),
-  address: cliente.endereco || { cep: "", logradouro: "", numero: "", bairro: "", cidade: "", estado: "", complemento: "" },
-  contacts: (cliente.contatos || []).map((contact) => ({
-    ...contact,
-    name: contact.nome,
-    phone: contact.telefone,
-    profession: contact.profissao,
-    isPrimary: contact.principal,
-  })),
-});
+const normalize = (cliente) => {
+  const isPF = cliente.isPF;
+  const primaryContact = (cliente.contatos || []).find(c => c.principal) || (cliente.contatos || [])[0];
+  
+  return {
+    ...cliente,
+    name: cliente.nomeRazaoSocial,
+    type: isPF ? "PF" : "PJ",
+    cpf: isPF ? cliente.cpfCnpj : undefined,
+    cnpj: isPF ? undefined : cliente.cpfCnpj,
+    status: (cliente.status?.nome || cliente.statusNome || "").toLowerCase(),
+    comoConheceu: typeof cliente.comoConheceu === 'string' ? cliente.comoConheceu : cliente.comoConheceu?.name() || "INDICACAO",
+    email: cliente.email || (isPF ? primaryContact?.email : null),
+    profession: cliente.profession || (isPF ? primaryContact?.profissao : null),
+    address: cliente.endereco || { cep: "", logradouro: "", numero: "", bairro: "", cidade: "", estado: "", complemento: "" },
+    contacts: (cliente.contatos || []).map((contact) => ({
+      ...contact,
+      name: contact.nome,
+      phone: contact.telefone,
+      profession: contact.profissao,
+      isPrimary: contact.principal,
+    })),
+  };
+};
 
 const toRequest = (data) => ({
   nomeRazaoSocial: data.name,
   cpfCnpj: data.document.replace(/\D/g, ""),
   isPF: data.type === "PF",
   rg: data.rg || null,
+  comoConheceu: data.comoConheceu || "INDICACAO",
   statusClienteId: Number(data.statusClienteId || 1),
   endereco: data.address,
   contatos: data.contacts.map((contact, index) => ({
