@@ -440,6 +440,11 @@
   transition: all 0.2s ease;
 }
 
+.client-detail-actions__btn:disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
 .client-detail-actions__btn--primary {
   border: 0;
   background: #0f2357;
@@ -447,7 +452,7 @@
   box-shadow: 0 4px 12px rgba(15, 35, 87, 0.2);
 }
 
-.client-detail-actions__btn--primary:hover {
+.client-detail-actions__btn--primary:hover:not(:disabled) {
   background: #1a3a7a;
 }
 
@@ -457,7 +462,7 @@
   color: #dc2626;
 }
 
-.client-detail-actions__btn--danger:hover {
+.client-detail-actions__btn--danger:hover:not(:disabled) {
   background: #fee2e2;
 }
 

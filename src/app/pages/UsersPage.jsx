@@ -6,6 +6,8 @@ import { UserAvatar } from "../components/UserAvatar";
 import { FilterSelect } from "../components/FilterSelect";
 import { PaginationBar } from "../components/PaginationBar";
 import { mockUsers } from "../data/mockData";
+import { useAuth } from "../contexts/AuthContext";
+import { hasPermission } from "../utils/permissions";
 import "../../styles/users-page.css";
 
 const STATUS_OPTS = [
@@ -25,6 +27,8 @@ export default function UsersPage() {
   const [sortBy, setSortBy] = useState("az");
   const [page, setPage] = useState(1);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const canCreateUser = hasPermission(user, "CRIAR USUÁRIO");
 
   const roleOptions = ["Todos", ...Array.from(new Set(mockUsers.map((u) => u.role)))];
 
@@ -68,7 +72,12 @@ export default function UsersPage() {
           <p className="page-kicker">SGPJ</p>
           <h1 className="page-title">Usuários</h1>
         </div>
-        <button onClick={() => navigate("/app/usuarios/novo")} className="users-new-button">
+        <button
+          onClick={() => canCreateUser && navigate("/app/usuarios/novo")}
+          className="users-new-button"
+          disabled={!canCreateUser}
+          title={canCreateUser ? "Novo Usuário" : "Sem permissão para criar usuário"}
+        >
           <Plus size={16} />
           Novo Usuário
         </button>

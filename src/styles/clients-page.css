@@ -47,11 +47,16 @@
   box-shadow: 0 1px 2px rgba(15, 35, 87, 0.25);
 }
 
-.clients-new-button:hover {
+.clients-new-button:disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.clients-new-button:hover:not(:disabled) {
   background: #162d6b;
 }
 
-.clients-new-button:active {
+.clients-new-button:active:not(:disabled) {
   transform: scale(0.97);
 }
 
@@ -464,13 +469,18 @@
   outline: none;
 }
 
-.client-card-actions button:hover {
+.client-card-actions button:disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.client-card-actions button:hover:not(:disabled) {
   border-color: #0f2357;
   background: #0f2357;
   color: #fff;
 }
 
-.client-card-actions button:active {
+.client-card-actions button:active:not(:disabled) {
   transform: scale(0.95);
 }
 

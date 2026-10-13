@@ -61,17 +61,32 @@
   font-weight: 600;
 }
 
+.users-new-button,
+.users-primary-button,
+.users-danger-button,
+.users-danger-confirm {
+  transition: all 0.2s ease;
+}
+
+.users-new-button:disabled,
+.users-primary-button:disabled,
+.users-danger-button:disabled,
+.users-danger-confirm:disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.users-new-button:hover:not(:disabled),
+.users-primary-button:hover:not(:disabled) {
+  background: #1a3a7a;
+}
+
 .users-new-button {
   height: 2.5rem;
   padding: 0 1rem;
   background: #0f2357;
   color: #fff;
   box-shadow: 0 1px 2px rgba(15, 35, 87, 0.2);
-}
-
-.users-new-button:hover,
-.users-primary-button:hover {
-  background: #1a3a7a;
 }
 
 .users-summary-grid {

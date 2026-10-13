@@ -72,6 +72,33 @@
   color: #c9a96e;
 }
 
+.roles-add-button:disabled,
+.roles-search-btn:disabled,
+.roles-icon-btn:disabled,
+.perms-restore-btn:disabled,
+.perms-clear-btn:disabled,
+.perms-accordion__toggle-all:disabled,
+.perm-btn:disabled,
+.roles-save-btn:disabled,
+.roles-delete-dialog__btn:disabled,
+.roles-dialog__btn:disabled,
+.roles-add-modal__btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.roles-add-button:disabled:hover,
+.roles-search-btn:disabled:hover,
+.roles-icon-btn:disabled:hover,
+.perms-restore-btn:disabled:hover,
+.perms-clear-btn:disabled:hover,
+.perms-accordion__toggle-all:disabled:hover,
+.perm-btn:disabled:hover,
+.roles-save-btn:disabled:hover {
+  background: inherit;
+  color: inherit;
+}
+
 .roles-search-row {
   display: flex;
   align-items: center;

@@ -52,6 +52,8 @@ import {
 } from "../services/processoService";
 import { maskCNJ } from "../utils/masks";
 import { toast } from "sonner";
+import { useAuth } from "../contexts/AuthContext";
+import { hasPermission } from "../utils/permissions";
 import "../../styles/process-detail-page.css";
 
 /* ─ helpers ─ */
@@ -112,6 +114,10 @@ function montarDefaultsCalendario(process) {
 export default function ProcessDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const canEditProcess = hasPermission(user, "EDITAR PROCESSO");
+  const canDeleteProcess = hasPermission(user, "EXCLUIR PROCESSO");
+  const canCreateDocument = hasPermission(user, "CRIAR DOCUMENTO");
 
   const [syncing, setSyncing] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -777,8 +783,9 @@ export default function ProcessDetailPage() {
               <button
                 type="button"
                 className="proc-doc-empty"
-                onClick={() => setUploadModalOpen(true)}
-                disabled={uploadingDocuments}
+                onClick={() => canCreateDocument && setUploadModalOpen(true)}
+                disabled={uploadingDocuments || !canCreateDocument}
+                title={canCreateDocument ? "Adicionar arquivo" : "Sem permissão para criar documento"}
               >
                 <Plus size={20} className="proc-doc-empty__icon" />
                 <p className="proc-doc-empty__text">Adicionar arquivo</p>
@@ -830,8 +837,9 @@ export default function ProcessDetailPage() {
                 <button
                   type="button"
                   className="proc-doc-add"
-                  onClick={() => setUploadModalOpen(true)}
-                  disabled={uploadingDocuments}
+                  onClick={() => canCreateDocument && setUploadModalOpen(true)}
+                  disabled={uploadingDocuments || !canCreateDocument}
+                  title={canCreateDocument ? "Adicionar arquivo" : "Sem permissão para criar documento"}
                 >
                   <Plus size={20} className="proc-doc-add__icon" />
                   <p className="proc-doc-add__label">Adicionar arquivo</p>
@@ -853,16 +861,20 @@ export default function ProcessDetailPage() {
           )}
           {!isClosed && !isSuspended && (
             <button
-              onClick={() => navigate(`/app/processos/${id}/editar`)}
+              onClick={() => canEditProcess && navigate(`/app/processos/${id}/editar`)}
               className="proc-actions__btn proc-actions__btn--primary"
+              disabled={!canEditProcess}
+              title={canEditProcess ? "Editar Processo" : "Sem permissão para editar processo"}
             >
               <Pencil size={15} />
               Editar Processo
             </button>
           )}
           <button
-            onClick={() => setDeleteDialog(true)}
+            onClick={() => canDeleteProcess && setDeleteDialog(true)}
             className="proc-actions__btn proc-actions__btn--danger"
+            disabled={!canDeleteProcess}
+            title={canDeleteProcess ? "Excluir" : "Sem permissão para excluir processo"}
           >
             <Trash2 size={15} />
             Excluir
