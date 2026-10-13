@@ -8,19 +8,17 @@ import { StatusBadge, PriorityBadge, PhaseBadge } from "../components/StatusBadg
 import { InfoRow } from "../components/InfoRow";
 import { PaginationBar } from "../components/PaginationBar";
 import { maskPhone } from "../utils/masks";
-import { mockClients, mockProcesses } from "../data/mockData";
+import { clienteService, getClienteError } from "../services/clienteService";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import "../../styles/client-detail-page.css";
 
 export default function ClientDetailPage() {
-  useEffect(() => {
-    document.title = `Cliente - ${client.name}`;
-  }, []);
-
   const {
     id
   } = useParams();
   const navigate = useNavigate();
+  const [client, setClient] = useState(null);
+  const [loadError, setLoadError] = useState("");
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [addContactDialog, setAddContactDialog] = useState(false);
   const [newContact, setNewContact] = useState({
@@ -30,22 +28,26 @@ export default function ClientDetailPage() {
     profession: ""
   });
 
-  const client = mockClients.find(c => c.id === id);
-  const [contacts, setContacts] = useState(() => (client?.contacts ? [...client.contacts] : []));
+  const [contacts, setContacts] = useState([]);
   const [contactSearchInput, setContactSearchInput] = useState("");
   const [appliedContactSearch, setAppliedContactSearch] = useState("");
   const [contactPage, setContactPage] = useState(1);
   const CONTACTS_PAGE_SIZE = 3;
 
   useEffect(() => {
-    if (client) {
-      document.title = `Cliente - ${client.name}`;
-    }
-  }, [client]);
+    clienteService.getById(id)
+      .then((loadedClient) => {
+        setClient(loadedClient);
+        setContacts(loadedClient.contacts || []);
+        document.title = `Cliente - ${loadedClient.name}`;
+      })
+      .catch((requestError) => setLoadError(getClienteError(requestError)));
+  }, [id]);
 
   if (!client) {
+    if (!loadError) return <div className="client-detail-page client-detail-page--empty"><p className="client-detail-empty-text">Carregando cliente...</p></div>;
     return <div className="client-detail-page client-detail-page--empty">
-        <p className="client-detail-empty-text">Cliente não encontrado.</p>
+        <p className="client-detail-empty-text">{loadError}</p>
         <Button onClick={() => navigate("/app/clientes")} className="client-detail-empty-button">
           Voltar para Clientes
         </Button>
@@ -54,7 +56,7 @@ export default function ClientDetailPage() {
   const isPF = client.type === "PF";
   const pf = client;
   const pj = client;
-  const clientProcesses = mockProcesses.filter(p => p.clientId === id);
+  const clientProcesses = [];
 
   const handleSearchSubmit = (e) => {
     e?.preventDefault();
@@ -310,7 +312,7 @@ export default function ClientDetailPage() {
             </Button>
             <Button className="client-detail-dialog-button client-detail-dialog-button--danger" onClick={() => {
             setDeleteDialog(false);
-            navigate("/app/clientes");
+            clienteService.remove(id).then(() => navigate("/app/clientes")).catch((requestError) => setLoadError(getClienteError(requestError)));
           }}>
               Excluir
             </Button>
