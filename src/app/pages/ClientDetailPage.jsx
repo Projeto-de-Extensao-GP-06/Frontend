@@ -10,6 +10,8 @@ import { PaginationBar } from "../components/PaginationBar";
 import { maskPhone } from "../utils/masks";
 import { clienteService, getClienteError } from "../services/clienteService";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
+import { useAuth } from "../contexts/AuthContext";
+import { hasPermission } from "../utils/permissions";
 import "../../styles/client-detail-page.css";
 
 export default function ClientDetailPage() {
@@ -17,6 +19,11 @@ export default function ClientDetailPage() {
     id
   } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const canCreateContact = hasPermission(user, "CRIAR CONTATO");
+  const canEditClient = hasPermission(user, "EDITAR CLIENTE");
+  const canDeleteClient = hasPermission(user, "EXCLUIR CLIENTE");
+
   const [client, setClient] = useState(null);
   const [loadError, setLoadError] = useState("");
   const [deleteDialog, setDeleteDialog] = useState(false);
@@ -175,14 +182,16 @@ export default function ClientDetailPage() {
             </div>
             <h2 className="client-detail-section-title">{isPF ? "Contatos adicionais" : "Contatos"}</h2>
           </div>
-          <button
+          <Button
             type="button"
             onClick={() => setAddContactDialog(true)}
-            className="client-detail-add-contact-button"
+            disabled={!canCreateContact}
+            title={canCreateContact ? "Adicionar contato" : "Sem permissão para criar contato"}
+            className="button button--default button--default-size"
           >
             <Plus size={13} />
             Adicionar contato
-          </button>
+          </Button>
         </div>
 
         {/* Contact Search Form */}
@@ -289,10 +298,20 @@ export default function ClientDetailPage() {
 
       {/* Actions */}
       <div className="client-detail-actions">
-        <button onClick={() => navigate(`/app/clientes/${id}/editar`)} className="client-detail-actions__btn client-detail-actions__btn--primary">
+        <button
+          onClick={() => canEditClient && navigate(`/app/clientes/${id}/editar`)}
+          className="client-detail-actions__btn client-detail-actions__btn--primary"
+          disabled={!canEditClient}
+          title={canEditClient ? "Editar Cliente" : "Sem permissão para editar cliente"}
+        >
           <Pencil size={15} />Editar Cliente
         </button>
-        <button onClick={() => setDeleteDialog(true)} className="client-detail-actions__btn client-detail-actions__btn--danger">
+        <button
+          onClick={() => canDeleteClient && setDeleteDialog(true)}
+          className="client-detail-actions__btn client-detail-actions__btn--danger"
+          disabled={!canDeleteClient}
+          title={canDeleteClient ? "Excluir" : "Sem permissão para excluir cliente"}
+        >
           <Trash2 size={15} />Excluir
         </button>
       </div>

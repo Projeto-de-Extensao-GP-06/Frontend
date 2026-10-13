@@ -4,6 +4,8 @@ import { Plus, Search, Users, Trash2, Pencil, LoaderCircle, AlertCircle } from "
 import { ClientCard } from "../components/ClientCard";
 import { PaginationBar } from "../components/PaginationBar";
 import { clienteService, getClienteError } from "../services/clienteService";
+import { useAuth } from "../contexts/AuthContext";
+import { hasPermission } from "../utils/permissions";
 import "../../styles/clients-page.css";
 
 export default function ClientsPage() {
@@ -12,6 +14,11 @@ export default function ClientsPage() {
   }, []);
 
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const canCreateClient = hasPermission(user, "CRIAR CLIENTE");
+  const canEditClient = hasPermission(user, "EDITAR CLIENTE");
+  const canDeleteClient = hasPermission(user, "EXCLUIR CLIENTE");
+
   const [clients, setClients] = useState([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -67,7 +74,12 @@ export default function ClientsPage() {
             Clientes
           </h1>
         </div>
-        <button onClick={() => navigate("/app/clientes/novo")} className="clients-new-button">
+        <button
+          onClick={() => navigate("/app/clientes/novo")}
+          className="clients-new-button"
+          disabled={!canCreateClient}
+          title={canCreateClient ? "Novo Cliente" : "Sem permissão para criar cliente"}
+        >
           <Plus size={16} />
           Novo Cliente
         </button>
@@ -148,20 +160,22 @@ export default function ClientsPage() {
                 <>
                   <button
                     aria-label={`Editar ${client.name}`}
-                    title="Editar"
+                    title={canEditClient ? "Editar" : "Sem permissão para editar cliente"}
+                    disabled={!canEditClient}
                     onClick={(event) => {
                       event.stopPropagation();
-                      navigate(`/app/clientes/${client.id}/editar`);
+                      if (canEditClient) navigate(`/app/clientes/${client.id}/editar`);
                     }}
                   >
                     <Pencil size={15} />
                   </button>
                   <button
                     aria-label={`Excluir ${client.name}`}
-                    title="Excluir"
+                    title={canDeleteClient ? "Excluir" : "Sem permissão para excluir cliente"}
+                    disabled={!canDeleteClient}
                     onClick={(event) => {
                       event.stopPropagation();
-                      handleDelete(client);
+                      if (canDeleteClient) handleDelete(client);
                     }}
                   >
                     <Trash2 size={15} />
