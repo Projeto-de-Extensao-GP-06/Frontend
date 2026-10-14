@@ -4,6 +4,7 @@ import { Home, LayoutDashboard, FileText, Users, UserCog, Shield, User, LogOut, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { Button } from "../components/ui/button";
 import { useAuth } from "../contexts/AuthContext";
+import { SyncProcessProvider } from "../contexts/SyncProcessContext";
 import "../../styles/app-layout.css";
 const navItems = [{
   path: "/app/inicio",
@@ -68,7 +69,9 @@ export default function AppLayout() {
   };
   const isAssistant = location.pathname.startsWith("/app/assistente");
 
-  return <div className="app-shell">
+  return (
+    <SyncProcessProvider>
+      <div className="app-shell">
 
     {/* ── Fixed Top Header ── */}
     <header className="app-header">
@@ -246,5 +249,7 @@ export default function AppLayout() {
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  </div>;
+  </div>
+  </SyncProcessProvider>
+  );
 }

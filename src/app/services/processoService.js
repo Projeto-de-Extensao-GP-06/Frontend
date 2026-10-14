@@ -317,3 +317,51 @@ export function juntarObservacoes(observacoes) {
     .filter(Boolean)
     .join(SEPARADOR_OBSERVACAO);
 }
+
+export function conectarStatusSincronizacao(id, { onIniciado, onProcessando, onConcluido, onError } = {}) {
+  const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
+  const url = `${baseUrl}/processos/${id}/sincronizacao-status`;
+  const eventSource = new EventSource(url, { withCredentials: true });
+
+  eventSource.addEventListener("CONECTADO", (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      onIniciado?.(data);
+    } catch (_) {}
+  });
+
+  eventSource.addEventListener("ENFILEIRADO", (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      onIniciado?.(data);
+    } catch (_) {}
+  });
+
+  eventSource.addEventListener("PROCESSANDO", (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      onProcessando?.(data);
+    } catch (_) {}
+  });
+
+  eventSource.addEventListener("CONCLUIDO", (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      onConcluido?.(data);
+    } catch (_) {
+      onConcluido?.({});
+    } finally {
+      eventSource.close();
+    }
+  });
+
+  eventSource.onerror = (err) => {
+    eventSource.close();
+    onError?.(err);
+  };
+
+  return () => {
+    eventSource.close();
+  };
+}
+

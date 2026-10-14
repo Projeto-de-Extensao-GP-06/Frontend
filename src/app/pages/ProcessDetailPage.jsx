@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useNavigate, useParams, useLocation } from "react-router";
 import {
   ArrowLeft,
   Pencil,
@@ -52,6 +52,7 @@ import {
 } from "../services/processoService";
 import { maskCNJ } from "../utils/masks";
 import { toast } from "sonner";
+import { useSyncProcess } from "../contexts/SyncProcessContext";
 import "../../styles/process-detail-page.css";
 
 /* ─ helpers ─ */
@@ -112,8 +113,10 @@ function montarDefaultsCalendario(process) {
 export default function ProcessDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { iniciarSincronizacao, isSincronizando, ultimoProcessoSincronizadoId } = useSyncProcess();
+  const syncing = isSincronizando(id);
 
-  const [syncing, setSyncing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [reactivating, setReactivating] = useState(false);
   const [savingComment, setSavingComment] = useState(false);
@@ -135,15 +138,38 @@ export default function ProcessDetailPage() {
   const [isAddingComment, setIsAddingComment] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [historyVisible, setHistoryVisible] = useState(HISTORY_INITIAL);
-  const pollingIntervalRef = useRef(null);
 
+  // Quando o usuário navega pelo botão do Toast "Ver Processo" vindo de outra página
   useEffect(() => {
-    return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-      }
-    };
-  }, []);
+    if (!loading && process && location.state?.destacarCard) {
+      navigate(location.pathname, { replace: true, state: {} });
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          const card = document.getElementById("card-dados-processo");
+          if (card) {
+            card.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        }, 120);
+      });
+    }
+  }, [loading, process, location.state, location.pathname, navigate]);
+
+  // Quando o processo terminar de sincronizar em segundo plano, atualiza os dados na tela
+  useEffect(() => {
+    if (String(ultimoProcessoSincronizadoId) === String(id)) {
+      (async () => {
+        try {
+          const [dados, historico] = await Promise.all([
+            buscarProcessoPorId(id),
+            listarHistoricoDoProcesso(id),
+          ]);
+          setProcess({ ...dados, history: historico });
+          setStatus(dados.status);
+          setObservationsText(dados.observationsText);
+        } catch (_) {}
+      })();
+    }
+  }, [ultimoProcessoSincronizadoId, id]);
 
   useEffect(() => {
     async function carregar() {
@@ -191,102 +217,11 @@ export default function ProcessDetailPage() {
     carregarTiposDocumento();
   }, []);
 
-  const handleAtualizarDados = async () => {
-    try {
-      setSyncing(true);
-      const resposta = await atualizarDadosProcesso(id);
-      toast.info(
-        resposta?.mensagem ||
-          "Sincronização iniciada na fila! Buscando dados oficiais no DataJud...",
-      );
-
-      const timestampOriginal = process?.raw?.ultimaAtualizacao || process?.ultimaAtualizacaoIso;
-      const dataSincronizacaoOriginal = process?.lastSyncDate;
-      const inicio = Date.now();
-      const tempoLimiteMs = 30000; // 30 segundos máx
-
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-      }
-
-      pollingIntervalRef.current = setInterval(async () => {
-        try {
-          const dadosAtualizados = await buscarProcessoPorId(id);
-          const timestampAtual = dadosAtualizados?.raw?.ultimaAtualizacao || dadosAtualizados?.ultimaAtualizacaoIso;
-
-          // Verifica se o consumer já processou (por timestamp ISO ou por texto ou tempo decorrido de 12s)
-          const atualizouTimestamp = timestampAtual && timestampAtual !== timestampOriginal;
-          const atualizouTexto = dadosAtualizados?.lastSyncDate && dadosAtualizados.lastSyncDate !== dataSincronizacaoOriginal;
-          const tempoDecorrido = Date.now() - inicio;
-
-          if (atualizouTimestamp || atualizouTexto || tempoDecorrido >= 12000) {
-            clearInterval(pollingIntervalRef.current);
-            pollingIntervalRef.current = null;
-
-            const historico = await listarHistoricoDoProcesso(id);
-            setProcess({ ...dadosAtualizados, history: historico });
-            setStatus(dadosAtualizados.status);
-            setObservationsText(dadosAtualizados.observationsText);
-            setSyncing(false);
-
-            toast.success("Dados do processo sincronizados com sucesso!", {
-              duration: 12000,
-              action: {
-                label: "Ver dados",
-                onClick: () => {
-                  const card = document.getElementById("card-dados-processo");
-                  if (card) {
-                    card.scrollIntoView({ behavior: "smooth", block: "center" });
-                    card.classList.add("proc-card--highlight");
-                    setTimeout(() => card.classList.remove("proc-card--highlight"), 2500);
-                  }
-                },
-              },
-            });
-            return;
-          }
-
-          // Se estourar o tempo limite de espera
-          if (tempoDecorrido > tempoLimiteMs) {
-            clearInterval(pollingIntervalRef.current);
-            pollingIntervalRef.current = null;
-            setSyncing(false);
-            const historico = await listarHistoricoDoProcesso(id);
-            setProcess({ ...dadosAtualizados, history: historico });
-            setStatus(dadosAtualizados.status);
-            setObservationsText(dadosAtualizados.observationsText);
-
-            toast.success("Sincronização concluída!", {
-              duration: 10000,
-              action: {
-                label: "Ver dados",
-                onClick: () => {
-                  const card = document.getElementById("card-dados-processo");
-                  if (card) {
-                    card.scrollIntoView({ behavior: "smooth", block: "center" });
-                    card.classList.add("proc-card--highlight");
-                    setTimeout(() => card.classList.remove("proc-card--highlight"), 2500);
-                  }
-                },
-              },
-            });
-          }
-        } catch (_) {
-          // Ignora falhas pontuais de conexão durante o polling
-        }
-      }, 2500);
-    } catch (err) {
-      console.error("Erro ao solicitar sincronização do processo:", err);
-      setSyncing(false);
-      if (err.response?.status === 401) {
-        toast.warning("Sessão inválida ou expirada.");
-      } else {
-        const mensagemErro =
-          err.response?.data?.message ||
-          "Não foi possível iniciar a sincronização do processo.";
-        toast.error(mensagemErro);
-      }
-    }
+  const handleAtualizarDados = () => {
+    iniciarSincronizacao({
+      processoId: id,
+      clientName: process?.clientName,
+    });
   };
 
   const handleDelete = async () => {
