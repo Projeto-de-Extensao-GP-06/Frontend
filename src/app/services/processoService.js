@@ -62,7 +62,7 @@ function mapearHistorico(historico) {
 
 // Transforma a resposta crua da API (ProcessoAppResponse) no formato que a tela usa.
 // Usada tanto no carregamento inicial quanto depois de "Atualizar dados".
-function mapearProcesso(p) {
+export function mapearProcesso(p) {
   const audiencia = formatarDataHora(p.dataAudiencia);
   const ajuizamento = formatarDataHora(p.processoApi?.dataAjuizamento);
   const encerramento = formatarDataHora(p.encerradoSuspensoEm);

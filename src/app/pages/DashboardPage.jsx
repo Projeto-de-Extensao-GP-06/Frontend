@@ -172,7 +172,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    document.title = "Dashboard";
+    document.title = "SGPJ | Dashboard";
   }, []);
 
   // Estados de filtro de período (padrão: Mês atual)

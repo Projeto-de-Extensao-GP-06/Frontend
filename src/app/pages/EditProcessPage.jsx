@@ -92,6 +92,7 @@ export default function EditProcessPage() {
   const [justificativa, setJustificativa] = useState("");
 
   useEffect(() => {
+    document.title = "SGPJ | Editar Processo";
     async function carregar() {
       try {
         setLoading(true);

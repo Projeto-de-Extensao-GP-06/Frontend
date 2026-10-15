@@ -1,5 +1,5 @@
-﻿import { useState, useEffect } from "react";
-import { Search, FileText, X, Check, ChevronDown } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, FileText, X, Check, ChevronDown, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,9 @@ import {
 } from "./ui/dialog";
 import { ProcessCard } from "./ProcessCard";
 import { PaginationBar } from "./PaginationBar";
-import { mockProcesses, phases, tribunals } from "../data/mockData";
+import { listarProcessos, mapearProcesso } from "../services/processoService";
+import { api } from "../provider/api";
+import { toast } from "sonner";
 import "../../styles/select-process-modal.css";
 
 export function SelectProcessModal({
@@ -19,9 +21,11 @@ export function SelectProcessModal({
   selectedProcessId,
   onSelect,
 }) {
-  const [selectedProcess, setSelectedProcess] = useState(() =>
-    mockProcesses.find((p) => p.id === selectedProcessId) || null
-  );
+  const [selectedProcess, setSelectedProcess] = useState(null);
+  const [processes, setProcesses] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [phasesList, setPhasesList] = useState([]);
+  const [tribunalsList, setTribunalsList] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
   const [priorityFilter, setPriorityFilter] = useState("todas");
@@ -29,17 +33,66 @@ export function SelectProcessModal({
   const [tribunalFilter, setTribunalFilter] = useState("todos");
   const [page, setPage] = useState(1);
 
+  // Carrega opções de fases e tribunais da API
   useEffect(() => {
-    if (open) {
-      setSelectedProcess(
-        mockProcesses.find((p) => p.id === selectedProcessId) || null
-      );
+    let active = true;
+    async function carregarOpcoes() {
+      try {
+        const [fasesRes, tribRes] = await Promise.all([
+          api.get("/fasesProcesso").catch(() => ({ data: [] })),
+          api.get("/siglaTribunais").catch(() => ({ data: [] })),
+        ]);
+        if (!active) return;
+        const fases = Array.isArray(fasesRes.data) ? fasesRes.data : [];
+        const tribs = Array.isArray(tribRes.data) ? tribRes.data : [];
+        setPhasesList(fases.map((f) => f.nome).filter(Boolean));
+        setTribunalsList(
+          tribs.map((t) => t.nome?.toUpperCase() || t.nome).filter(Boolean)
+        );
+      } catch (err) {
+        console.error("Erro ao carregar opções no modal de processos:", err);
+      }
     }
+    carregarOpcoes();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Carrega processos reais do backend quando o modal abrir
+  useEffect(() => {
+    if (!open) return;
+    let active = true;
+    setLoading(true);
+
+    listarProcessos({ size: 100 })
+      .then((data) => {
+        if (!active) return;
+        const rawContent = data.content || (Array.isArray(data) ? data : []);
+        const mapped = rawContent.map(mapearProcesso);
+        setProcesses(mapped);
+        setSelectedProcess(
+          mapped.find((p) => String(p.id) === String(selectedProcessId)) || null
+        );
+      })
+      .catch((err) => {
+        console.error("Erro ao carregar processos:", err);
+        if (active) {
+          toast.error("Não foi possível carregar os processos do servidor.");
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, [open, selectedProcessId]);
 
   const PAGE_SIZE = 6;
 
-  const filtered = mockProcesses.filter((p) => {
+  const filtered = processes.filter((p) => {
     const term = search.toLowerCase();
     const matchSearch =
       !search ||
@@ -102,6 +155,16 @@ export function SelectProcessModal({
     }
   };
 
+  const availablePhases =
+    phasesList.length > 0
+      ? phasesList
+      : Array.from(new Set(processes.map((p) => p.phase).filter(Boolean)));
+
+  const availableTribunals =
+    tribunalsList.length > 0
+      ? tribunalsList
+      : Array.from(new Set(processes.map((p) => p.tribunal).filter(Boolean)));
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="select-process-dialog-content">
@@ -149,7 +212,7 @@ export function SelectProcessModal({
               <div className="select-modal-filter-item">
                 <p className="select-modal-filter-label">Status</p>
                 <div className="select-modal-filter-group">
-                  {["todos", "ativo", "encerrado", "inativo"].map((s) => (
+                  {["todos", "ativo", "encerrado", "suspenso"].map((s) => (
                     <button
                       key={s}
                       type="button"
@@ -202,7 +265,7 @@ export function SelectProcessModal({
                     className="select-modal-filter-select"
                   >
                     <option value="todas">Todas as fases</option>
-                    {phases.map((ph) => (
+                    {availablePhases.map((ph) => (
                       <option key={ph} value={ph.toLowerCase()}>
                         {ph}
                       </option>
@@ -225,7 +288,7 @@ export function SelectProcessModal({
                     className="select-modal-filter-select"
                   >
                     <option value="todos">Todos os tribunais</option>
-                    {tribunals.slice(0, 10).map((t) => (
+                    {availableTribunals.map((t) => (
                       <option key={t} value={t.toLowerCase()}>
                         {t}
                       </option>
@@ -240,9 +303,11 @@ export function SelectProcessModal({
           {/* ── Results count + clear ── */}
           <div className="select-modal-results-row">
             <p className="select-modal-results-count">
-              {filtered.length === mockProcesses.length
+              {loading
+                ? "Carregando processos..."
+                : filtered.length === processes.length
                 ? `${filtered.length} processos encontrados`
-                : `${filtered.length} de ${mockProcesses.length} processos encontrados`}
+                : `${filtered.length} de ${processes.length} processos encontrados`}
             </p>
             {hasActiveFilters && (
               <button
@@ -256,8 +321,13 @@ export function SelectProcessModal({
             )}
           </div>
 
-          {/* ── Process Grid / Empty State ── */}
-          {filtered.length === 0 ? (
+          {/* ── Process Grid / Empty / Loading State ── */}
+          {loading ? (
+            <div className="select-modal-empty-state">
+              <Loader2 size={28} className="animate-spin text-primary" />
+              <p className="select-modal-empty-text">Carregando processos do servidor...</p>
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="select-modal-empty-state">
               <div className="select-modal-empty-icon-wrap">
                 <FileText size={24} />
@@ -291,7 +361,7 @@ export function SelectProcessModal({
           )}
 
           {/* ── Pagination ── */}
-          {totalPages > 1 && (
+          {!loading && totalPages > 1 && (
             <PaginationBar page={safePage} total={totalPages} onPage={setPage} />
           )}
         </div>

@@ -2,9 +2,49 @@
   box-sizing: border-box;
 }
 
+/* ── Fluid Root Scale ──
+   Escala proporcionalmente todo o frontend (textos em rem, espaçamentos,
+   paddings, botões e modais) conforme o tamanho da viewport diminui. */
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+@media (max-width: 1280px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 1024px) {
+  html {
+    font-size: 14.5px;
+  }
+}
+
+@media (max-width: 768px) {
+  html {
+    font-size: 13.5px;
+  }
+}
+
+@media (max-width: 480px) {
+  html {
+    font-size: 12.5px;
+  }
+}
+
+@media (max-width: 360px) {
+  html {
+    font-size: 11.5px;
+  }
+}
+
 body {
   font-family: "DM Sans", sans-serif;
   color: #1a2237;
+  margin: 0;
 }
 
 input, textarea, select, button {
@@ -12,12 +52,61 @@ input, textarea, select, button {
   font-family: inherit;
 }
 
-/* Vários campos do app usam menos de 16px. No iOS Safari isso força um zoom
-   automático ao focar o campo, que às vezes não desfaz sozinho depois — trava
-   o layout "zoomado". Forçamos 16px em telas pequenas para nunca disparar isso. */
-@media (max-width: 640px) {
-  input, textarea, select {
-    font-size: 16px !important;
+/* ── Global Typography Responsiveness ── */
+.page-title,
+.clients-title,
+.dashboard-title,
+.requests-title,
+.home-title {
+  font-size: clamp(1.2rem, 1.05rem + 0.8vw, 1.625rem) !important;
+}
+
+.page-title--sm {
+  font-size: clamp(1rem, 0.9rem + 0.5vw, 1.375rem) !important;
+}
+
+.page-kicker,
+.clients-kicker,
+.dashboard-kicker {
+  font-size: clamp(0.58rem, 0.52rem + 0.2vw, 0.6875rem) !important;
+}
+
+/* ── Global Form Responsiveness ── */
+.form-input,
+.form-textarea,
+.requests-search-input,
+.search-input {
+  font-size: clamp(0.8125rem, 0.75rem + 0.3vw, 1rem);
+}
+
+/* ── Global Page Padding Responsiveness ── */
+@media (max-width: 768px) {
+  .home-page,
+  .dashboard-page,
+  .clients-page,
+  .requests-page,
+  .users-page,
+  .roles-page,
+  .proc-detail-page,
+  .client-detail-page {
+    padding-top: 1rem;
+    padding-bottom: 4rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-page,
+  .dashboard-page,
+  .clients-page,
+  .requests-page,
+  .users-page,
+  .roles-page,
+  .proc-detail-page,
+  .client-detail-page {
+    padding-left: 0.65rem;
+    padding-right: 0.65rem;
+    padding-top: 0.75rem;
+    padding-bottom: 3.5rem;
   }
 }
 

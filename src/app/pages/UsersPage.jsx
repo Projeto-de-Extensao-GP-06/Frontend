@@ -18,7 +18,7 @@ const STATUS_OPTS = [
 
 export default function UsersPage() {
   useEffect(() => {
-    document.title = "Usuários";
+    document.title = "SGPJ | Usuários";
   }, []);
 
   const [search, setSearch] = useState("");

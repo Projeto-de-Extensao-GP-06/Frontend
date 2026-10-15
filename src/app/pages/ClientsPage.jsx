@@ -10,7 +10,7 @@ import "../../styles/clients-page.css";
 
 export default function ClientsPage() {
   useEffect(() => {
-    document.title = "Clientes";
+    document.title = "SGPJ | Clientes";
   }, []);
 
   const navigate = useNavigate();
