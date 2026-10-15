@@ -157,7 +157,7 @@ export default function ProcessDetailPage() {
         setObservationsText(dados.observationsText);
         setDocuments(docs);
         setHistoryVisible(HISTORY_INITIAL);
-        document.title = `Processo - ${dados.clientName}`;
+        document.title = `SGPJ | Processo - ${dados.clientName}`;
       } catch (err) {
         console.error("Erro ao carregar processo:", err);
         if (err.response?.status === 401) {

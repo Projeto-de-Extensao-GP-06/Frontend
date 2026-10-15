@@ -11,7 +11,9 @@ const fromClient = (client) => ({ type: client.type, name: client.name || "", do
 export default function ClienteFormPage({ editing = false }) {
   const navigate = useNavigate(); const { id } = useParams();
   const [form, setForm] = useState(empty); const [loading, setLoading] = useState(editing); const [saving, setSaving] = useState(false); const [error, setError] = useState("");
-  useEffect(() => { if (!editing) return; clienteService.getById(id).then((client) => setForm(fromClient(client))).catch((e) => setError(getClienteError(e))).finally(() => setLoading(false)); }, [editing, id]);
+  useEffect(() => {
+    document.title = editing ? "SGPJ | Editar Cliente" : "SGPJ | Novo Cliente";
+    if (!editing) return; clienteService.getById(id).then((client) => setForm(fromClient(client))).catch((e) => setError(getClienteError(e))).finally(() => setLoading(false)); }, [editing, id]);
   const setField = (field, value) => setForm((current) => ({ ...current, [field]: value }));
   const setAddress = (field, value) => setForm((current) => ({ ...current, address: { ...current.address, [field]: value } }));
   const setContact = (index, field, value) => setForm((current) => ({ ...current, contacts: current.contacts.map((contact, i) => i === index ? { ...contact, [field]: value } : contact) }));

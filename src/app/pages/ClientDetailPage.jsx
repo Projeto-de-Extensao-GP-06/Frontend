@@ -46,7 +46,7 @@ export default function ClientDetailPage() {
       .then((loadedClient) => {
         setClient(loadedClient);
         setContacts(loadedClient.contacts || []);
-        document.title = `Cliente - ${loadedClient.name}`;
+        document.title = `SGPJ | Cliente - ${loadedClient.name}`;
       })
       .catch((requestError) => setLoadError(getClienteError(requestError)));
   }, [id]);

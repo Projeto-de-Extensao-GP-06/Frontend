@@ -39,6 +39,7 @@ export default function EditClientPage() {
   const [comoConheceu, setComoConheceu] = useState("INDICACAO");
 
   useEffect(() => {
+    document.title = "SGPJ | Editar Cliente";
     const loadClient = async () => {
       try {
         const data = await clienteService.getById(id);

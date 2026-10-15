@@ -88,7 +88,7 @@ export default function NewProcessPage() {
   const observationRef = useRef(null);
 
   useEffect(() => {
-    document.title = "Novo Processo";
+    document.title = "SGPJ | Novo Processo";
     let active = true;
     Promise.all([listarPrioridades(), listarFases(), listarTribunais()])
       .then(([priorityOptions, phases, courts]) => {

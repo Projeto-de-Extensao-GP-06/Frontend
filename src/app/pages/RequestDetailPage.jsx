@@ -21,7 +21,7 @@ export default function RequestDetailPage() {
 
   useEffect(() => {
     if (request) {
-      document.title = `Solicitação - ${request.companyName || request.name}`;
+      document.title = `SGPJ | Solicitação - ${request.companyName || request.name}`;
     }
   }, [request]);
 

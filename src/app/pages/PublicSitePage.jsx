@@ -70,7 +70,7 @@ export default function PublicSitePage() {
   const savedData = getSavedFormData();
 
   useEffect(() => {
-    document.title = "Thauany Bezerra Advogada";
+    document.title = "SGPJ | Início";
   }, []);
 
   const [menuOpen, setMenuOpen] = useState(false);

@@ -40,7 +40,7 @@ export default function LegalPage() {
     : "Regras para utilização do site e envio de informações para contato inicial.";
 
   useEffect(() => {
-    document.title = title;
+    document.title = `SGPJ | ${title}`;
     window.scrollTo(0, 0);
   }, [title]);
 

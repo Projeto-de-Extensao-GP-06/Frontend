@@ -72,7 +72,7 @@ function rolePermissionsToIds(role, allPermissions) {
 
 export default function RolesPage() {
   useEffect(() => {
-    document.title = "Cargos e Permissões";
+    document.title = "SGPJ | Cargos e Permissões";
   }, []);
 
   const { user } = useAuth();
