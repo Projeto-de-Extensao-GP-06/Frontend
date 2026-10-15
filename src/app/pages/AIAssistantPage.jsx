@@ -83,16 +83,63 @@ export default function AIAssistantPage() {
 
   // Recupera dados salvos da sessão caso ainda estejam válidos
   const [initialData] = useState(() => readStoredSession());
+  const hasSavedChat = Boolean(
+    initialData?.messages && initialData.messages.some((m) => m.role === "user")
+  );
 
-  const [messages, setMessages] = useState(() => initialData?.messages || [INITIAL_MESSAGE]);
+  const [messages, setMessages] = useState(() => (hasSavedChat ? initialData.messages : []));
   const [sessionId, setSessionId] = useState(() => initialData?.sessionId || null);
   const [selectedProcess, setSelectedProcess] = useState(() => initialData?.selectedProcess || null);
 
   const [input, setInput] = useState("");
   const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
-  const [typing, setTyping] = useState(false);
+  const [typing, setTyping] = useState(() => !hasSavedChat);
   const [clearing, setClearing] = useState(false);
   const bottomRef = useRef(null);
+  const welcomeTimeoutRef = useRef(null);
+
+  // Exibe a animação de digitação antes da mensagem de boas-vindas ao carregar
+  useEffect(() => {
+    if (!hasSavedChat) {
+      setTyping(true);
+      welcomeTimeoutRef.current = setTimeout(() => {
+        setMessages([
+          {
+            id: "0",
+            role: "assistant",
+            content: WELCOME_MESSAGE,
+            time: now(),
+          },
+        ]);
+        setTyping(false);
+      }, 1200);
+
+      return () => {
+        if (welcomeTimeoutRef.current) {
+          clearTimeout(welcomeTimeoutRef.current);
+        }
+      };
+    }
+  }, [hasSavedChat]);
+
+  const triggerWelcomeWithTyping = useCallback(() => {
+    setMessages([]);
+    setTyping(true);
+    if (welcomeTimeoutRef.current) {
+      clearTimeout(welcomeTimeoutRef.current);
+    }
+    welcomeTimeoutRef.current = setTimeout(() => {
+      setMessages([
+        {
+          id: Date.now().toString(),
+          role: "assistant",
+          content: WELCOME_MESSAGE,
+          time: now(),
+        },
+      ]);
+      setTyping(false);
+    }, 1000);
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({
@@ -119,16 +166,9 @@ export default function AIAssistantPage() {
     removeStoredSession();
     setSessionId(null);
     setSelectedProcess(null);
-    setMessages([
-      {
-        id: Date.now().toString(),
-        role: "assistant",
-        content: WELCOME_MESSAGE,
-        time: now(),
-      },
-    ]);
+    triggerWelcomeWithTyping();
     toast.info("A sessão expirou por inatividade. Uma nova conversa foi iniciada.");
-  }, [sessionId]);
+  }, [sessionId, triggerWelcomeWithTyping]);
 
   useEffect(() => {
     const checkExpiry = () => {
@@ -171,28 +211,14 @@ export default function AIAssistantPage() {
       removeStoredSession();
       setSessionId(null);
       setSelectedProcess(null);
-      setMessages([
-        {
-          id: Date.now().toString(),
-          role: "assistant",
-          content: WELCOME_MESSAGE,
-          time: now(),
-        },
-      ]);
+      triggerWelcomeWithTyping();
       toast.success("Nova conversa iniciada.");
     } catch (err) {
       console.error("Erro ao iniciar nova conversa no servidor:", err);
       removeStoredSession();
       setSessionId(null);
       setSelectedProcess(null);
-      setMessages([
-        {
-          id: Date.now().toString(),
-          role: "assistant",
-          content: WELCOME_MESSAGE,
-          time: now(),
-        },
-      ]);
+      triggerWelcomeWithTyping();
       toast.info("Nova conversa iniciada localmente.");
     } finally {
       setClearing(false);
@@ -432,12 +458,13 @@ export default function AIAssistantPage() {
       </div>
 
       <div className="ai-input-bar">
-        <div className="ai-input-wrap">
+        <div className={`ai-input-wrap ${typing ? "ai-input-wrap--disabled" : ""}`}>
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Digite sua mensagem..."
+            placeholder={typing ? "MarIA está digitando..." : "Digite sua mensagem..."}
             rows={1}
+            disabled={typing}
             className="ai-input"
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {

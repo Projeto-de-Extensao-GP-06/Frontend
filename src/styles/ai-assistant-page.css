@@ -152,6 +152,7 @@
 .ai-msg {
   display: flex;
   gap: clamp(0.5rem, 0.4rem + 0.3vw, 0.75rem);
+  animation: ai-fade-in 0.25s ease-out;
 }
 
 .ai-msg--user {
@@ -428,6 +429,17 @@
   50% { transform: translateY(-0.25rem); }
 }
 
+@keyframes ai-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* ── Process picker section (Acima do input) ── */
 
 .ai-picker-section {
@@ -650,6 +662,12 @@
   border-color: #0f2357;
 }
 
+.ai-input-wrap--disabled {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  cursor: not-allowed;
+}
+
 .ai-input {
   display: block;
   width: 100%;
@@ -662,6 +680,11 @@
   line-height: 1.45;
   outline: none;
   resize: none;
+}
+
+.ai-input:disabled {
+  cursor: not-allowed;
+  color: #94a3b8;
 }
 
 .ai-input::placeholder {
