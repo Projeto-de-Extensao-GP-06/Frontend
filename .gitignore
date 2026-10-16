@@ -6,7 +6,9 @@ dist/
 
 # Cache do Vite
 .vite/
-
+AGENTS.md
+graphify-out
+.opencode
 # Variáveis de ambiente locais
 .env
 .env.local
