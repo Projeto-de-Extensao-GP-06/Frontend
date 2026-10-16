@@ -8,19 +8,24 @@ import { StatusBadge, PriorityBadge, PhaseBadge } from "../components/StatusBadg
 import { InfoRow } from "../components/InfoRow";
 import { PaginationBar } from "../components/PaginationBar";
 import { maskPhone } from "../utils/masks";
-import { mockClients, mockProcesses } from "../data/mockData";
+import { clienteService, getClienteError } from "../services/clienteService";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
+import { useAuth } from "../contexts/AuthContext";
+import { hasPermission } from "../utils/permissions";
 import "../../styles/client-detail-page.css";
 
 export default function ClientDetailPage() {
-  useEffect(() => {
-    document.title = `Cliente - ${client.name}`;
-  }, []);
-
   const {
     id
   } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const canCreateContact = hasPermission(user, "CRIAR CONTATO");
+  const canEditClient = hasPermission(user, "EDITAR CLIENTE");
+  const canDeleteClient = hasPermission(user, "EXCLUIR CLIENTE");
+
+  const [client, setClient] = useState(null);
+  const [loadError, setLoadError] = useState("");
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [addContactDialog, setAddContactDialog] = useState(false);
   const [newContact, setNewContact] = useState({
@@ -30,22 +35,26 @@ export default function ClientDetailPage() {
     profession: ""
   });
 
-  const client = mockClients.find(c => c.id === id);
-  const [contacts, setContacts] = useState(() => (client?.contacts ? [...client.contacts] : []));
+  const [contacts, setContacts] = useState([]);
   const [contactSearchInput, setContactSearchInput] = useState("");
   const [appliedContactSearch, setAppliedContactSearch] = useState("");
   const [contactPage, setContactPage] = useState(1);
   const CONTACTS_PAGE_SIZE = 3;
 
   useEffect(() => {
-    if (client) {
-      document.title = `Cliente - ${client.name}`;
-    }
-  }, [client]);
+    clienteService.getById(id)
+      .then((loadedClient) => {
+        setClient(loadedClient);
+        setContacts(loadedClient.contacts || []);
+        document.title = `SGPJ | Cliente - ${loadedClient.name}`;
+      })
+      .catch((requestError) => setLoadError(getClienteError(requestError)));
+  }, [id]);
 
   if (!client) {
+    if (!loadError) return <div className="client-detail-page client-detail-page--empty"><p className="client-detail-empty-text">Carregando cliente...</p></div>;
     return <div className="client-detail-page client-detail-page--empty">
-        <p className="client-detail-empty-text">Cliente não encontrado.</p>
+        <p className="client-detail-empty-text">{loadError}</p>
         <Button onClick={() => navigate("/app/clientes")} className="client-detail-empty-button">
           Voltar para Clientes
         </Button>
@@ -54,7 +63,7 @@ export default function ClientDetailPage() {
   const isPF = client.type === "PF";
   const pf = client;
   const pj = client;
-  const clientProcesses = mockProcesses.filter(p => p.clientId === id);
+  const clientProcesses = [];
 
   const handleSearchSubmit = (e) => {
     e?.preventDefault();
@@ -173,14 +182,16 @@ export default function ClientDetailPage() {
             </div>
             <h2 className="client-detail-section-title">{isPF ? "Contatos adicionais" : "Contatos"}</h2>
           </div>
-          <button
+          <Button
             type="button"
             onClick={() => setAddContactDialog(true)}
-            className="client-detail-add-contact-button"
+            disabled={!canCreateContact}
+            title={canCreateContact ? "Adicionar contato" : "Sem permissão para criar contato"}
+            className="button button--default button--default-size"
           >
             <Plus size={13} />
             Adicionar contato
-          </button>
+          </Button>
         </div>
 
         {/* Contact Search Form */}
@@ -287,10 +298,20 @@ export default function ClientDetailPage() {
 
       {/* Actions */}
       <div className="client-detail-actions">
-        <button onClick={() => navigate(`/app/clientes/${id}/editar`)} className="client-detail-actions__btn client-detail-actions__btn--primary">
+        <button
+          onClick={() => canEditClient && navigate(`/app/clientes/${id}/editar`)}
+          className="client-detail-actions__btn client-detail-actions__btn--primary"
+          disabled={!canEditClient}
+          title={canEditClient ? "Editar Cliente" : "Sem permissão para editar cliente"}
+        >
           <Pencil size={15} />Editar Cliente
         </button>
-        <button onClick={() => setDeleteDialog(true)} className="client-detail-actions__btn client-detail-actions__btn--danger">
+        <button
+          onClick={() => canDeleteClient && setDeleteDialog(true)}
+          className="client-detail-actions__btn client-detail-actions__btn--danger"
+          disabled={!canDeleteClient}
+          title={canDeleteClient ? "Excluir" : "Sem permissão para excluir cliente"}
+        >
           <Trash2 size={15} />Excluir
         </button>
       </div>
@@ -310,7 +331,7 @@ export default function ClientDetailPage() {
             </Button>
             <Button className="client-detail-dialog-button client-detail-dialog-button--danger" onClick={() => {
             setDeleteDialog(false);
-            navigate("/app/clientes");
+            clienteService.remove(id).then(() => navigate("/app/clientes")).catch((requestError) => setLoadError(getClienteError(requestError)));
           }}>
               Excluir
             </Button>

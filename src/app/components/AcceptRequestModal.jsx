@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Check, ArrowRight, ArrowLeft, X, AlertCircle, FileCheck, Building2, User, HelpCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { brazilStates, phases } from "../data/mockData";
 import { maskCPF, maskCNPJ, maskRG, maskCEP, maskCNJ, maskCurrency } from "../utils/masks";
+import { useCepLookup } from "../hooks/useCepLookup";
 import "../../styles/accept-request-modal.css";
 
 const steps = [
@@ -36,6 +37,12 @@ export function AcceptRequestModal({ open, onOpenChange, request, onConfirmAccep
   const [neighborhood, setNeighborhood] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("SP");
+  const numberInputRef = useRef(null);
+  const cepLookup = useCepLookup(cep, open);
+  const sanitizedCep = cep.replace(/\D/g, "");
+  const isCurrentCepLookup = cepLookup.requestedCep === sanitizedCep;
+  const isCepLoading = cepLookup.loading && isCurrentCepLookup;
+  const cepLookupError = !cepLookup.loading && isCurrentCepLookup ? cepLookup.error : "";
 
   // Step 3 - Process info
   const [cnj, setCnj] = useState("");
@@ -63,7 +70,7 @@ export function AcceptRequestModal({ open, onOpenChange, request, onConfirmAccep
       setCompanyName(request.companyName || (isPJ ? request.name : ""));
       setContactName(isPJ ? (request.name || "") : "");
       setEmail(request.email || "");
-      setPhone(request.phone || "");
+      setPhone(request.phone ? maskPhone(request.phone) : "");
       setCpf(request.cpf ? maskCPF(request.cpf) : "");
       setRg(request.rg ? maskRG(request.rg) : "");
       setCnpj(request.cnpj ? maskCNPJ(request.cnpj) : "");
@@ -85,6 +92,16 @@ export function AcceptRequestModal({ open, onOpenChange, request, onConfirmAccep
       setCauseValue("");
     }
   }, [open, request]);
+
+  useEffect(() => {
+    if (!open || !cepLookup.data || !isCurrentCepLookup) return;
+
+    setStreet(cepLookup.data.logradouro);
+    setNeighborhood(cepLookup.data.bairro);
+    setCity(cepLookup.data.localidade);
+    setState(cepLookup.data.uf || "SP");
+    numberInputRef.current?.focus();
+  }, [open, cepLookup.data, isCurrentCepLookup]);
 
   const handleStartWizard = () => {
     setMode("wizard");
@@ -434,7 +451,7 @@ export function AcceptRequestModal({ open, onOpenChange, request, onConfirmAccep
                           type="text"
                           className="accept-input"
                           value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
+                          onChange={(e) => setPhone(maskPhone(e.target.value))}
                           placeholder="(00) 00000-0000"
                         />
                       </div>
@@ -531,7 +548,7 @@ export function AcceptRequestModal({ open, onOpenChange, request, onConfirmAccep
                               type="text"
                               className="accept-input"
                               value={phone}
-                              onChange={(e) => setPhone(e.target.value)}
+                              onChange={(e) => setPhone(maskPhone(e.target.value))}
                               placeholder="(00) 00000-0000"
                             />
                           </div>
@@ -558,7 +575,18 @@ export function AcceptRequestModal({ open, onOpenChange, request, onConfirmAccep
                       onChange={(e) => setCep(maskCEP(e.target.value))}
                       placeholder="00000-000"
                       maxLength={9}
+                      disabled={isCepLoading}
                     />
+                    {isCepLoading && (
+                      <p className="accept-helper-text" role="status" aria-live="polite">
+                        Consultando CEP…
+                      </p>
+                    )}
+                    {cepLookupError && (
+                      <p className="accept-cep-error" role="alert">
+                        {cepLookupError}
+                      </p>
+                    )}
                   </div>
                   <div className="accept-field">
                     <label className="accept-label">
@@ -568,6 +596,7 @@ export function AcceptRequestModal({ open, onOpenChange, request, onConfirmAccep
                       className="accept-select"
                       value={state}
                       onChange={(e) => setState(e.target.value)}
+                      disabled={isCepLoading}
                     >
                       {brazilStates.map((st) => (
                         <option key={st} value={st}>
@@ -589,6 +618,7 @@ export function AcceptRequestModal({ open, onOpenChange, request, onConfirmAccep
                       value={street}
                       onChange={(e) => setStreet(e.target.value)}
                       placeholder="Ex: Avenida Paulista"
+                      disabled={isCepLoading}
                     />
                   </div>
                   <div className="accept-field">
@@ -601,6 +631,7 @@ export function AcceptRequestModal({ open, onOpenChange, request, onConfirmAccep
                       value={number}
                       onChange={(e) => setNumber(e.target.value)}
                       placeholder="Ex: 1578 ou S/N"
+                      ref={numberInputRef}
                     />
                   </div>
                 </div>
@@ -616,6 +647,7 @@ export function AcceptRequestModal({ open, onOpenChange, request, onConfirmAccep
                       value={neighborhood}
                       onChange={(e) => setNeighborhood(e.target.value)}
                       placeholder="Ex: Bela Vista"
+                      disabled={isCepLoading}
                     />
                   </div>
                   <div className="accept-field">
@@ -628,6 +660,7 @@ export function AcceptRequestModal({ open, onOpenChange, request, onConfirmAccep
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       placeholder="Ex: São Paulo"
+                      disabled={isCepLoading}
                     />
                   </div>
                 </div>

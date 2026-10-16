@@ -5,7 +5,7 @@ import "../../styles/new-user-page.css";
 
 export default function NewUserPage() {
   useEffect(() => {
-    document.title = "Novo Usuário";
+    document.title = "SGPJ | Novo Usuário";
   }, []);
 
   const navigate = useNavigate();

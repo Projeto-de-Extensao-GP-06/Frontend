@@ -13,7 +13,7 @@ export default function UserDetailPage() {
 
   useEffect(() => {
     if (user) {
-      document.title = `Usuário - ${user.name}`;
+      document.title = `SGPJ | Usuário - ${user.name}`;
     }
   }, [user]);
 

@@ -10,7 +10,7 @@
 .roles-header__kicker {
   margin: 0 0 0.125rem;
   color: #9ca3af;
-  font-size: 11px;
+  font-size: clamp(0.58rem, 0.52rem + 0.2vw, 0.6875rem);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -20,7 +20,7 @@
   margin: 0;
   color: #0f2357;
   font-family: "Playfair Display", serif;
-  font-size: 1.625rem;
+  font-size: clamp(1.2rem, 1.05rem + 0.8vw, 1.625rem);
   font-weight: 700;
   line-height: 1.2;
 }
@@ -70,6 +70,33 @@
 
 .roles-add-button:hover {
   color: #c9a96e;
+}
+
+.roles-add-button:disabled,
+.roles-search-btn:disabled,
+.roles-icon-btn:disabled,
+.perms-restore-btn:disabled,
+.perms-clear-btn:disabled,
+.perms-accordion__toggle-all:disabled,
+.perm-btn:disabled,
+.roles-save-btn:disabled,
+.roles-delete-dialog__btn:disabled,
+.roles-dialog__btn:disabled,
+.roles-add-modal__btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.roles-add-button:disabled:hover,
+.roles-search-btn:disabled:hover,
+.roles-icon-btn:disabled:hover,
+.perms-restore-btn:disabled:hover,
+.perms-clear-btn:disabled:hover,
+.perms-accordion__toggle-all:disabled:hover,
+.perm-btn:disabled:hover,
+.roles-save-btn:disabled:hover {
+  background: inherit;
+  color: inherit;
 }
 
 .roles-search-row {
