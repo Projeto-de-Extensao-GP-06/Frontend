@@ -201,6 +201,9 @@ export default function ProcessDetailPage() {
       console.error("Erro ao atualizar dados do processo:", err);
       if (err.response?.status === 401) {
         toast.warning("Sessão inválida ou expirada.");
+      } else if (err.response?.status === 503 || err.response?.status === 502 || err.response?.status === 504) {
+        const mensagemErro = err.response?.data?.message || "Não foi possível obter dados oficiais do DataJud no momento. Por favor, tente novamente mais tarde.";
+        toast.warning(mensagemErro);
       } else {
         const mensagemErro = err.response?.data?.message || "Não foi possível atualizar os dados do processo.";
         toast.error(mensagemErro);
