@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { ArrowLeft, Scale } from "lucide-react";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import "../../styles/legal-page.css";
 
 const privacySections = [
@@ -31,6 +31,7 @@ const termsSections = [
 
 export default function LegalPage() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const isPrivacy = pathname === "/politica-de-privacidade";
   const sections = isPrivacy ? privacySections : termsSections;
   const title = isPrivacy ? "Política de Privacidade" : "Termos de Uso";
@@ -39,13 +40,23 @@ export default function LegalPage() {
     : "Regras para utilização do site e envio de informações para contato inicial.";
 
   useEffect(() => {
-    document.title = title;
+    document.title = `SGPJ | ${title}`;
+    window.scrollTo(0, 0);
   }, [title]);
+
+  const handleBack = (e) => {
+    e.preventDefault();
+    if (window.history.state && window.history.state.idx > 0) {
+      navigate(-1);
+    } else {
+      navigate("/");
+    }
+  };
 
   return <main className="legal-page">
     <header className="legal-page__header">
       <div className="legal-page__header-inner">
-        <Link to="/site" className="legal-page__back"><ArrowLeft size={17} /> Voltar ao site</Link>
+        <Link to="/" onClick={handleBack} className="legal-page__back"><ArrowLeft size={17} /> Voltar ao site</Link>
         <div className="legal-page__brand"><Scale size={22} /> Thauany Bezerra Advocacia</div>
       </div>
     </header>
@@ -57,7 +68,7 @@ export default function LegalPage() {
         <h2>{heading}</h2>
         <p>{text}</p>
       </section>)}
-      <Link to="/site" className="legal-page__return">Voltar para o site</Link>
+      <Link to="/" onClick={handleBack} className="legal-page__return">Voltar para o site</Link>
     </article>
   </main>;
 }

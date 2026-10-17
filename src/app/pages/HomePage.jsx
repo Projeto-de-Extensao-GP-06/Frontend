@@ -124,7 +124,7 @@ export default function HomePage() {
 
   // ── Carregar opções de filtro e KPIs (uma vez) ──────────────────────────
   useEffect(() => {
-    document.title = "Início - Processos";
+    document.title = "SGPJ | Início";
 
     async function carregarOpcoes() {
       try {

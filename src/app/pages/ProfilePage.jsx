@@ -42,7 +42,7 @@ export default function ProfilePage() {
   }, [searchParams, setSearchParams]);
 
   useEffect(() => {
-    document.title = "Perfil";
+    document.title = "SGPJ | Perfil";
 
     async function carregarPerfil() {
       try {

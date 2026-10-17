@@ -6,6 +6,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import { buscarSolicitacaoPorId, mapearSolicitacao } from "../services/solicitacaoService";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { AcceptRequestModal } from "../components/AcceptRequestModal";
+import { maskPhone, maskCNJ } from "../utils/masks";
 import "../../styles/request-detail-page.css";
 
 export default function RequestDetailPage() {
@@ -48,7 +49,7 @@ export default function RequestDetailPage() {
   }, [id, retryIndex]);
 
   useEffect(() => {
-    document.title = request ? `Solicitação - ${request.companyName || request.name}` : "Solicitação";
+    document.title = request ? `SGPJ | Solicitação - ${request.companyName || request.name}` : "SGPJ | Solicitação";
   }, [request]);
 
   if (loading) {
@@ -100,10 +101,27 @@ export default function RequestDetailPage() {
           </div>
         </div>
         <div className="req-detail-info-list">
-          {request.companyName && <div className="req-detail-info-row"><User size={14} className="req-detail-info-row__icon" /><span className="req-detail-info-row__value">Contato principal: <strong>{request.name}</strong></span></div>}
-          <div className="req-detail-info-row"><Mail size={14} className="req-detail-info-row__icon" /><span className="req-detail-info-row__value">{request.email}</span></div>
-          <div className="req-detail-info-row"><Phone size={14} className="req-detail-info-row__icon" /><span className="req-detail-info-row__value">{request.phone}</span></div>
-          <div className="req-detail-info-row"><Calendar size={14} className="req-detail-info-row__icon" /><span className="req-detail-info-row__value">Solicitado em {request.createdAt}</span></div>
+          {request.companyName && (
+            <div className="req-detail-info-row">
+              <User size={14} className="req-detail-info-row__icon" />
+              <span className="req-detail-info-row__value">
+                Contato principal: <strong>{request.name}</strong>
+                {request.contactRole ? ` (${request.contactRole})` : ""}
+              </span>
+            </div>
+          )}
+          <div className="req-detail-info-row">
+            <Mail size={14} className="req-detail-info-row__icon" />
+            <span className="req-detail-info-row__value">{request.email}</span>
+          </div>
+          <div className="req-detail-info-row">
+            <Phone size={14} className="req-detail-info-row__icon" />
+            <span className="req-detail-info-row__value">{maskPhone(request.phone) || request.phone || "-"}</span>
+          </div>
+          <div className="req-detail-info-row">
+            <Calendar size={14} className="req-detail-info-row__icon" />
+            <span className="req-detail-info-row__value">Solicitado em {request.createdAt}</span>
+          </div>
           {request.aceitouTermos !== undefined && <div className="req-detail-info-row"><Check size={14} className="req-detail-info-row__icon" /><span className="req-detail-info-row__value">Aceitou os termos: {request.aceitouTermos ? "Sim" : "Não"}</span></div>}
           {request.dataResposta && <div className="req-detail-info-row"><Calendar size={14} className="req-detail-info-row__icon" /><span className="req-detail-info-row__value">Respondida em {request.dataResposta}</span></div>}
         </div>
@@ -112,7 +130,7 @@ export default function RequestDetailPage() {
       {request.processNumber && <div className="req-detail-card">
         <div className="req-detail-process-header"><FileText size={16} className="req-detail-process-header__icon" /><h3 className="req-detail-process-header__title">Informações do Processo</h3></div>
         <div className="req-detail-proc-grid">
-          <div><p className="req-detail-proc-label">Número CNJ</p><p className="req-detail-proc-value">{request.processNumber}</p></div>
+          <div><p className="req-detail-proc-label">Número CNJ</p><p className="req-detail-proc-value">{maskCNJ(request.processNumber)}</p></div>
           {request.filingDate && <div><p className="req-detail-proc-label">Data ajuizamento</p><p className="req-detail-proc-value">{request.filingDate}</p></div>}
           {request.instance && <div><p className="req-detail-proc-label">Instância</p><p className="req-detail-proc-value">{request.instance}</p></div>}
           {request.secrecyLevel && <div><p className="req-detail-proc-label">Nível de Sigilo</p><p className="req-detail-proc-value">{request.secrecyLevel}</p></div>}

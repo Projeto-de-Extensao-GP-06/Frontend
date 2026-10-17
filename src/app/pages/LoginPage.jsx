@@ -12,7 +12,7 @@ export default function LoginPage() {
   const location = useLocation();
 
   useEffect(() => {
-    document.title = "Login";
+    document.title = "SGPJ | Login";
     if (location.state?.message) {
       toast.success(location.state.message);
       window.history.replaceState({}, document.title);

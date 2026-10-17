@@ -1,71 +1,67 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router";
-import { Plus, Search, Users, X } from "lucide-react";
+import { useNavigate } from "react-router";
+import { Plus, Search, Users, Trash2, Pencil, LoaderCircle, AlertCircle } from "lucide-react";
 import { ClientCard } from "../components/ClientCard";
-import { FilterSelect } from "../components/FilterSelect";
 import { PaginationBar } from "../components/PaginationBar";
-import { mockClients } from "../data/mockData";
+import { clienteService, getClienteError } from "../services/clienteService";
+import { useAuth } from "../contexts/AuthContext";
+import { hasPermission } from "../utils/permissions";
 import "../../styles/clients-page.css";
-
-const TYPE_OPTS = [
-  { value: "todos", label: "Todos" },
-  { value: "PF", label: "Pessoa Física" },
-  { value: "PJ", label: "Pessoa Jurídica" },
-];
-
-const STATUS_OPTS = [
-  { value: "todos", label: "Todos" },
-  { value: "ativo", label: "Ativo" },
-  { value: "inativo", label: "Inativo" },
-];
 
 export default function ClientsPage() {
   useEffect(() => {
-    document.title = "Clientes";
+    document.title = "SGPJ | Clientes";
   }, []);
 
-  const [searchParams] = useSearchParams();
-  const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState("todos");
-  const [statusFilter, setStatusFilter] = useState(() => {
-    const value = searchParams.get("status");
-    return STATUS_OPTS.some(o => o.value === value) ? value : "todos";
-  });
-  const [sortBy, setSortBy] = useState("nome_asc");
-  const [page, setPage] = useState(1);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const canCreateClient = hasPermission(user, "CRIAR CLIENTE");
+  const canEditClient = hasPermission(user, "EDITAR CLIENTE");
+  const canDeleteClient = hasPermission(user, "EXCLUIR CLIENTE");
 
-  const filtered = mockClients.filter(c => {
-    const term = search.toLowerCase();
-    const doc = c.type === "PF" ? c.cpf : c.cnpj;
-    const matchSearch = !search || c.name.toLowerCase().includes(term) || c.contacts?.some(ct => ct.email?.toLowerCase().includes(term)) || (doc && doc.includes(term));
-    const matchType = typeFilter === "todos" || c.type === typeFilter;
-    const matchStatus = statusFilter === "todos" || c.status === statusFilter;
-    return matchSearch && matchType && matchStatus;
-  });
+  const [clients, setClients] = useState([]);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const sorted = [...filtered].sort((a, b) => {
-    if (sortBy === "nome_asc") {
-      return a.name.localeCompare(b.name, "pt");
+  const loadClients = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      setClients(await clienteService.list());
+    } catch (requestError) {
+      setError(getClienteError(requestError));
+    } finally {
+      setLoading(false);
     }
-    if (sortBy === "nome_desc") {
-      return b.name.localeCompare(a.name, "pt");
-    }
-    return 0;
-  });
-
-  const hasActiveFilters = search !== "" || typeFilter !== "todos" || statusFilter !== "todos";
-  const clearFilters = () => {
-    setSearch("");
-    setTypeFilter("todos");
-    setStatusFilter("todos");
-    setPage(1);
   };
 
+  useEffect(() => {
+    loadClients();
+  }, []);
+
+  const filtered = clients.filter((client) => {
+    const term = search.trim().toLowerCase();
+    return !term || [client.name, client.email, client.cpf, client.cnpj]
+      .filter(Boolean)
+      .some((value) => value.toLowerCase().includes(term));
+  }).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+
   const PAGE_SIZE = 6;
-  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
-  const paginated = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const visible = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  const handleDelete = async (client) => {
+    if (!window.confirm(`Excluir o cliente ${client.name}?`)) return;
+    try {
+      await clienteService.remove(client.id);
+      await loadClients();
+    } catch (requestError) {
+      window.alert(getClienteError(requestError));
+    }
+  };
 
   return <div className="clients-page">
       {/* ── Header ── */}
@@ -78,13 +74,18 @@ export default function ClientsPage() {
             Clientes
           </h1>
         </div>
-        <button onClick={() => navigate("/app/clientes/novo")} className="clients-new-button">
+        <button
+          onClick={() => navigate("/app/clientes/novo")}
+          className="clients-new-button"
+          disabled={!canCreateClient}
+          title={canCreateClient ? "Novo Cliente" : "Sem permissão para criar cliente"}
+        >
           <Plus size={16} />
           Novo Cliente
         </button>
       </div>
 
-      {/* ── Search + Filters panel ── */}
+      {/* ── Search panel ── */}
       <div className="clients-panel">
         {/* Search row */}
         <div className="clients-search-row">
@@ -101,109 +102,92 @@ export default function ClientsPage() {
               className="clients-search-input"
             />
           </div>
-          <button className="clients-search-button">
+          <button className="clients-search-button" onClick={() => setPage(1)}>
             Buscar
           </button>
-        </div>
-
-        {/* Divider */}
-        <div className="clients-divider" />
-
-        {/* Filters row */}
-        <div className="clients-filter-row">
-          <div className="clients-filter-group-left">
-            <span className="clients-filter-label">
-              Filtros
-            </span>
-
-            <FilterSelect
-              prefix="clients"
-              label="Tipo"
-              value={typeFilter}
-              onChange={val => {
-                setTypeFilter(val);
-                setPage(1);
-              }}
-            >
-              {TYPE_OPTS.map(o => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </FilterSelect>
-
-            <FilterSelect
-              prefix="clients"
-              label="Status"
-              value={statusFilter}
-              onChange={val => {
-                setStatusFilter(val);
-                setPage(1);
-              }}
-            >
-              {STATUS_OPTS.map(o => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </FilterSelect>
-
-            {hasActiveFilters && (
-              <button onClick={clearFilters} className="clients-clear-button">
-                <X size={11} />
-                Limpar filtros
-              </button>
-            )}
-          </div>
-
-          <div className="clients-sort-wrap">
-            <span className="clients-sort-label">Ordenar:</span>
-            <select
-              value={sortBy}
-              onChange={e => {
-                setSortBy(e.target.value);
-                setPage(1);
-              }}
-              className="clients-sort-select"
-            >
-              <option value="nome_asc">Nome (A → Z)</option>
-              <option value="nome_desc">Nome (Z → A)</option>
-            </select>
-          </div>
         </div>
       </div>
 
       {/* ── Results count ── */}
       <div className="clients-results-row">
         <p className="clients-results-count">
-          {sorted.length === mockClients.length
-            ? `${sorted.length} clientes`
-            : `${sorted.length} de ${mockClients.length} clientes`}
+          {filtered.length} cliente{filtered.length === 1 ? "" : "s"}
         </p>
-        {sorted.length > 0 && (
-          <p className="clients-results-tip">
-            Clique em um cliente para ver detalhes
-          </p>
-        )}
       </div>
 
       {/* ── Client grid / empty state ── */}
-      {sorted.length === 0 ? <div className="clients-empty-state">
+      {loading ? (
+        <div className="clients-empty-state">
+          <div className="clients-empty-icon-wrap">
+            <LoaderCircle size={24} className="clients-empty-icon" />
+          </div>
+          <p className="clients-empty-title">
+            Carregando clientes...
+          </p>
+        </div>
+      ) : error ? (
+        <div className="clients-empty-state">
+          <div className="clients-empty-icon-wrap">
+            <AlertCircle size={24} className="clients-empty-icon" />
+          </div>
+          <p className="clients-empty-title">
+            Não foi possível carregar os clientes
+          </p>
+          <p className="clients-empty-text">
+            {error}
+          </p>
+          <button onClick={loadClients} className="clients-empty-clear">
+            Tentar novamente
+          </button>
+        </div>
+      ) : visible.length === 0 ? (
+        <div className="clients-empty-state">
           <div className="clients-empty-icon-wrap">
             <Users size={24} className="clients-empty-icon" />
           </div>
           <p className="clients-empty-title">
             Nenhum cliente encontrado
           </p>
-          <p className="clients-empty-text">
-            Tente ajustar os filtros de busca
-          </p>
-          {hasActiveFilters && <button onClick={clearFilters} className="clients-empty-clear">
-              Limpar filtros
-            </button>}
-        </div> : <div className="clients-grid">
-          {paginated.map(client => <ClientCard key={client.id} client={client} onClick={() => navigate(`/app/clientes/${client.id}`)} />)}
-        </div>}
-      <PaginationBar page={safePage} total={totalPages} onPage={setPage} />
+        </div>
+      ) : (
+        <div className="clients-grid">
+          {visible.map((client) => (
+            <ClientCard
+              key={client.id}
+              client={client}
+              onClick={() => navigate(`/app/clientes/${client.id}`)}
+              actions={
+                <>
+                  <button
+                    aria-label={`Editar ${client.name}`}
+                    title={canEditClient ? "Editar" : "Sem permissão para editar cliente"}
+                    disabled={!canEditClient}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      if (canEditClient) navigate(`/app/clientes/${client.id}/editar`);
+                    }}
+                  >
+                    <Pencil size={15} />
+                  </button>
+                  <button
+                    aria-label={`Excluir ${client.name}`}
+                    title={canDeleteClient ? "Excluir" : "Sem permissão para excluir cliente"}
+                    disabled={!canDeleteClient}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      if (canDeleteClient) handleDelete(client);
+                    }}
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </>
+              }
+            />
+          ))}
+        </div>
+      )}
+      {!loading && visible.length > 0 && (
+        <PaginationBar page={safePage} total={totalPages} onPage={setPage} />
+      )}
     </div>;
 }

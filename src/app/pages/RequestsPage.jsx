@@ -24,7 +24,7 @@ function sortParams(sortBy, filtered) {
 
 export default function RequestsPage() {
   useEffect(() => {
-    document.title = "Solicitações";
+    document.title = "SGPJ | Solicitações";
   }, []);
 
   const [search, setSearch] = useState("");

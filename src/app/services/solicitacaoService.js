@@ -77,6 +77,7 @@ export function mapearSolicitacao(dto = {}) {
     type: isPF ? "PF" : "PJ",
     name: nome,
     companyName: dto.nomeRazaoSocial || null,
+    contactRole: dto.contactRole || null,
     email: dto.email || "—",
     phone: dto.telefone || "—",
     state: dto.estado || "—",
@@ -96,3 +97,13 @@ export function mapearSolicitacao(dto = {}) {
     raw: dto,
   };
 }
+/**
+ * Envia uma nova solicitação/dúvida a partir do formulário público.
+ *
+ * @param {Object} dados Objeto compatível com SolicitacaoDuvidaCriacaoRequest
+ * @returns {Promise<any>}
+ */
+export const criarSolicitacao = async (dados) => {
+  const response = await api.post("/solicitacoes", dados);
+  return response.data;
+};

@@ -98,15 +98,14 @@ export default function AppLayout() {
             );
           })}
 
-          {/* Assistente IA */}
+          {/* Assistente IA - MarIA */}
           <button
             onClick={() => go("/app/assistente")}
             className={`app-desktop-nav-link app-desktop-nav-link--assistant ${location.pathname === "/app/assistente" ? "is-active" : ""
               }`}
           >
             <MessageSquare size={16} className="app-desktop-nav-icon" />
-            <span>Assistente IA</span>
-            <span className="app-desktop-badge">NOVO</span>
+            <span>MarIA</span>
           </button>
         </nav>
 
@@ -190,11 +189,10 @@ export default function AppLayout() {
             </button>;
           })}
 
-          {/* Assistente IA — quick link */}
+          {/* MarIA — quick link */}
           <button onClick={() => go("/app/assistente")} className={`app-drawer-link app-drawer-link--assistant ${location.pathname === "/app/assistente" ? "is-active" : ""}`}>
             <MessageSquare size={18} className={`app-drawer-link-icon ${location.pathname === "/app/assistente" ? "is-active" : ""}`} />
-            <span className="app-drawer-link-label">Assistente IA</span>
-            <span className="app-drawer-pill">NOVO</span>
+            <span className="app-drawer-link-label">MarIA</span>
           </button>
 
           <div className="app-drawer-divider" />
