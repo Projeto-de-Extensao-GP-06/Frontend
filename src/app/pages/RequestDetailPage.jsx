@@ -83,8 +83,8 @@ export default function RequestDetailPage() {
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
           <span style={{
             fontSize: "0.75rem", fontWeight: "700", padding: "0.25rem 0.6rem", borderRadius: "0.5rem",
-            backgroundColor: request.type === "PJ" ? "#eef1f8" : "#f1f5f9",
-            color: request.type === "PJ" ? "#0f2357" : "#475569", border: "1px solid #e2e8f0",
+            backgroundColor: request.type === "PJ" ? "#f5edd8" : "#eef1f8",
+            color: request.type === "PJ" ? "#8b6234" : "#1d4ed8", border: "1px solid #e2e8f0",
           }}>{request.type === "PJ" ? "Pessoa Jurídica (PJ)" : "Pessoa Física (PF)"}</span>
           <StatusBadge status={status === "accepted" ? "aceita" : status === "denied" ? "negada" : request.status} />
         </div>

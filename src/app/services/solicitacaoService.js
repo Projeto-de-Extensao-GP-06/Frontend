@@ -75,8 +75,9 @@ export function mapearSolicitacao(dto = {}) {
   return {
     id: dto.id,
     type: isPF ? "PF" : "PJ",
-    name: nome,
-    companyName: dto.nomeRazaoSocial || null,
+    name: isPF ? nome : dto.nomeContato || nome,
+    companyName: isPF ? null : dto.nomeRazaoSocial || nome,
+    cnpj: dto.cnpj || "",
     contactRole: dto.contactRole || null,
     email: dto.email || "—",
     phone: dto.telefone || "—",

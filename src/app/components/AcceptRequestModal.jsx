@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Check, ArrowRight, ArrowLeft, X, AlertCircle, FileCheck, Building2, User, HelpCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { brazilStates, phases } from "../data/mockData";
-import { maskCPF, maskCNPJ, maskRG, maskCEP, maskCNJ, maskCurrency } from "../utils/masks";
+import { maskCPF, maskCNPJ, maskRG, maskCEP, maskCNJ, maskCurrency, maskPhone } from "../utils/masks";
 import { useCepLookup } from "../hooks/useCepLookup";
 import "../../styles/accept-request-modal.css";
 
@@ -297,8 +297,8 @@ export function AcceptRequestModal({ open, onOpenChange, request, onConfirmAccep
                       fontWeight: "600",
                       padding: "0.2rem 0.6rem",
                       borderRadius: "999px",
-                      background: clientType === "PJ" ? "#eef1f8" : "#e0f2fe",
-                      color: clientType === "PJ" ? "#0f2357" : "#0369a1",
+                      background: clientType === "PJ" ? "#f5edd8" : "#eef1f8",
+                      color: clientType === "PJ" ? "#8b6234" : "#1d4ed8",
                     }}
                   >
                     {clientType === "PJ" ? "Pessoa Jurídica (PJ)" : "Pessoa Física (PF)"}

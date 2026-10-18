@@ -245,8 +245,8 @@ function RequestCard({ request, onClick }) {
               fontWeight: "700",
               padding: "0.15rem 0.45rem",
               borderRadius: "0.375rem",
-              backgroundColor: request.type === "PJ" ? "#eef1f8" : "#f1f5f9",
-              color: request.type === "PJ" ? "#0f2357" : "#475569",
+              backgroundColor: request.type === "PJ" ? "#f5edd8" : "#eef1f8",
+              color: request.type === "PJ" ? "#8b6234" : "#1d4ed8",
               border: "1px solid #e2e8f0",
             }}>{request.type}</span>
             <StatusBadge status={request.status} />
