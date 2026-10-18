@@ -161,14 +161,18 @@ export async function listarHistoricoDoProcesso(id) {
 
 function mapearDocumentos(documentos, caminhoDeArmazenamentoId) {
   return (Array.isArray(documentos) ? documentos : []).map((d) => {
-    const partes = (d.nomeOriginal || "").split(".");
+    const partes = (d.nomeOriginal || d.nome || "").split(".");
     const ext = partes.length > 1 ? partes.pop().toUpperCase() : "DOC";
+    const downloadUrl = d.onedriveUrlDownload || d.urlDownload || null;
+    const viewUrl = d.onedriveUrlThumbnail || d.thumbnailUrl || downloadUrl || null;
+
     return {
       id: d.documentoId ?? d.id,
-      name: d.nomeOriginal,
+      name: d.nomeOriginal || d.nome || "Documento",
       type: d.tipoDocumentoNome || (ext.length > 5 ? ext.slice(0, 4) : ext),
-      uploadedAt: formatarDataHoraCompleta(d.anexadoEm ?? d.dataHoraCriacao),
-      url: d.onedriveUrlThumbnail || d.thumbnailUrl || d.onedriveUrlDownload,
+      uploadedAt: formatarDataHoraCompleta(d.anexadoEm ?? d.dataHoraCriacao ?? d.criadoEm),
+      url: viewUrl,
+      downloadUrl: downloadUrl || viewUrl,
       caminhoDeArmazenamentoId,
     };
   });
@@ -224,7 +228,11 @@ export async function enviarDocumentosDoCliente({ arquivos, tipoDocumentoId, cli
     if (processoAppId) {
       formData.append("processoAppId", processoAppId);
     }
-    const response = await api.post("/api-onedrive", formData);
+    const response = await api.post("/api-onedrive", formData, {
+      headers: {
+        "Content-Type": undefined,
+      },
+    });
     resultados.push(response.data);
   }
   return resultados;

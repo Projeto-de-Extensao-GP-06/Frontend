@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronUp,
   Calendar,
+  Download,
 } from "lucide-react";
 import {
   StatusBadge,
@@ -820,13 +821,27 @@ export default function ProcessDetailPage() {
 
                 return (
                   <div key={doc.id} className="proc-doc-card">
+                    {(doc.downloadUrl || doc.url) && (
+                      <a
+                        href={doc.downloadUrl || doc.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        download={doc.name}
+                        className="proc-doc-card__download"
+                        title={`Baixar ${doc.name}`}
+                        aria-label={`Baixar documento ${doc.name}`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Download size={13} />
+                      </a>
+                    )}
                     {doc.url ? (
                       <a
                         href={doc.url}
                         target="_blank"
                         rel="noreferrer"
                         className="proc-doc-card__link"
-                        title={`Abrir ${doc.name}`}
+                        title={`Visualizar ${doc.name}`}
                       >
                         {content}
                       </a>
