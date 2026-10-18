@@ -29,7 +29,7 @@ export default function RequestsPage() {
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [filterState, setFilterState] = useState("SP");
+  const [filterState, setFilterState] = useState("");
   const [sortBy, setSortBy] = useState("recente");
   const [page, setPage] = useState(1);
   const [result, setResult] = useState({ content: [], totalElements: 0, totalPages: 0 });
