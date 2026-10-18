@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router";
 import { ArrowLeft, Mail, Phone, Calendar, FileText, Check, X, User, Building2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { StatusBadge } from "../components/StatusBadge";
-import { buscarSolicitacaoPorId, mapearSolicitacao } from "../services/solicitacaoService";
+import { aceitarSolicitacao, buscarSolicitacaoPorId, mapearSolicitacao } from "../services/solicitacaoService";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { AcceptRequestModal } from "../components/AcceptRequestModal";
 import { maskPhone, maskCNJ } from "../utils/masks";
@@ -157,7 +157,15 @@ export default function RequestDetailPage() {
               : <><X size={18} className="req-detail-result__icon req-detail-result__icon--denied" /><div><p className="req-detail-result__title req-detail-result__title--denied">Solicitação negada</p><p className="req-detail-result__sub req-detail-result__sub--denied">A solicitação foi recusada.</p></div></>}
           </div>}
 
-      <AcceptRequestModal open={acceptModalOpen} onOpenChange={setAcceptModalOpen} request={request} onConfirmAccept={() => setStatus("accepted")} />
+      <AcceptRequestModal
+        open={acceptModalOpen}
+        onOpenChange={setAcceptModalOpen}
+        request={request}
+        onConfirmAccept={async (dados) => {
+          await aceitarSolicitacao(id, dados);
+          setStatus("accepted");
+        }}
+      />
       <Dialog open={denyDialog} onOpenChange={setDenyDialog}>
         <DialogContent className="req-dialog">
           <DialogHeader><DialogTitle className="req-dialog__title">Negar solicitação?</DialogTitle></DialogHeader>

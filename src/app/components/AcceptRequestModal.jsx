@@ -54,6 +54,7 @@ export function AcceptRequestModal({ open, onOpenChange, request, onConfirmAccep
 
   // Form error notification per step
   const [errorMsg, setErrorMsg] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Reset or populate fields when request or open state changes
   useEffect(() => {
@@ -61,6 +62,7 @@ export function AcceptRequestModal({ open, onOpenChange, request, onConfirmAccep
       setMode("confirm");
       setCurrentStep(0);
       setErrorMsg("");
+      setIsSubmitting(false);
 
       const isPJ = request.type === "PJ" || Boolean(request.companyName);
       setClientType(isPJ ? "PJ" : "PF");
@@ -110,6 +112,7 @@ export function AcceptRequestModal({ open, onOpenChange, request, onConfirmAccep
   };
 
   const handleClose = () => {
+    if (isSubmitting) return;
     setErrorMsg("");
     onOpenChange(false);
   };
@@ -193,51 +196,62 @@ export function AcceptRequestModal({ open, onOpenChange, request, onConfirmAccep
     setCurrentStep((prev) => Math.max(prev - 1, 0));
   };
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     if (validateStep()) {
+      const valueDigits = causeValue.replace(/\D/g, "");
+      const value = valueDigits
+        ? `${valueDigits.slice(0, -2) || "0"}.${valueDigits.slice(-2).padStart(2, "0")}`
+        : null;
       const completedData = {
         client: {
           type: clientType,
-          name: clientType === "PJ" ? companyName : name,
-          companyName: clientType === "PJ" ? companyName : undefined,
-          email,
-          phone,
-          cpf: clientType === "PF" ? cpf : undefined,
-          rg: clientType === "PF" ? rg : undefined,
-          cnpj: clientType === "PJ" ? cnpj : undefined,
-          profession: clientType === "PF" ? profession : undefined,
+          name: (clientType === "PJ" ? companyName : name).trim(),
+          companyName: clientType === "PJ" ? companyName.trim() : undefined,
+          email: email.trim() || null,
+          phone: phone.replace(/\D/g, "") || null,
+          cpf: clientType === "PF" ? cpf.replace(/\D/g, "") : undefined,
+          rg: clientType === "PF" ? rg.replace(/\D/g, "") : undefined,
+          cnpj: clientType === "PJ" ? cnpj.replace(/\D/g, "") : undefined,
+          profession: profession.trim() || null,
           address: {
-            cep,
-            logradouro: street,
-            numero: number,
-            complemento: complement,
-            bairro: neighborhood,
-            cidade: city,
-            estado: state,
+            cep: cep.replace(/\D/g, ""),
+            logradouro: street.trim(),
+            numero: number.trim(),
+            complemento: complement.trim() || null,
+            bairro: neighborhood.trim(),
+            cidade: city.trim(),
+            estado: state.trim().toUpperCase(),
           },
           contacts: clientType === "PJ" ? [
             {
-              id: `ct_${Date.now()}`,
-              name: contactName,
-              email: email,
-              phone: phone,
-              profession: profession,
+              name: contactName.trim(),
+              email: email.trim() || null,
+              phone: phone.replace(/\D/g, "") || null,
+              profession: profession.trim(),
               isPrimary: true,
             }
           ] : [],
         },
         process: {
-          cnj: cnj || request?.processNumber || "",
+          cnj: (cnj || request?.processNumber || "").replace(/\D/g, "") || null,
           priority,
           phase,
-          hearingDate,
-          hearingTime,
-          value: causeValue,
+          hearingDate: hearingDate || null,
+          hearingTime: hearingTime || null,
+          value,
         },
       };
 
-      onConfirmAccept(completedData);
-      handleClose();
+      setIsSubmitting(true);
+      try {
+        await onConfirmAccept(completedData);
+        setErrorMsg("");
+        onOpenChange(false);
+      } catch (error) {
+        setErrorMsg(error.response?.data?.mensagem || error.response?.data?.message || error.message || "Não foi possível aceitar a solicitação.");
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -811,9 +825,11 @@ export function AcceptRequestModal({ open, onOpenChange, request, onConfirmAccep
                 type="button"
                 className="accept-btn accept-btn--success"
                 onClick={handleFinish}
+                disabled={isSubmitting}
+                aria-busy={isSubmitting}
               >
                 <Check size={15} />
-                Concluir e Aceitar
+                {isSubmitting ? "Enviando..." : "Concluir e Aceitar"}
               </button>
             )}
           </div>

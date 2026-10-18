@@ -59,6 +59,11 @@ export async function buscarSolicitacaoPorId(id, { signal } = {}) {
   return response.data;
 }
 
+export async function aceitarSolicitacao(id, dados) {
+  const response = await api.patch(`/solicitacoes/${encodeURIComponent(id)}/aceitar`, dados);
+  return response.data;
+}
+
 export function mapearSolicitacao(dto = {}) {
   const processo = dto.processo || null;
   const data = dto.dataSolicitacao || dto.dataHoraInicio || dto.ultimaAtualizacao;
