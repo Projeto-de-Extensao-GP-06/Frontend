@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router";
 import { ArrowLeft, Mail, Phone, Calendar, FileText, Check, X, User, Building2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { StatusBadge } from "../components/StatusBadge";
-import { aceitarSolicitacao, buscarSolicitacaoPorId, mapearSolicitacao } from "../services/solicitacaoService";
+import { aceitarSolicitacao, buscarSolicitacaoPorId, mapearSolicitacao, negarSolicitacao } from "../services/solicitacaoService";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { AcceptRequestModal } from "../components/AcceptRequestModal";
 import { maskPhone, maskCNJ } from "../utils/masks";
@@ -18,6 +18,8 @@ export default function RequestDetailPage() {
   const [retryIndex, setRetryIndex] = useState(0);
   const [status, setStatus] = useState("pending");
   const [denyDialog, setDenyDialog] = useState(false);
+  const [denying, setDenying] = useState(false);
+  const [denyError, setDenyError] = useState("");
   const [acceptModalOpen, setAcceptModalOpen] = useState(false);
 
   useEffect(() => {
@@ -149,7 +151,7 @@ export default function RequestDetailPage() {
         ? <div className="req-detail-actions">
             <p className="req-detail-actions__label">Análise desta solicitação:</p>
             <Button onClick={() => setAcceptModalOpen(true)} className="req-detail-actions__btn req-detail-actions__btn--accept"><Check size={16} />Aceitar Solicitação</Button>
-            <Button onClick={() => setDenyDialog(true)} className="req-detail-actions__btn req-detail-actions__btn--deny"><X size={16} />Negar Solicitação</Button>
+            <Button onClick={() => { setDenyError(""); setDenyDialog(true); }} className="req-detail-actions__btn req-detail-actions__btn--deny"><X size={16} />Negar Solicitação</Button>
           </div>
         : <div className={`req-detail-result ${status === "accepted" || request.status === "aceita" ? "req-detail-result--accepted" : "req-detail-result--denied"}`}>
             {status === "accepted" || request.status === "aceita"
@@ -170,9 +172,26 @@ export default function RequestDetailPage() {
         <DialogContent className="req-dialog">
           <DialogHeader><DialogTitle className="req-dialog__title">Negar solicitação?</DialogTitle></DialogHeader>
           <p className="req-dialog__text">Esta ação é irreversível. A solicitação será recusada permanentemente.</p>
+          {denyError && <p className="req-dialog__text" role="alert">{denyError}</p>}
           <DialogFooter className="req-dialog__footer">
-            <button className="req-dialog__btn req-dialog__btn--outline" onClick={() => setDenyDialog(false)}>Cancelar</button>
-            <button className="req-dialog__btn req-dialog__btn--danger" onClick={() => { setDenyDialog(false); setStatus("denied"); }}>Negar</button>
+            <button className="req-dialog__btn req-dialog__btn--outline" disabled={denying} onClick={() => setDenyDialog(false)}>Cancelar</button>
+            <button
+              className="req-dialog__btn req-dialog__btn--danger"
+              disabled={denying}
+              onClick={async () => {
+                setDenying(true);
+                setDenyError("");
+                try {
+                  await negarSolicitacao(id);
+                  setDenyDialog(false);
+                  navigate("/app/solicitacoes");
+                } catch (requestError) {
+                  setDenyError(requestError.response?.data?.mensagem || requestError.response?.data?.message || requestError.message || "Não foi possível negar a solicitação.");
+                } finally {
+                  setDenying(false);
+                }
+              }}
+            >{denying ? "Negando..." : "Negar"}</button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
