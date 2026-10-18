@@ -12,6 +12,7 @@ import { Checkbox } from "../components/ui/checkbox";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { maskPhone, maskCNJ, maskCNPJ } from "../utils/masks";
 import { isValidCNPJ, isValidEmail, isValidPhone, isValidCNJ } from "../utils/validators";
+import { brazilStates } from "../data/mockData";
 import { criarSolicitacao } from "../services/solicitacaoService";
 import siteLogoImage from "../../imports/Captura_de_tela_2026-05-29_235111-1.png";
 import "../../styles/public-site-page.css";
@@ -308,6 +309,7 @@ export default function PublicSitePage() {
       numeroProcesso: processNumber?.trim() ? processNumber.replace(/\D/g, "") : null,
       razaoSocial: !isPF ? razaoSocialValor : null,
       cnpj: !isPF && cnpj ? cnpj.replace(/[^0-9A-Za-z]/g, "").toUpperCase() : null,
+      estado,
       turnstileToken,
     };
 
@@ -716,6 +718,21 @@ export default function PublicSitePage() {
                   )}
 
                   <div>
+                    <Label htmlFor="estado" className="site-contact-label">Estado (UF) *</Label>
+                    <select
+                      id="estado"
+                      name="estado"
+                      required
+                      value={state}
+                      onChange={(e) => setState(e.target.value)}
+                      className="site-contact-select"
+                    >
+                      <option value="" disabled>Selecione seu estado</option>
+                      {brazilStates.map((uf) => <option key={uf} value={uf}>{uf}</option>)}
+                    </select>
+                  </div>
+
+                  <div>
                     <Label className="site-contact-label">N° do Processo (CNJ)</Label>
                     <Input
                       value={processNumber}
@@ -815,7 +832,7 @@ export default function PublicSitePage() {
                       onExpire={() => setTurnstileToken("")}
                       options={{
                         theme: "light",
-                        language: "pt-BR",
+                        language: "pt-br",
                         appearance: "always",
                       }}
                     />
