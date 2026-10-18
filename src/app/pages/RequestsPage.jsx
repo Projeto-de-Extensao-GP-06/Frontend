@@ -159,6 +159,7 @@ export default function RequestsPage() {
             <span className="requests-filter-label">Filtros</span>
             <FilterSelect
               prefix="requests"
+              className={`requests-filter-select${filterState ? " requests-filter-select--active" : ""}`}
               label="Estado"
               value={filterState}
               onChange={(value) => { setFilterState(value); setPage(1); }}
