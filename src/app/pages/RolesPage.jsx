@@ -10,21 +10,32 @@ import { hasPermission, normalizePermission } from "../utils/permissions";
 import "../../styles/roles-page.css";
 
 const SPECIAL_PERMISSIONS = new Set(["TODAS AS PERMISSÕES", "SEM PERMISSÕES"]);
+const SYSTEM_CARGOS = new Set(["ADMIN", "Sem Cargo"]);
 const MODULE_ORDER = ["PROCESSO", "SOLICITAÇÃO", "CLIENTE", "CARGO", "USUÁRIO", "CONTATO", "DOCUMENTO"];
 const ACTION_ORDER = ["CRIAR", "EDITAR", "EXCLUIR", "ACEITAR", "NEGAR"];
 
 const stripAccents = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-const titleCase = (value) => String(value || "").toLocaleLowerCase("pt-BR").replace(/(^|\s)\S/g, (letter) => letter.toLocaleUpperCase("pt-BR"));
+const titleCase = (value) => {
+  const str = String(value || "");
+  if (str === "ADMIN") return "Admin";
+  return str.toLocaleLowerCase("pt-BR").replace(/(^|\s)\S/g, (letter) => letter.toLocaleUpperCase("pt-BR"));
+};
 const getPermissionAction = (name) => normalizePermission(name).split(" ")[0] || "";
 const getPermissionModule = (name) => normalizePermission(name).split(" ").slice(1).join(" ") || "GERAL";
 const getRoleId = (role) => role?.cargoId ?? role?.id;
 const roleVariant = (index) => ["admin", "advogado", "assistente"][index % 3];
+const isSystemCargo = (role) => {
+  const roleName = role?.nome || role?.name || role;
+  const normalized = roleName === "Admin" ? "ADMIN" : roleName;
+  return SYSTEM_CARGOS.has(normalized);
+};
 
 const normalizeRole = (role) => ({
   ...role,
   id: String(getRoleId(role)),
   cargoId: getRoleId(role),
-  name: role.nome || role.name || "Cargo",
+  nome: role.nome || role.name || "Cargo",
+  name: titleCase(role.nome || role.name || "Cargo"),
   permissoes: Array.isArray(role.permissoes) ? role.permissoes : [],
 });
 
@@ -164,7 +175,7 @@ export default function RolesPage() {
     setAllExpanded(!allExpanded);
   };
   const togglePerm = key => {
-    if (!canEditRole || saving) return;
+    if (!canEditRole || saving || isSystemCargo(selectedRoleData)) return;
     setCheckedPerms(p => ({
       ...p,
       [key]: !p[key],
@@ -173,7 +184,7 @@ export default function RolesPage() {
   const selectedPermissionIds = () => Object.entries(checkedPerms).filter(([, isChecked]) => isChecked).map(([permissionId]) => Number(permissionId));
 
   const handleSave = async () => {
-    if (!selectedRoleData || !canEditRole) return;
+    if (!selectedRoleData || !canEditRole || isSystemCargo(selectedRoleData)) return;
     setSaving(true);
     try {
       const updatedRole = await atualizarPermissoesCargo(selectedRoleData.cargoId, selectedPermissionIds());
@@ -214,7 +225,7 @@ export default function RolesPage() {
   };
 
   const handleDeleteRole = role => {
-    if (!canDeleteRole) return;
+    if (!canDeleteRole || isSystemCargo(role)) return;
     setRoleToDelete(role);
     setDeleteRoleDialog(true);
   };
@@ -238,7 +249,7 @@ export default function RolesPage() {
   };
 
   const handleClearAllPermissions = () => {
-    if (!canEditRole || saving) return;
+    if (!canEditRole || saving || isSystemCargo(selectedRoleData)) return;
     setCheckedPerms((current) => Object.keys(current).reduce((acc, key) => {
       acc[key] = false;
       return acc;
@@ -247,7 +258,7 @@ export default function RolesPage() {
   const isPermsChanged = Object.keys(initialPerms).some(key => Boolean(checkedPerms[key]) !== Boolean(initialPerms[key]))
     || Object.keys(checkedPerms).some(key => Boolean(checkedPerms[key]) !== Boolean(initialPerms[key]));
   const handleRestorePermissions = () => {
-    if (!canEditRole || saving) return;
+    if (!canEditRole || saving || isSystemCargo(selectedRoleData)) return;
     setCheckedPerms({ ...initialPerms });
   };
   const totalChecked = Object.values(checkedPerms).filter(Boolean).length;
@@ -300,7 +311,7 @@ export default function RolesPage() {
                   <button disabled className="roles-icon-btn" title="Renomear cargo ainda não está disponível no backend">
                     <Edit2 size={13} className="roles-icon-btn__icon" />
                   </button>
-                  <button onClick={e => { e.stopPropagation(); handleDeleteRole(role); }} disabled={!canDeleteRole || deleting} className="roles-icon-btn roles-icon-btn--danger" title={canDeleteRole ? "Excluir cargo" : "Sem permissão para excluir cargo"}>
+                  <button onClick={e => { e.stopPropagation(); handleDeleteRole(role); }} disabled={!canDeleteRole || deleting || isSystemCargo(role)} className="roles-icon-btn roles-icon-btn--danger" title={isSystemCargo(role) ? "Cargo do sistema não pode ser excluído" : canDeleteRole ? "Excluir cargo" : "Sem permissão para excluir cargo"}>
                     <Trash2 size={13} className="roles-icon-btn__icon--danger" />
                   </button>
                 </div>
@@ -316,12 +327,12 @@ export default function RolesPage() {
         </p>
         <div className="perms-toolbar__right">
           {isPermsChanged && (
-            <button onClick={handleRestorePermissions} className="perms-restore-btn" disabled={!canEditRole || saving} title="Restaurar estado inicial das permissões">
+            <button onClick={handleRestorePermissions} className="perms-restore-btn" disabled={!canEditRole || saving || isSystemCargo(selectedRoleData)} title={isSystemCargo(selectedRoleData) ? "Cargo do sistema não pode ser editado" : "Restaurar estado inicial das permissões"}>
               <RotateCcw size={12} />
               Restaurar permissões
             </button>
           )}
-          <button onClick={handleClearAllPermissions} disabled={!canEditRole || saving || !selectedRoleData} className="perms-clear-btn">Remover todas</button>
+          <button onClick={handleClearAllPermissions} disabled={!canEditRole || saving || !selectedRoleData || isSystemCargo(selectedRoleData)} className="perms-clear-btn" title={isSystemCargo(selectedRoleData) ? "Cargo do sistema não pode ser editado" : "Remover todas as permissões"}>Remover todas</button>
           <span className="perms-counter">{totalChecked}/{totalPerms}</span>
         </div>
       </div>
@@ -356,7 +367,8 @@ export default function RolesPage() {
                   {module.permissions.map(perm => {
                     const isChecked = !!checkedPerms[perm.id];
                     const label = titleCase(getPermissionAction(perm.nome));
-                    return <button key={perm.id} onClick={() => togglePerm(perm.id)} disabled={!canEditRole || saving || !selectedRoleData} title={canEditRole ? perm.nome : "Sem permissão para editar cargo"} className={`perm-btn ${isChecked ? "perm-btn--on" : "perm-btn--off"}`}>
+                    const isSystemRole = isSystemCargo(selectedRoleData);
+                    return <button key={perm.id} onClick={() => togglePerm(perm.id)} disabled={!canEditRole || saving || !selectedRoleData || isSystemRole} title={isSystemRole ? "Cargo do sistema não pode ser editado" : canEditRole ? perm.nome : "Sem permissão para editar cargo"} className={`perm-btn ${isChecked ? "perm-btn--on" : "perm-btn--off"}`}>
                       <div className={`perm-btn__box ${isChecked ? "perm-btn__box--checked" : ""}`}>
                         {isChecked && <Check size={10} className="perm-btn__check" strokeWidth={3} />}
                       </div>
@@ -369,7 +381,7 @@ export default function RolesPage() {
         })}
       </div>
 
-      <button onClick={() => setSaveDialogOpen(true)} disabled={!canEditRole || !selectedRoleData || !isPermsChanged || saving} className={`roles-save-btn ${saved ? "roles-save-btn--saved" : ""}`} title={canEditRole ? "Salvar permissões" : "Sem permissão para editar cargo"}>
+      <button onClick={() => setSaveDialogOpen(true)} disabled={!canEditRole || !selectedRoleData || !isPermsChanged || saving || isSystemCargo(selectedRoleData)} className={`roles-save-btn ${saved ? "roles-save-btn--saved" : ""}`} title={isSystemCargo(selectedRoleData) ? "Cargo do sistema não pode ser editado" : canEditRole ? "Salvar permissões" : "Sem permissão para editar cargo"}>
         {saved ? "✓ Permissões salvas!" : <><Save size={15} />{saving ? "Salvando..." : "Salvar permissões"}</>}
       </button>
 
