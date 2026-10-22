@@ -6,6 +6,7 @@ import { CalendarEventModal } from "../components/CalendarEventModal";
 import { FilterSelect } from "../components/FilterSelect";
 import { PaginationBar } from "../components/PaginationBar";
 import { listarProcessos } from "../services/processoService";
+import { buscarDadosGeraisDashboard } from "../services/dashboardService";
 import { api } from "../provider/api";
 import { maskCNJ } from "../utils/masks";
 import { toast } from "sonner";
@@ -78,7 +79,7 @@ export default function HomePage() {
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [pendingRequests, setPendingRequests] = useState(null);
+  const [kpiSolicitacoesPendentes, setKpiSolicitacoesPendentes] = useState(null);
 
   // Filtros
   const [search, setSearch] = useState("");
@@ -157,23 +158,23 @@ export default function HomePage() {
 
     async function carregarKpis() {
       try {
-        const [ativosRes, encerradosRes, audienciaRes, solicitacoesRes] = await Promise.all([
+        const [ativosRes, encerradosRes, audienciaRes, dashboardRes] = await Promise.all([
           api.get("/processos", { params: { status: "ATIVO", size: 1 } }).catch(() => null),
           api.get("/processos", { params: { status: "ENCERRADO", size: 1 } }).catch(() => null),
           api.get("/processos", { params: { audiencia: "com", size: 1 } }).catch(() => null),
-          api.get("/solicitacoes").catch(() => null),
+          buscarDadosGeraisDashboard().catch(() => null),
         ]);
         if (ativosRes) setKpiAtivos(ativosRes.data.totalElements ?? 0);
         if (encerradosRes) setKpiEncerrados(encerradosRes.data.totalElements ?? 0);
         if (audienciaRes) setKpiAudiencia(audienciaRes.data.totalElements ?? 0);
-        if (solicitacoesRes) {
-          setPendingRequests(Array.isArray(solicitacoesRes.data) ? solicitacoesRes.data : []);
+        if (dashboardRes?.solicitacoesPendentes != null) {
+          setKpiSolicitacoesPendentes(dashboardRes.solicitacoesPendentes);
         } else {
-          setPendingRequests([]);
+          setKpiSolicitacoesPendentes(0);
         }
       } catch (e) {
         console.error("Erro ao carregar KPIs:", e);
-        setPendingRequests([]);
+        setKpiSolicitacoesPendentes(0);
       }
     }
 
@@ -278,9 +279,10 @@ export default function HomePage() {
         <MetricCard
           icon={<Zap size={15} className="metric-card-icon metric-card-icon--amber" />}
           iconVariant="metric-card-badge--amber"
-          value={pendingRequests?.length ?? "—"}
+          value={kpiSolicitacoesPendentes ?? "—"}
           label="Solicitações pendentes"
           trendVariant="metric-trend--amber"
+          onClick={() => navigate("/app/solicitacoes?tab=pendente")}
         />
         <MetricCard
           icon={<BarChart3 size={15} className="metric-card-icon metric-card-icon--green" />}
@@ -451,10 +453,17 @@ function MetricCard({
   icon,
   iconVariant,
   value,
-  label
+  label,
+  onClick,
 }) {
   return (
-    <div className="metric-card">
+    <div
+      className={`metric-card ${onClick ? "metric-card--clickable" : ""}`}
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e) => e.key === "Enter" && onClick() : undefined}
+    >
       <div className={`metric-card-badge ${iconVariant}`}>
         {icon}
       </div>

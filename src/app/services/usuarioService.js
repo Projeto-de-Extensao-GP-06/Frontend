@@ -27,3 +27,11 @@ export async function buscarPerfilAtual() {
   salvarUsuarioLogado(usuario);
   return usuario;
 }
+
+export async function alterarMinhaSenha({ senhaAtual, novaSenha }) {
+  const response = await api.patch("/usuarios/minha-senha", {
+    senhaAtual,
+    novaSenha,
+  });
+  return response.data;
+}

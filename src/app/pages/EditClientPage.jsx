@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { brazilStates } from "../data/mockData";
 import { maskCPF, maskCNPJ, maskRG, maskPhone, maskCEP } from "../utils/masks";
 import { clienteService, getClienteError } from "../services/clienteService";
+import { useCepLookup } from "../hooks/useCepLookup";
 import "../../styles/edit-client-page.css";
 
 export default function EditClientPage() {
@@ -37,6 +38,11 @@ export default function EditClientPage() {
   const [estado, setEstado] = useState("SP");
   const [contacts, setContacts] = useState([]);
   const [comoConheceu, setComoConheceu] = useState("INDICACAO");
+
+  const cepLookup = useCepLookup(cep);
+  const sanitizedCep = cep.replace(/\D/g, "");
+  const isCurrentCepLookup = cepLookup.requestedCep === sanitizedCep;
+  const addressFilledByCep = cepLookup.data && isCurrentCepLookup;
 
   useEffect(() => {
     document.title = "SGPJ | Editar Cliente";
@@ -90,6 +96,16 @@ export default function EditClientPage() {
     
     loadClient();
   }, [id]);
+
+  useEffect(() => {
+    if (!cepLookup.data || !isCurrentCepLookup) return;
+
+    const data = cepLookup.data;
+    setLogradouro(data.logradouro || "");
+    setBairro(data.bairro || "");
+    setCidade(data.localidade || "");
+    setEstado(data.uf || "SP");
+  }, [cepLookup.data, isCurrentCepLookup]);
 
   const handleContactChange = (index, field, value) => {
     setContacts(prev =>
@@ -302,21 +318,28 @@ export default function EditClientPage() {
             maxLength={9}
             mono
           />
-          <Field label="Logradouro" value={logradouro} onChange={(e) => setLogradouro(e.target.value)} />
+          {cepLookup.loading && isCurrentCepLookup && <p className="edit-client-cep-status">Buscando endereço...</p>}
+          {cepLookup.error && isCurrentCepLookup && <p className="edit-client-cep-status edit-client-cep-status--error">{cepLookup.error}</p>}
+          <Field label="Logradouro" value={logradouro} onChange={(e) => setLogradouro(e.target.value)} disabled={addressFilledByCep} />
           <div className="edit-client-grid edit-client-grid--2">
             <Field label="Número" value={numero} onChange={(e) => setNumero(e.target.value)} />
             <Field label="Complemento" value={complemento} onChange={(e) => setComplemento(e.target.value)} />
           </div>
-          <Field label="Bairro" value={bairro} onChange={(e) => setBairro(e.target.value)} />
+          <Field label="Bairro" value={bairro} onChange={(e) => setBairro(e.target.value)} disabled={addressFilledByCep} />
           <div className="edit-client-grid edit-client-grid--state">
             <div className="edit-client-grid-main">
-              <Field label="Cidade" value={cidade} onChange={(e) => setCidade(e.target.value)} />
+              <Field label="Cidade" value={cidade} onChange={(e) => setCidade(e.target.value)} disabled={addressFilledByCep} />
             </div>
             <div className="edit-client-state-field">
-              <Label className="edit-client-label">Estado</Label>
-              <select className="edit-client-select" value={estado} onChange={(e) => setEstado(e.target.value)}>
+              <Field
+                as="select"
+                label="Estado"
+                value={estado}
+                onChange={(e) => setEstado(e.target.value)}
+                disabled={addressFilledByCep}
+              >
                 {brazilStates.map(s => <option key={s}>{s}</option>)}
-              </select>
+              </Field>
             </div>
           </div>
         </div>}
@@ -438,6 +461,7 @@ function Field({
   maxLength,
   as = "input",
   children,
+  disabled = false,
   ...props
 }) {
   const Component = as;
@@ -450,6 +474,7 @@ function Field({
           value={value}
           onChange={onChange}
           className="edit-client-input"
+          disabled={disabled}
           {...props}
         >
           {children}
@@ -461,6 +486,7 @@ function Field({
           onChange={onChange}
           placeholder={placeholder}
           maxLength={maxLength}
+          disabled={disabled}
           className={`edit-client-input ${mono ? "edit-client-input--mono" : ""}`}
           {...props}
         />

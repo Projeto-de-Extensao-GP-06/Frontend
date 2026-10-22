@@ -1,13 +1,19 @@
 import axios from "axios";
 
 export const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080",
+    baseURL: import.meta.env.VITE_API_URL !== undefined ? import.meta.env.VITE_API_URL : (import.meta.env.DEV ? "http://localhost:8080" : ""),
     // OBRIGATÓRIO: permite envio e recebimento de cookies HttpOnly entre portas/domínios diferentes
     withCredentials: true,
-    headers: {
-        "Content-Type": "application/json",
-    },
 });
+
+// Garante que uploads multipart/form-data não sejam forçados para application/json
+api.interceptors.request.use((config) => {
+    if (config.data instanceof FormData && config.headers) {
+        delete config.headers["Content-Type"];
+    }
+    return config;
+});
+
 
 // Endpoints que NÃO devem disparar a tentativa de refresh token quando retornarem 401
 const NO_REFRESH_ENDPOINTS = [

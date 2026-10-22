@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronUp,
   Calendar,
+  Download,
 } from "lucide-react";
 import {
   StatusBadge,
@@ -201,6 +202,9 @@ export default function ProcessDetailPage() {
       console.error("Erro ao atualizar dados do processo:", err);
       if (err.response?.status === 401) {
         toast.warning("Sessão inválida ou expirada.");
+      } else if (err.response?.status === 503 || err.response?.status === 502 || err.response?.status === 504) {
+        const mensagemErro = err.response?.data?.message || "Não foi possível obter dados oficiais do DataJud no momento. Por favor, tente novamente mais tarde.";
+        toast.warning(mensagemErro);
       } else {
         const mensagemErro = err.response?.data?.message || "Não foi possível atualizar os dados do processo.";
         toast.error(mensagemErro);
@@ -817,13 +821,27 @@ export default function ProcessDetailPage() {
 
                 return (
                   <div key={doc.id} className="proc-doc-card">
+                    {(doc.downloadUrl || doc.url) && (
+                      <a
+                        href={doc.downloadUrl || doc.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        download={doc.name}
+                        className="proc-doc-card__download"
+                        title={`Baixar ${doc.name}`}
+                        aria-label={`Baixar documento ${doc.name}`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Download size={13} />
+                      </a>
+                    )}
                     {doc.url ? (
                       <a
                         href={doc.url}
                         target="_blank"
                         rel="noreferrer"
                         className="proc-doc-card__link"
-                        title={`Abrir ${doc.name}`}
+                        title={`Visualizar ${doc.name}`}
                       >
                         {content}
                       </a>

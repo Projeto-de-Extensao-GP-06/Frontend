@@ -244,10 +244,8 @@ export default function EditProcessPage() {
       siglaTribunalId: Number(siglaTribunalId),
       dataAudiencia: montarDataHoraIso(hearingDate, hearingTime),
       valorCausa: valorCausa ? Number(valorCausa.replace(/\D/g, "")) / 100 : null,
+      numeroCnj: cnj ? cnj.replace(/\D/g, "") : null,
     };
-    if (cnj) {
-      payload.numeroCnj = cnj.replace(/\D/g, "");
-    }
     return payload;
   }
 
@@ -279,6 +277,17 @@ export default function EditProcessPage() {
     }
   }
 
+  const validarCnj = () => {
+    if (cnj) {
+      const cnjLimpo = cnj.replace(/\D/g, "");
+      if (cnjLimpo.length !== 20) {
+        toast.warning("O CNJ deve conter exatamente 20 dígitos numéricos (ou deixe em branco).");
+        return false;
+      }
+    }
+    return true;
+  };
+
   const validarObservacoes = () => {
     if (observacoesArray.length > MAX_OBSERVACOES) {
       toast.warning(`O processo aceita no máximo ${MAX_OBSERVACOES} observações.`);
@@ -292,6 +301,10 @@ export default function EditProcessPage() {
   };
 
   const handleSalvar = () => {
+    if (!validarCnj()) {
+      setSaveDialogOpen(false);
+      return;
+    }
     if (!validarObservacoes()) {
       setSaveDialogOpen(false);
       return;
@@ -436,9 +449,15 @@ export default function EditProcessPage() {
           <Label className="edit-process-label" htmlFor="edit-process-cnj">
             Número CNJ
           </Label>
-          <Label className="edit-process-input edit-process-input--mono edit-process-input-cadeado" style={{ fontSize: "0.875rem", fontWeight: "normal", padding: "0.2rem" }}>
-             {cnj}
-          </Label>
+          <Input
+            id="edit-process-cnj"
+            type="text"
+            value={cnj}
+            onChange={(event) => setCnj(maskCNJ(event.target.value))}
+            placeholder="0000000-00.0000.0.00.0000"
+            maxLength={25}
+            className="edit-process-input edit-process-input--mono"
+          />
         </div>
 
         {/* Cliente — somente leitura */}
@@ -683,7 +702,10 @@ export default function EditProcessPage() {
             <CheckCircle size={15} />
             Encerrar Processo
           </Button>
-          <Button onClick={() => setSaveDialogOpen(true)} className="edit-process-button edit-process-button--primary" disabled={saving}>
+          <Button onClick={() => {
+            if (!validarCnj()) return;
+            setSaveDialogOpen(true);
+          }} className="edit-process-button edit-process-button--primary" disabled={saving}>
             <Save size={15} />
             Salvar Alterações
           </Button>
@@ -720,7 +742,7 @@ export default function EditProcessPage() {
           </DialogHeader>
           <p className="edit-process-dialog-text">
             Deseja salvar as alterações realizadas no processo{" "}
-            <strong className="edit-process-dialog__highlight">{process.cnj || id}</strong>?
+            <strong className="edit-process-dialog__highlight">{cnj || process.cnj || id}</strong>?
           </p>
           <DialogFooter className="edit-process-dialog-footer">
             <Button variant="outline" className="edit-process-dialog-button edit-process-dialog-button--outline" onClick={() => setSaveDialogOpen(false)} disabled={saving}>

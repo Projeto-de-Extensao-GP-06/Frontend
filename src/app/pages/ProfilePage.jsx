@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
-import { Key, Shield, CheckCircle, AlertCircle, Cloud, RefreshCw, Loader2, User, Save } from "lucide-react";
+import { Key, Shield, CheckCircle, AlertCircle, Cloud, RefreshCw, Loader2, User, Save, Eye, EyeOff, Check, Circle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { Button } from "../components/ui/button";
 import { useAuth } from "../contexts/AuthContext";
 import { startOneDriveLogin } from "../services/oneDriveService";
-import { buscarPerfilAtual, atualizarUsuario, salvarUsuarioLogado } from "../services/usuarioService";
+import { buscarPerfilAtual, atualizarUsuario, salvarUsuarioLogado, alterarMinhaSenha } from "../services/usuarioService";
 import "../../styles/profile-page.css";
 
 export default function ProfilePage() {
@@ -16,8 +16,20 @@ export default function ProfilePage() {
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
-  const [confirmPassDialogOpen, setConfirmPassDialogOpen] = useState(false);
   const [confirmSaveDialogOpen, setConfirmSaveDialogOpen] = useState(false);
+
+  // Estados do modal de alteração de senha autenticada
+  const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [showCurrentPass, setShowCurrentPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [passwordErrors, setPasswordErrors] = useState({});
+  const [passwordApiError, setPasswordApiError] = useState("");
+
   const [oneDriveLoading, setOneDriveLoading] = useState(false);
   const [oneDriveError, setOneDriveError] = useState("");
   const navigate = useNavigate();
@@ -147,6 +159,116 @@ export default function ProfilePage() {
     }
   };
 
+  const resetPasswordForm = () => {
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmNewPassword("");
+    setShowCurrentPass(false);
+    setShowNewPass(false);
+    setShowConfirmPass(false);
+    setPasswordErrors({});
+    setPasswordApiError("");
+  };
+
+  const handleOpenPasswordModal = () => {
+    resetPasswordForm();
+    setChangePasswordModalOpen(true);
+  };
+
+  const handleClosePasswordModal = () => {
+    if (savingPassword) return;
+    resetPasswordForm();
+    setChangePasswordModalOpen(false);
+  };
+
+  const passwordRules = [
+    {
+      id: "length",
+      label: "Mínimo de 8 caracteres (máximo de 255)",
+      met: newPassword.length >= 8 && newPassword.length <= 255,
+    },
+    {
+      id: "uppercase",
+      label: "Pelo menos 1 letra maiúscula",
+      met: /[A-Z]/.test(newPassword),
+    },
+    {
+      id: "lowercase",
+      label: "Pelo menos 1 letra minúscula",
+      met: /[a-z]/.test(newPassword),
+    },
+    {
+      id: "number",
+      label: "Pelo menos 1 número",
+      met: /[0-9]/.test(newPassword),
+    },
+    {
+      id: "special",
+      label: "Pelo menos 1 caractere especial (!@#$%...)",
+      met: /[^A-Za-z0-9]/.test(newPassword),
+    },
+  ];
+
+  const validatePasswordForm = () => {
+    const errs = {};
+    if (!currentPassword) {
+      errs.current = "Informe sua senha atual.";
+    }
+    if (!newPassword) {
+      errs.newPass = "Informe a nova senha.";
+    } else if (newPassword.length < 8) {
+      errs.newPass = "A nova senha deve ter pelo menos 8 caracteres.";
+    } else if (newPassword.length > 255) {
+      errs.newPass = "A nova senha deve ter no máximo 255 caracteres.";
+    } else if (!/[A-Z]/.test(newPassword)) {
+      errs.newPass = "A nova senha deve conter pelo menos 1 letra maiúscula.";
+    } else if (!/[a-z]/.test(newPassword)) {
+      errs.newPass = "A nova senha deve conter pelo menos 1 letra minúscula.";
+    } else if (!/[0-9]/.test(newPassword)) {
+      errs.newPass = "A nova senha deve conter pelo menos 1 número.";
+    } else if (!/[^A-Za-z0-9]/.test(newPassword)) {
+      errs.newPass = "A nova senha deve conter pelo menos 1 caractere especial.";
+    } else if (currentPassword && newPassword === currentPassword) {
+      errs.newPass = "A nova senha não pode ser igual à senha atual.";
+    }
+
+    if (!confirmNewPassword) {
+      errs.confirm = "Confirme sua nova senha.";
+    } else if (newPassword !== confirmNewPassword) {
+      errs.confirm = "As senhas não coincidem.";
+    }
+
+    setPasswordErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleSubmitChangePassword = async (e) => {
+    e.preventDefault();
+    setPasswordApiError("");
+
+    if (!validatePasswordForm()) return;
+
+    setSavingPassword(true);
+    try {
+      await alterarMinhaSenha({
+        senhaAtual: currentPassword,
+        novaSenha: newPassword,
+      });
+      toast.success("Senha alterada com sucesso!");
+      handleClosePasswordModal();
+    } catch (err) {
+      console.error("Erro ao alterar senha:", err);
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Não foi possível alterar sua senha. Verifique os dados e tente novamente.";
+      setPasswordApiError(message);
+      toast.error(message);
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
   const handleConnectOneDrive = async () => {
     setOneDriveError("");
     setOneDriveLoading(true);
@@ -244,7 +366,7 @@ export default function ProfilePage() {
               </button>
               <button
                 type="button"
-                onClick={() => setConfirmPassDialogOpen(true)}
+                onClick={handleOpenPasswordModal}
                 className="profile-change-password-btn"
               >
                 <Key size={15} />
@@ -343,24 +465,180 @@ export default function ProfilePage() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal de confirmação de alteração de senha */}
-      <Dialog open={confirmPassDialogOpen} onOpenChange={setConfirmPassDialogOpen}>
-        <DialogContent className="profile-dialog">
+      {/* Modal de Alteração de Senha */}
+      <Dialog open={changePasswordModalOpen} onOpenChange={(open) => { if (!open) handleClosePasswordModal(); }}>
+        <DialogContent className="profile-dialog profile-dialog--password">
           <DialogHeader>
             <div className="profile-dialog__header">
-              <div className="profile-dialog__icon-wrap">
-                <AlertCircle size={24} className="profile-dialog__icon" />
+              <div className="profile-dialog__icon-wrap profile-dialog__icon-wrap--blue">
+                <Key size={24} className="profile-dialog__icon" />
               </div>
               <DialogTitle className="profile-dialog__title">Alterar senha</DialogTitle>
             </div>
           </DialogHeader>
           <p className="profile-dialog__text">
-            Você será redirecionado para a tela de alteração de senha e será desconectado do sistema. Deseja continuar?
+            Informe sua senha atual e crie uma nova senha para sua conta.
           </p>
-          <DialogFooter className="profile-dialog__footer">
-            <Button variant="outline" className="profile-dialog-button profile-dialog-button--outline" onClick={() => setConfirmPassDialogOpen(false)}>Cancelar</Button>
-            <Button className="profile-dialog-button profile-dialog-button--primary" onClick={() => { setConfirmPassDialogOpen(false); navigate("/redefinir-senha?mode=redefinir"); }}>Continuar</Button>
-          </DialogFooter>
+
+          {passwordApiError && (
+            <div className="profile-feedback profile-feedback--error" style={{ margin: "0.25rem 0" }}>
+              <AlertCircle size={15} />
+              <span>{passwordApiError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmitChangePassword} className="profile-password-form" noValidate>
+            {/* Senha Atual */}
+            <div className="profile-password-field">
+              <label htmlFor="current-password-input" className="profile-password-field__label">
+                Senha atual
+              </label>
+              <div className="profile-password-field__wrap">
+                <input
+                  id="current-password-input"
+                  type={showCurrentPass ? "text" : "password"}
+                  value={currentPassword}
+                  onChange={(e) => {
+                    setCurrentPassword(e.target.value);
+                    if (passwordErrors.current) setPasswordErrors((prev) => ({ ...prev, current: undefined }));
+                    if (passwordApiError) setPasswordApiError("");
+                  }}
+                  placeholder="Sua senha atual"
+                  className={`profile-password-field__input ${passwordErrors.current ? "profile-password-field__input--error" : ""}`}
+                  autoComplete="current-password"
+                  disabled={savingPassword}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPass(!showCurrentPass)}
+                  className="profile-password-field__toggle"
+                  aria-label={showCurrentPass ? "Ocultar senha atual" : "Mostrar senha atual"}
+                >
+                  {showCurrentPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              {passwordErrors.current && (
+                <p className="profile-password-field__error">{passwordErrors.current}</p>
+              )}
+            </div>
+
+            {/* Nova Senha */}
+            <div className="profile-password-field">
+              <label htmlFor="new-password-input" className="profile-password-field__label">
+                Nova senha
+              </label>
+              <div className="profile-password-field__wrap">
+                <input
+                  id="new-password-input"
+                  type={showNewPass ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => {
+                    setNewPassword(e.target.value);
+                    if (passwordErrors.newPass) setPasswordErrors((prev) => ({ ...prev, newPass: undefined }));
+                    if (passwordErrors.confirm && confirmNewPassword && e.target.value === confirmNewPassword) {
+                      setPasswordErrors((prev) => ({ ...prev, confirm: undefined }));
+                    }
+                    if (passwordApiError) setPasswordApiError("");
+                  }}
+                  placeholder="Nova senha segura"
+                  className={`profile-password-field__input ${passwordErrors.newPass ? "profile-password-field__input--error" : ""}`}
+                  autoComplete="new-password"
+                  disabled={savingPassword}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPass(!showNewPass)}
+                  className="profile-password-field__toggle"
+                  aria-label={showNewPass ? "Ocultar nova senha" : "Mostrar nova senha"}
+                >
+                  {showNewPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              {passwordErrors.newPass && (
+                <p className="profile-password-field__error">{passwordErrors.newPass}</p>
+              )}
+            </div>
+
+            {/* Requisitos da Nova Senha */}
+            <div className="profile-password-rules" aria-live="polite">
+              <span className="profile-password-rules__title">Requisitos da nova senha:</span>
+              <ul className="profile-password-rules__list">
+                {passwordRules.map((rule) => (
+                  <li
+                    key={rule.id}
+                    className={`profile-password-rules__item ${rule.met ? "is-met" : ""}`}
+                  >
+                    {rule.met ? (
+                      <Check size={14} className="profile-password-rules__icon" />
+                    ) : (
+                      <Circle size={10} className="profile-password-rules__icon" />
+                    )}
+                    <span>{rule.label}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Confirmar Nova Senha */}
+            <div className="profile-password-field">
+              <label htmlFor="confirm-password-input" className="profile-password-field__label">
+                Confirmar nova senha
+              </label>
+              <div className="profile-password-field__wrap">
+                <input
+                  id="confirm-password-input"
+                  type={showConfirmPass ? "text" : "password"}
+                  value={confirmNewPassword}
+                  onChange={(e) => {
+                    setConfirmNewPassword(e.target.value);
+                    if (passwordErrors.confirm) setPasswordErrors((prev) => ({ ...prev, confirm: undefined }));
+                    if (passwordApiError) setPasswordApiError("");
+                  }}
+                  placeholder="Repita a nova senha"
+                  className={`profile-password-field__input ${passwordErrors.confirm ? "profile-password-field__input--error" : ""}`}
+                  autoComplete="new-password"
+                  disabled={savingPassword}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPass(!showConfirmPass)}
+                  className="profile-password-field__toggle"
+                  aria-label={showConfirmPass ? "Ocultar confirmação" : "Mostrar confirmação"}
+                >
+                  {showConfirmPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              {passwordErrors.confirm && (
+                <p className="profile-password-field__error">{passwordErrors.confirm}</p>
+              )}
+            </div>
+
+            <DialogFooter className="profile-dialog__footer" style={{ marginTop: "0.5rem" }}>
+              <Button
+                type="button"
+                variant="outline"
+                className="profile-dialog-button profile-dialog-button--outline"
+                onClick={handleClosePasswordModal}
+                disabled={savingPassword}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                className="profile-dialog-button profile-dialog-button--primary"
+                disabled={savingPassword}
+              >
+                {savingPassword ? (
+                  <>
+                    <Loader2 size={15} className="animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  "Alterar senha"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>;
