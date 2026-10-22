@@ -99,7 +99,7 @@ export default function RequestDetailPage() {
           </div>
           <div>
             <p className="req-detail-requester__name">{request.companyName || request.name}</p>
-            <p className="req-detail-requester__meta">{request.state} • {request.createdAt}</p>
+            <p className="req-detail-requester__meta">{request.createdAt}</p>
           </div>
         </div>
         <div className="req-detail-info-list">

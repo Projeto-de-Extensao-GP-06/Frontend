@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { ChevronRight, Mail, Calendar, Inbox, Search, X } from "lucide-react";
-import { StatusBadge } from "../components/StatusBadge";
 import { FilterSelect } from "../components/FilterSelect";
 import { PaginationBar } from "../components/PaginationBar";
 import { filtrarSolicitacoes, listarSolicitacoes, mapearSolicitacao } from "../services/solicitacaoService";
@@ -250,14 +249,11 @@ function RequestCard({ request, onClick }) {
               color: request.type === "PJ" ? "#8b6234" : "#1d4ed8",
               border: "1px solid #e2e8f0",
             }}>{request.type}</span>
-            <StatusBadge status={request.status} />
             <ChevronRight size={14} className="request-card-chevron" />
           </div>
         </div>
         <div className="request-card-meta">
           {request.companyName && <><span className="request-card-contact-name">Contato: {request.name}</span><span className="request-card-dot">·</span></>}
-          <span className="request-card-state">{request.state}</span>
-          <span className="request-card-dot">·</span>
           <span className="request-card-date"><Calendar size={10} className="request-card-date-icon" />{request.createdAt}</span>
         </div>
         <p className="request-card-description">{request.description}</p>

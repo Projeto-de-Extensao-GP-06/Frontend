@@ -391,7 +391,6 @@
   margin-bottom: 0.75rem;
 }
 
-.request-card-state,
 .request-card-date,
 .request-card-body-text {
   color: #6b7280;
@@ -481,4 +480,3 @@
     display: block;
   }
 }
-
