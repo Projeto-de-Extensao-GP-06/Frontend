@@ -47,7 +47,12 @@ export function SelectProcessModal({
         const tribs = Array.isArray(tribRes.data) ? tribRes.data : [];
         setPhasesList(fases.map((f) => f.nome).filter(Boolean));
         setTribunalsList(
-          tribs.map((t) => t.nome?.toUpperCase() || t.nome).filter(Boolean)
+          tribs
+            .map((t) => {
+              const label = t.siglaTribunal || t.nome;
+              return label?.toUpperCase() || label;
+            })
+            .filter(Boolean)
         );
       } catch (err) {
         console.error("Erro ao carregar opções no modal de processos:", err);
@@ -262,7 +267,7 @@ export function SelectProcessModal({
                       setPhaseFilter(e.target.value);
                       setPage(1);
                     }}
-                    className="select-modal-filter-select"
+                    className={`select-modal-filter-select${phaseFilter !== "todas" ? " select-modal-filter-select--active" : ""}`}
                   >
                     <option value="todas">Todas as fases</option>
                     {availablePhases.map((ph) => (
@@ -285,7 +290,7 @@ export function SelectProcessModal({
                       setTribunalFilter(e.target.value);
                       setPage(1);
                     }}
-                    className="select-modal-filter-select"
+                    className={`select-modal-filter-select${tribunalFilter !== "todos" ? " select-modal-filter-select--active" : ""}`}
                   >
                     <option value="todos">Todos os tribunais</option>
                     {availableTribunals.map((t) => (

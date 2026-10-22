@@ -188,6 +188,21 @@
   overflow: hidden;
 }
 
+.clients-filter-select--active {
+  border-color: #8ba8e8;
+  background: #e8efff;
+}
+
+.clients-filter-select--active .clients-filter-select-label {
+  color: #0f2357;
+}
+
+.clients-filter-select--active .clients-filter-select-input {
+  border-left-color: #c2d0f0;
+  color: #0f2357;
+  font-weight: 700;
+}
+
 .clients-filter-select-label {
   padding: 0.375rem 0.5rem 0.375rem 0.75rem;
   color: #374151;

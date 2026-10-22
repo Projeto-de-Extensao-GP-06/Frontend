@@ -287,19 +287,15 @@ export default function DashboardPage() {
   const kpis = {
     processosAtivos: {
       value: generalData?.processoAtivos != null ? String(generalData.processoAtivos) : "0",
-      sub: "carteira ativa",
     },
     solicitacoes: {
       value: generalData?.solicitacoesPendentes != null ? String(generalData.solicitacoesPendentes) : "0",
-      sub: "pendentes",
     },
     clientes: {
       value: generalData?.clientesExistentes != null ? String(generalData.clientesExistentes) : "0",
-      sub: "cadastrados",
     },
     comAudiencia: {
       value: generalData?.processosComAudiencia != null ? String(generalData.processosComAudiencia) : "0",
-      sub: "agendadas",
     },
   };
 
@@ -408,8 +404,6 @@ export default function DashboardPage() {
           icon={<Scale size={15} className="kpi-card-icon kpi-card-icon--blue" />}
           iconVariant="kpi-card-badge--blue"
           sub={kpis.processosAtivos.sub}
-          subIcon={<TrendingUp size={10} />}
-          subVariant="kpi-card-sub--success"
           onClick={() => navigate("/app?status=ativo")}
         />
         <KpiCard
@@ -418,8 +412,6 @@ export default function DashboardPage() {
           icon={<Zap size={15} className="kpi-card-icon kpi-card-icon--amber" />}
           iconVariant="kpi-card-badge--amber"
           sub={kpis.solicitacoes.sub}
-          subIcon={<ArrowUpRight size={10} />}
-          subVariant="kpi-card-sub--amber"
           onClick={() => navigate("/app/solicitacoes?tab=pendente")}
         />
         <KpiCard
@@ -428,8 +420,6 @@ export default function DashboardPage() {
           icon={<Users size={15} className="kpi-card-icon kpi-card-icon--green" />}
           iconVariant="kpi-card-badge--green"
           sub={kpis.clientes.sub}
-          subIcon={<Users size={10} />}
-          subVariant="kpi-card-sub--muted"
           onClick={() => navigate("/app/clientes")}
         />
         <KpiCard
@@ -438,8 +428,6 @@ export default function DashboardPage() {
           icon={<Calendar size={15} className="kpi-card-icon kpi-card-icon--gold" />}
           iconVariant="kpi-card-badge--gold"
           sub={kpis.comAudiencia.sub}
-          subIcon={<Calendar size={10} />}
-          subVariant="kpi-card-sub--muted"
           onClick={() => navigate("/app?audiencia=com")}
         />
       </div>
