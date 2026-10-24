@@ -1,33 +1,17 @@
-# Estagio 1: Build da aplicacao React com Node.js
-FROM node:20-alpine AS builder
-
-WORKDIR /app
-
-# Copia dependencias primeiro para aproveitar cache do Docker
-COPY package*.json ./
-RUN npm ci
-
-# Copia o codigo-fonte e compila
-COPY . .
-RUN npm run build
-
-# Estagio 2: Servidor web ultraleve com Nginx
+# Usa a imagem leve do Nginx baseada em Alpine
 FROM nginx:alpine
 
-# Copia o build final do React para o diretorio publico do Nginx
-COPY --from=builder /app/dist /usr/share/nginx/html
+# Remove o arquivo de configuração padrão do Nginx
+RUN rm /etc/nginx/conf.d/default.conf
 
-# Copia configuracao simples do Nginx para suportar SPA (Single Page Application)
-RUN echo 'server { \
-    listen 80; \
-    server_name _; \
-    root /usr/share/nginx/html; \
-    index index.html; \
-    location / { \
-        try_files $uri $uri/ /index.html; \
-    } \
-}' > /etc/nginx/conf.d/default.conf
+# Copia o nginx.conf da raiz do projeto para o diretório de configurações do Nginx
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
+# Copia a pasta dist gerada manualmente (npm run build) para a pasta pública do Nginx
+COPY dist/ /usr/share/nginx/html/
+
+# Expõe a porta 80
 EXPOSE 80
 
+# Inicia o Nginx em primeiro plano
 CMD ["nginx", "-g", "daemon off;"]
