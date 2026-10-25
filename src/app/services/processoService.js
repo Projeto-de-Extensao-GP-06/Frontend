@@ -269,22 +269,26 @@ export async function excluirProcesso(id) {
 
 export async function listarPrioridades() {
   const response = await api.get("/prioridades");
-  return response.data; // [{ id, nome }]
+  const data = response.data;
+  return Array.isArray(data) ? data : (data?.content || []);
 }
 
 export async function listarFases() {
   const response = await api.get("/fasesProcesso");
-  return response.data; // [{ id, nome }]
+  const data = response.data;
+  return Array.isArray(data) ? data : (data?.content || []);
 }
 
 export async function listarTribunais() {
   const response = await api.get("/siglaTribunais");
-  return response.data; // [{ id, siglaTribunal }]  <- atenção, campo diferente de "nome"
+  const data = response.data;
+  return Array.isArray(data) ? data : (data?.content || []);
 }
 
 export async function listarMotivosStatus() {
   const response = await api.get("/motivosStatusProcesso");
-  return response.data; // [{ id, nome, aplicavelA }]
+  const data = response.data;
+  return Array.isArray(data) ? data : (data?.content || []);
 }
 
 export async function atualizarProcesso(id, payload) {

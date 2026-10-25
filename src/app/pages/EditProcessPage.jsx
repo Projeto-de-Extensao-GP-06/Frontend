@@ -427,8 +427,9 @@ export default function EditProcessPage() {
     }
   };
 
-  const motivosEncerramento = motivos.filter((m) => m.aplicavelA === "ENCERRADO" || m.aplicavelA === "AMBOS");
-  const motivosSuspensao = motivos.filter((m) => m.aplicavelA === "SUSPENSO" || m.aplicavelA === "AMBOS");
+  const listaMotivos = Array.isArray(motivos) ? motivos : (motivos?.content || []);
+  const motivosEncerramento = listaMotivos.filter((m) => m?.aplicavelA === "ENCERRADO" || m?.aplicavelA === "AMBOS");
+  const motivosSuspensao = listaMotivos.filter((m) => m?.aplicavelA === "SUSPENSO" || m?.aplicavelA === "AMBOS");
 
   return (
     <div className="edit-process-page">
