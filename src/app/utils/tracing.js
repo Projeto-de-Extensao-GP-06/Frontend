@@ -17,7 +17,10 @@ const initTracing = () => {
     });
 
     const exporter = new OTLPTraceExporter({
-      url: import.meta.env.VITE_OTEL_EXPORTER_OTLP_ENDPOINT || 'http://observability:4318/v1/traces',
+      // Em produção: o Nginx faz proxy de /v1/traces → Alloy local (porta 4318)
+      // Alloy repassa para o Tempo na ec2-observability via gRPC 4317
+      // Em desenvolvimento: a URL relativa falha silenciosamente (sem servidor OTLP local)
+      url: import.meta.env.VITE_OTEL_EXPORTER_OTLP_ENDPOINT || '/v1/traces',
       headers: {}
     });
 
