@@ -43,7 +43,7 @@ function parseDataBrParaInput(dataBr) {
 
 // junta input type=date + input type=time num ISO pro backend
 function montarDataHoraIso(dataInput, horaInput) {
-  if (!dataInput) return null;
+  if (!dataInput || !horaInput) return null;
   const hora = horaInput || "00:00";
   return `${dataInput}T${hora}:00`;
 }
@@ -86,6 +86,7 @@ export default function EditProcessPage() {
   const [valorCausa, setValorCausa] = useState("");
   const [hearingDate, setHearingDate] = useState("");
   const [hearingTime, setHearingTime] = useState("");
+  const [audienciaError, setAudienciaError] = useState("");
 
   // campos usados só nos dialogs de encerrar/desativar
   const [motivoStatusProcessoId, setMotivoStatusProcessoId] = useState("");
@@ -300,7 +301,28 @@ export default function EditProcessPage() {
     return true;
   };
 
+  const validarAudiencia = () => {
+    if (hearingDate && !hearingTime) {
+      const msg = "Informe o horário da audiência para a data preenchida.";
+      setAudienciaError(msg);
+      toast.warning(msg);
+      return false;
+    }
+    if (hearingTime && !hearingDate) {
+      const msg = "Informe a data da audiência para o horário preenchido.";
+      setAudienciaError(msg);
+      toast.warning(msg);
+      return false;
+    }
+    setAudienciaError("");
+    return true;
+  };
+
   const handleSalvar = () => {
+    if (!validarAudiencia()) {
+      setSaveDialogOpen(false);
+      return;
+    }
     if (!validarCnj()) {
       setSaveDialogOpen(false);
       return;
@@ -315,6 +337,10 @@ export default function EditProcessPage() {
   };
 
   const handleEncerrar = () => {
+    if (!validarAudiencia()) {
+      setCloseDialogOpen(false);
+      return;
+    }
     if (!validarObservacoes()) {
       setCloseDialogOpen(false);
       return;
@@ -334,6 +360,10 @@ export default function EditProcessPage() {
   };
 
   const handleDesativar = () => {
+    if (!validarAudiencia()) {
+      setDeactivateDialogOpen(false);
+      return;
+    }
     if (!validarObservacoes()) {
       setDeactivateDialogOpen(false);
       return;
@@ -551,16 +581,27 @@ export default function EditProcessPage() {
               <Input
                 type="date"
                 value={hearingDate}
-                onChange={(e) => setHearingDate(e.target.value)}
+                onChange={(e) => {
+                  setHearingDate(e.target.value);
+                  if (audienciaError) setAudienciaError("");
+                }}
                 className="edit-process-input edit-process-input--mono"
               />
               <Input
                 type="time"
                 value={hearingTime}
-                onChange={(e) => setHearingTime(e.target.value)}
+                onChange={(e) => {
+                  setHearingTime(e.target.value);
+                  if (audienciaError) setAudienciaError("");
+                }}
                 className="edit-process-input edit-process-input--mono"
               />
             </div>
+            {audienciaError && (
+              <p className="edit-process-field-error" style={{ color: "#ef4444", fontSize: "0.8125rem", marginTop: "4px" }}>
+                {audienciaError}
+              </p>
+            )}
           </div>
         </div>
 
@@ -699,12 +740,16 @@ export default function EditProcessPage() {
       {/* Actions */}
       <div className="edit-process-actions">
         <div className="edit-process-actions-row">
-          <Button onClick={() => setCloseDialogOpen(true)} className="edit-process-button edit-process-button--close" disabled={saving}>
+          <Button onClick={() => {
+            if (!validarAudiencia()) return;
+            setCloseDialogOpen(true);
+          }} className="edit-process-button edit-process-button--close" disabled={saving}>
             <CheckCircle size={15} />
             Encerrar Processo
           </Button>
           <Button onClick={() => {
             if (!validarCnj()) return;
+            if (!validarAudiencia()) return;
             setSaveDialogOpen(true);
           }} className="edit-process-button edit-process-button--primary" disabled={saving}>
             <Save size={15} />
@@ -713,7 +758,10 @@ export default function EditProcessPage() {
         </div>
 
         <div className="edit-process-actions-row">
-          <Button className="edit-process-button edit-process-button--warn" onClick={() => setDeactivateDialogOpen(true)} disabled={saving}>
+          <Button className="edit-process-button edit-process-button--warn" onClick={() => {
+            if (!validarAudiencia()) return;
+            setDeactivateDialogOpen(true);
+          }} disabled={saving}>
             <AlertTriangle size={15} className="edit-process-dialog__icon" />
             Suspender Processo
           </Button>

@@ -84,6 +84,7 @@ export default function NewProcessPage() {
   const tribunalRef = useRef(null);
   const causeValueRef = useRef(null);
   const hearingDateRef = useRef(null);
+  const hearingTimeRef = useRef(null);
   const descriptionRef = useRef(null);
   const observationRef = useRef(null);
 
@@ -190,7 +191,7 @@ export default function NewProcessPage() {
       }
     }
 
-    // 7. Data da audiência: data real (rejeitar 31/02, ano com 4 dígitos, ano entre 2000 e o ano atual + 10); se houver hora, data é obrigatória
+    // 7. Data e hora da audiência: data real (rejeitar 31/02, ano com 4 dígitos, ano entre 2000 e o ano atual + 10); data e hora não podem ser registradas separadamente
     if (hearingTime && !hearingDate) {
       newErrors.dataAudiencia = "Informe a data da audiência para o horário preenchido.";
     } else if (hearingDate) {
@@ -216,6 +217,8 @@ export default function NewProcessPage() {
             dateObj.getDate() !== day
           ) {
             newErrors.dataAudiencia = "Data da audiência inexistente no calendário (ex: 31/02).";
+          } else if (!hearingTime) {
+            newErrors.dataAudiencia = "Informe o horário da audiência para a data preenchida.";
           }
         }
       }
@@ -261,7 +264,7 @@ export default function NewProcessPage() {
         { key: "fase", ref: faseRef },
         { key: "tribunal", ref: tribunalRef },
         { key: "valorCausa", ref: causeValueRef },
-        { key: "dataAudiencia", ref: hearingDateRef },
+        { key: "dataAudiencia", ref: hearingDate && !hearingTime ? hearingTimeRef : hearingDateRef },
         { key: "descricao", ref: descriptionRef },
         { key: "observacoes", ref: observationRef },
       ];
@@ -298,8 +301,8 @@ export default function NewProcessPage() {
       faseProcessoId: Number(faseProcessoId),
       siglaTribunalId: Number(siglaTribunalId),
       numeroProcesso: cnj ? cnj.replace(/\D/g, "") : null,
-      dataAudiencia: hearingDate
-        ? `${hearingDate}T${hearingTime || "00:00"}:00`
+      dataAudiencia: hearingDate && hearingTime
+        ? `${hearingDate}T${hearingTime}:00`
         : null,
       valorCausa: causeValue ? Number(causeValue.replace(/\D/g, "")) / 100 : null,
     };
@@ -663,6 +666,7 @@ export default function NewProcessPage() {
                 className="edit-process-input edit-process-input--mono"
               />
               <Input
+                ref={hearingTimeRef}
                 type="time"
                 value={hearingTime}
                 onChange={(event) => {
