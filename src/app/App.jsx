@@ -63,7 +63,7 @@ export default function App() {
 
     <AuthProvider>
       <RouterProvider router={router} />
-      <Toaster position="top-right" richColors />
+      <Toaster position="top-right" richColors closeButton />
     </AuthProvider>
   </>;
 }

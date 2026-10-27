@@ -741,19 +741,19 @@ export default function EditProcessPage() {
       <div className="edit-process-actions">
         <div className="edit-process-actions-row">
           <Button onClick={() => {
-            if (!validarAudiencia()) return;
-            setCloseDialogOpen(true);
-          }} className="edit-process-button edit-process-button--close" disabled={saving}>
-            <CheckCircle size={15} />
-            Encerrar Processo
-          </Button>
-          <Button onClick={() => {
             if (!validarCnj()) return;
             if (!validarAudiencia()) return;
             setSaveDialogOpen(true);
           }} className="edit-process-button edit-process-button--primary" disabled={saving}>
             <Save size={15} />
             Salvar Alterações
+          </Button>
+          <Button onClick={() => {
+            if (!validarAudiencia()) return;
+            setCloseDialogOpen(true);
+          }} className="edit-process-button edit-process-button--close" disabled={saving}>
+            <CheckCircle size={15} />
+            Encerrar Processo
           </Button>
         </div>
 
