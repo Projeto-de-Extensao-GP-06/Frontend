@@ -88,7 +88,7 @@ export default function NewProcessPage() {
   const observationRef = useRef(null);
 
   useEffect(() => {
-    document.title = "Novo Processo";
+    document.title = "SGPJ | Novo Processo";
     let active = true;
     Promise.all([listarPrioridades(), listarFases(), listarTribunais()])
       .then(([priorityOptions, phases, courts]) => {
@@ -432,7 +432,15 @@ export default function NewProcessPage() {
       setCreationModalOpen(false);
       setIsMinimized(false);
       isMinimizedRef.current = false;
-      toast.error(message, { duration: 8000 });
+
+      if (error.response?.status === 409 || message.toLowerCase().includes("cnj")) {
+        setErrors((prev) => ({ ...prev, cnj: message }));
+        cnjRef.current?.focus?.();
+        cnjRef.current?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+        toast.error(message, { duration: 7000 });
+      } else {
+        toast.error(message, { duration: 8000 });
+      }
     } finally {
       setSubmitting(false);
     }

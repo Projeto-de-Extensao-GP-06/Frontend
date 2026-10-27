@@ -18,7 +18,7 @@
 .page-kicker {
   margin: 0 0 0.125rem;
   color: #9ca3af;
-  font-size: 11px;
+  font-size: clamp(0.58rem, 0.52rem + 0.2vw, 0.6875rem);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -28,13 +28,13 @@
   margin: 0;
   color: #0f2357;
   font-family: "Playfair Display", serif;
-  font-size: 26px;
+  font-size: clamp(1.2rem, 1.05rem + 0.8vw, 1.625rem);
   font-weight: 700;
   line-height: 1.2;
 }
 
 .page-title--sm {
-  font-size: 22px;
+  font-size: clamp(1rem, 0.9rem + 0.5vw, 1.375rem);
 }
 
 .users-new-button,
@@ -61,17 +61,32 @@
   font-weight: 600;
 }
 
+.users-new-button,
+.users-primary-button,
+.users-danger-button,
+.users-danger-confirm {
+  transition: all 0.2s ease;
+}
+
+.users-new-button:disabled,
+.users-primary-button:disabled,
+.users-danger-button:disabled,
+.users-danger-confirm:disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.users-new-button:hover:not(:disabled),
+.users-primary-button:hover:not(:disabled) {
+  background: #1a3a7a;
+}
+
 .users-new-button {
   height: 2.5rem;
   padding: 0 1rem;
   background: #0f2357;
   color: #fff;
   box-shadow: 0 1px 2px rgba(15, 35, 87, 0.2);
-}
-
-.users-new-button:hover,
-.users-primary-button:hover {
-  background: #1a3a7a;
 }
 
 .users-summary-grid {

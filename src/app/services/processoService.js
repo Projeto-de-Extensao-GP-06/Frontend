@@ -62,7 +62,7 @@ function mapearHistorico(historico) {
 
 // Transforma a resposta crua da API (ProcessoAppResponse) no formato que a tela usa.
 // Usada tanto no carregamento inicial quanto depois de "Atualizar dados".
-function mapearProcesso(p) {
+export function mapearProcesso(p) {
   const audiencia = formatarDataHora(p.dataAudiencia);
   const ajuizamento = formatarDataHora(p.processoApi?.dataAjuizamento);
   const encerramento = formatarDataHora(p.encerradoSuspensoEm);
@@ -162,14 +162,18 @@ export async function listarHistoricoDoProcesso(id) {
 
 function mapearDocumentos(documentos, caminhoDeArmazenamentoId) {
   return (Array.isArray(documentos) ? documentos : []).map((d) => {
-    const partes = (d.nomeOriginal || "").split(".");
+    const partes = (d.nomeOriginal || d.nome || "").split(".");
     const ext = partes.length > 1 ? partes.pop().toUpperCase() : "DOC";
+    const downloadUrl = d.onedriveUrlDownload || d.urlDownload || null;
+    const viewUrl = d.onedriveUrlThumbnail || d.thumbnailUrl || downloadUrl || null;
+
     return {
       id: d.documentoId ?? d.id,
-      name: d.nomeOriginal,
+      name: d.nomeOriginal || d.nome || "Documento",
       type: d.tipoDocumentoNome || (ext.length > 5 ? ext.slice(0, 4) : ext),
-      uploadedAt: formatarDataHoraCompleta(d.anexadoEm ?? d.dataHoraCriacao),
-      url: d.onedriveUrlThumbnail || d.thumbnailUrl || d.onedriveUrlDownload,
+      uploadedAt: formatarDataHoraCompleta(d.anexadoEm ?? d.dataHoraCriacao ?? d.criadoEm),
+      url: viewUrl,
+      downloadUrl: downloadUrl || viewUrl,
       caminhoDeArmazenamentoId,
     };
   });
@@ -225,7 +229,11 @@ export async function enviarDocumentosDoCliente({ arquivos, tipoDocumentoId, cli
     if (processoAppId) {
       formData.append("processoAppId", processoAppId);
     }
-    const response = await api.post("/api-onedrive", formData);
+    const response = await api.post("/api-onedrive", formData, {
+      headers: {
+        "Content-Type": undefined,
+      },
+    });
     resultados.push(response.data);
   }
   return resultados;
@@ -262,22 +270,26 @@ export async function excluirProcesso(id) {
 
 export async function listarPrioridades() {
   const response = await api.get("/prioridades");
-  return response.data; // [{ id, nome }]
+  const data = response.data;
+  return Array.isArray(data) ? data : (data?.content || []);
 }
 
 export async function listarFases() {
   const response = await api.get("/fasesProcesso");
-  return response.data; // [{ id, nome }]
+  const data = response.data;
+  return Array.isArray(data) ? data : (data?.content || []);
 }
 
 export async function listarTribunais() {
   const response = await api.get("/siglaTribunais");
-  return response.data; // [{ id, siglaTribunal }]  <- atenção, campo diferente de "nome"
+  const data = response.data;
+  return Array.isArray(data) ? data : (data?.content || []);
 }
 
 export async function listarMotivosStatus() {
   const response = await api.get("/motivosStatusProcesso");
-  return response.data; // [{ id, nome, aplicavelA }]
+  const data = response.data;
+  return Array.isArray(data) ? data : (data?.content || []);
 }
 
 export async function atualizarProcesso(id, payload) {

@@ -1,37 +1,111 @@
 import { useNavigate, useParams } from "react-router";
 import { ArrowLeft, Save, Building2, User, Plus, X, CheckCircle } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
-import { mockClients, brazilStates } from "../data/mockData";
+import { brazilStates } from "../data/mockData";
 import { maskCPF, maskCNPJ, maskRG, maskPhone, maskCEP } from "../utils/masks";
+import { clienteService, getClienteError } from "../services/clienteService";
+import { useCepLookup } from "../hooks/useCepLookup";
 import "../../styles/edit-client-page.css";
 
 export default function EditClientPage() {
-  const {
-    id
-  } = useParams();
+  const { id } = useParams();
   const navigate = useNavigate();
   const [tab, setTab] = useState("dados");
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
-  const client = mockClients.find(c => c.id === id);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [client, setClient] = useState(null);
 
-  const [cpf, setCpf] = useState(() => (client?.cpf ? maskCPF(client.cpf) : ""));
-  const [rg, setRg] = useState(() => (client?.rg ? maskRG(client.rg) : ""));
-  const [cnpj, setCnpj] = useState(() => (client?.cnpj ? maskCNPJ(client.cnpj) : ""));
-  const [phone, setPhone] = useState(() => (client?.phone ? maskPhone(client.phone) : ""));
-  const [cep, setCep] = useState(() => (client?.address?.cep ? maskCEP(client.address.cep) : ""));
-  const [contacts, setContacts] = useState(() =>
-    client?.contacts?.map(c => ({
-      ...c,
-      name: c.name ?? "",
-      email: c.email ?? "",
-      profession: c.profession ?? "",
-      phone: c.phone ? maskPhone(c.phone) : ""
-    })) ?? []
-  );
+  const [cpf, setCpf] = useState("");
+  const [rg, setRg] = useState("");
+  const [cnpj, setCnpj] = useState("");
+  const [phone, setPhone] = useState("");
+  const [cep, setCep] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [profession, setProfession] = useState("");
+  const [statusClienteId, setStatusClienteId] = useState(1);
+  const [logradouro, setLogradouro] = useState("");
+  const [numero, setNumero] = useState("");
+  const [complemento, setComplemento] = useState("");
+  const [bairro, setBairro] = useState("");
+  const [cidade, setCidade] = useState("");
+  const [estado, setEstado] = useState("SP");
+  const [contacts, setContacts] = useState([]);
+  const [comoConheceu, setComoConheceu] = useState("INDICACAO");
+
+  const cepLookup = useCepLookup(cep);
+  const sanitizedCep = cep.replace(/\D/g, "");
+  const isCurrentCepLookup = cepLookup.requestedCep === sanitizedCep;
+  const addressFilledByCep = cepLookup.data && isCurrentCepLookup;
+
+  useEffect(() => {
+    document.title = "SGPJ | Editar Cliente";
+    const loadClient = async () => {
+      try {
+        const data = await clienteService.getById(id);
+        setClient(data);
+        
+        const isPF = data.type === "PF";
+        setCpf(isPF ? data.cpf || "" : "");
+        setRg(data.rg || "");
+        setCnpj(!isPF ? data.cnpj || "" : "");
+        setName(data.name || "");
+        setEmail(data.email || "");
+        setProfession(data.profession || "");
+        setStatusClienteId(data.status?.id || 1);
+        setComoConheceu(typeof data.comoConheceu === 'string' ? data.comoConheceu : data.comoConheceu?.name() || "INDICACAO");
+        
+        // For PF clients, load email and profession from primary contact if not at top level
+        if (isPF && (!data.email || !data.profession) && data.contacts && data.contacts.length > 0) {
+          const primaryContact = data.contacts.find(c => c.principal) || data.contacts[0];
+          if (!data.email) setEmail(primaryContact.email || "");
+          if (!data.profession) setProfession(primaryContact.profession || "");
+        }
+        
+        if (data.address) {
+          setCep(data.address.cep || "");
+          setLogradouro(data.address.logradouro || "");
+          setNumero(data.address.numero || "");
+          setComplemento(data.address.complemento || "");
+          setBairro(data.address.bairro || "");
+          setCidade(data.address.cidade || "");
+          setEstado(data.address.estado || "SP");
+        }
+        
+        if (data.contacts && data.contacts.length > 0) {
+          setContacts(data.contacts.map(c => ({
+            ...c,
+            name: c.name ?? "",
+            email: c.email ?? "",
+            profession: c.profession ?? "",
+            phone: c.phone ? maskPhone(c.phone) : ""
+          })));
+        }
+      } catch (e) {
+        setError(getClienteError(e));
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadClient();
+  }, [id]);
+
+  useEffect(() => {
+    if (!cepLookup.data || !isCurrentCepLookup) return;
+
+    const data = cepLookup.data;
+    setLogradouro(data.logradouro || "");
+    setBairro(data.bairro || "");
+    setCidade(data.localidade || "");
+    setEstado(data.uf || "SP");
+  }, [cepLookup.data, isCurrentCepLookup]);
 
   const handleContactChange = (index, field, value) => {
     setContacts(prev =>
@@ -59,9 +133,66 @@ export default function EditClientPage() {
 
   const handleRemoveContact = (index) => {
     const contact = contacts[index];
+    const isPF = client?.type === "PF";
     if (!isPF && contact?.isPrimary) return;
     setContacts(prev => prev.filter((_, i) => i !== index));
   };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError("");
+    try {
+      const isPF = client?.type === "PF";
+      
+      // For PF clients, update the primary contact with email and profession from dados tab
+      let updatedContacts = [...contacts];
+      if (isPF && updatedContacts.length > 0) {
+        const primaryIndex = updatedContacts.findIndex(c => c.principal) || 0;
+        updatedContacts[primaryIndex] = {
+          ...updatedContacts[primaryIndex],
+          email: email,
+          profession: profession
+        };
+      }
+      
+      const data = {
+        type: isPF ? "PF" : "PJ",
+        name,
+        document: isPF ? cpf : cnpj,
+        rg,
+        comoConheceu,
+        statusClienteId,
+        address: {
+          cep,
+          logradouro,
+          numero,
+          complemento,
+          bairro,
+          cidade,
+          estado
+        },
+        contacts: updatedContacts.map((c, i) => ({
+          name: c.name,
+          email: c.email,
+          phone: c.phone,
+          profession: c.profession
+        }))
+      };
+      
+      await clienteService.update(id, data);
+      setSaveDialogOpen(false);
+      navigate(`/app/clientes/${id}`);
+    } catch (e) {
+      setError(getClienteError(e));
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="edit-client-page edit-client-page--empty">
+        <p className="edit-client-empty-text">Carregando cliente...</p>
+      </div>;
+  }
 
   if (!client) {
     return <div className="edit-client-page edit-client-page--empty">
@@ -71,9 +202,8 @@ export default function EditClientPage() {
         </Button>
       </div>;
   }
+
   const isPF = client.type === "PF";
-  const pf = client;
-  const pj = client;
   const tabs = isPF ? [{
     key: "dados",
     label: "Dados"
@@ -93,6 +223,7 @@ export default function EditClientPage() {
     key: "contatos",
     label: "Contatos"
   }];
+
   return <div className="edit-client-page">
       {/* Breadcrumb */}
       <button onClick={() => navigate(`/app/clientes/${id}`)} className="edit-client-breadcrumb">
@@ -139,16 +270,20 @@ export default function EditClientPage() {
                 maxLength={12}
                 mono
               />
-              <Field label="Nome Completo" defaultValue={pf.name} />
-              <Field label="E-mail" defaultValue={pf.email} type="email" />
-              <Field
-                label="Telefone"
-                value={phone}
-                onChange={(e) => setPhone(maskPhone(e.target.value))}
-                placeholder="(00) 00000-0000"
-                maxLength={15}
-              />
-              <Field label="Profissão" defaultValue={pf.profession} />
+              <Field label="Nome Completo" value={name} onChange={(e) => setName(e.target.value)} />
+              <Field label="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
+              <Field label="Profissão" value={profession} onChange={(e) => setProfession(e.target.value)} />
+              <Field 
+                label="Como conheceu" 
+                as="select"
+                value={comoConheceu}
+                onChange={(e) => setComoConheceu(e.target.value)}
+              >
+                <option value="INSTAGRAM">Instagram</option>
+                <option value="SITE">Site Institucional</option>
+                <option value="INDICACAO">Indicação</option>
+                <option value="OUTROS">Outros</option>
+              </Field>
             </> : <>
               <Field
                 label="CNPJ"
@@ -158,8 +293,19 @@ export default function EditClientPage() {
                 maxLength={18}
                 mono
               />
-              <Field label="Nome / Razão Social" defaultValue={pj.name} />
-              <Field label="E-mail" defaultValue={pj.email} type="email" />
+              <Field label="Nome / Razão Social" value={name} onChange={(e) => setName(e.target.value)} />
+              <Field label="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
+              <Field 
+                label="Como conheceu" 
+                as="select"
+                value={comoConheceu}
+                onChange={(e) => setComoConheceu(e.target.value)}
+              >
+                <option value="INSTAGRAM">Instagram</option>
+                <option value="SITE">Site Institucional</option>
+                <option value="INDICACAO">Indicação</option>
+                <option value="OUTROS">Outros</option>
+              </Field>
             </>}
         </div>}
 
@@ -172,21 +318,28 @@ export default function EditClientPage() {
             maxLength={9}
             mono
           />
-          <Field label="Logradouro" defaultValue={client.address.logradouro} />
+          {cepLookup.loading && isCurrentCepLookup && <p className="edit-client-cep-status">Buscando endereço...</p>}
+          {cepLookup.error && isCurrentCepLookup && <p className="edit-client-cep-status edit-client-cep-status--error">{cepLookup.error}</p>}
+          <Field label="Logradouro" value={logradouro} onChange={(e) => setLogradouro(e.target.value)} disabled={addressFilledByCep} />
           <div className="edit-client-grid edit-client-grid--2">
-            <Field label="Número" defaultValue={client.address.numero} />
-            <Field label="Complemento" defaultValue={client.address.complemento ?? ""} />
+            <Field label="Número" value={numero} onChange={(e) => setNumero(e.target.value)} />
+            <Field label="Complemento" value={complemento} onChange={(e) => setComplemento(e.target.value)} />
           </div>
-          <Field label="Bairro" defaultValue={client.address.bairro} />
+          <Field label="Bairro" value={bairro} onChange={(e) => setBairro(e.target.value)} disabled={addressFilledByCep} />
           <div className="edit-client-grid edit-client-grid--state">
             <div className="edit-client-grid-main">
-              <Field label="Cidade" defaultValue={client.address.cidade} />
+              <Field label="Cidade" value={cidade} onChange={(e) => setCidade(e.target.value)} disabled={addressFilledByCep} />
             </div>
             <div className="edit-client-state-field">
-              <Label className="edit-client-label">Estado</Label>
-              <select className="edit-client-select" defaultValue={client.address.estado}>
+              <Field
+                as="select"
+                label="Estado"
+                value={estado}
+                onChange={(e) => setEstado(e.target.value)}
+                disabled={addressFilledByCep}
+              >
                 {brazilStates.map(s => <option key={s}>{s}</option>)}
-              </select>
+              </Field>
             </div>
           </div>
         </div>}
@@ -259,14 +412,18 @@ export default function EditClientPage() {
           </button>
         </div>}
 
+      {error && <div className="edit-client-section">
+          <p className="edit-client-empty-text" style={{ color: "#dc2626" }}>{error}</p>
+        </div>}
+
       {/* Actions */}
       <div className="edit-client-actions">
         <Button variant="outline" onClick={() => navigate(`/app/clientes/${id}`)} className="edit-client-button edit-client-button--outline">
           Cancelar
         </Button>
-        <Button onClick={() => setSaveDialogOpen(true)} className="edit-client-button edit-client-button--primary">
+        <Button onClick={() => setSaveDialogOpen(true)} disabled={saving} className="edit-client-button edit-client-button--primary">
           <Save size={15} />
-          Salvar alterações
+          {saving ? "Salvando..." : "Salvar alterações"}
         </Button>
       </div>
 
@@ -286,11 +443,8 @@ export default function EditClientPage() {
           </p>
           <DialogFooter className="edit-client-dialog-footer">
             <Button variant="outline" className="edit-client-dialog-button edit-client-dialog-button--outline" onClick={() => setSaveDialogOpen(false)}>Cancelar</Button>
-            <Button className="edit-client-dialog-button edit-client-dialog-button--primary" onClick={() => {
-              setSaveDialogOpen(false);
-              navigate(`/app/clientes/${id}`);
-            }}>
-              Confirmar
+            <Button className="edit-client-dialog-button edit-client-dialog-button--primary" onClick={handleSave} disabled={saving}>
+              {saving ? "Salvando..." : "Confirmar"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -300,27 +454,42 @@ export default function EditClientPage() {
 function Field({
   label,
   value,
-  defaultValue,
   onChange,
   type = "text",
   mono = false,
   placeholder,
   maxLength,
+  as = "input",
+  children,
+  disabled = false,
   ...props
 }) {
+  const Component = as;
   return <div className="edit-client-field">
       <Label className="edit-client-label">
         {label}
       </Label>
-      <Input
-        type={type}
-        value={value}
-        defaultValue={defaultValue}
-        onChange={onChange}
-        placeholder={placeholder}
-        maxLength={maxLength}
-        className={`edit-client-input ${mono ? "edit-client-input--mono" : ""}`}
-        {...props}
-      />
+      {as === "select" ? (
+        <select
+          value={value}
+          onChange={onChange}
+          className="edit-client-input"
+          disabled={disabled}
+          {...props}
+        >
+          {children}
+        </select>
+      ) : (
+        <Input
+          type={type}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          maxLength={maxLength}
+          disabled={disabled}
+          className={`edit-client-input ${mono ? "edit-client-input--mono" : ""}`}
+          {...props}
+        />
+      )}
     </div>;
 }

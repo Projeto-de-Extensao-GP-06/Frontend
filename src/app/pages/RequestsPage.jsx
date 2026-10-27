@@ -1,124 +1,141 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router";
 import { ChevronRight, Mail, Calendar, Inbox, Search, X } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge";
 import { FilterSelect } from "../components/FilterSelect";
 import { PaginationBar } from "../components/PaginationBar";
-import { mockRequests } from "../data/mockData";
+import { filtrarSolicitacoes, listarSolicitacoes, mapearSolicitacao } from "../services/solicitacaoService";
+import { brazilStates } from "../data/mockData";
 import "../../styles/requests-page.css";
-const TABS = [{
-  id: "todas",
-  label: "Todas"
-}, {
-  id: "pendente",
-  label: "Pendentes"
-}, {
-  id: "aceita",
-  label: "Aceitas"
-}];
+
+const PAGE_SIZE = 6;
+const API_PAGE_SIZE = 20;
+
+function sortParams(sortBy, filtered) {
+  if (sortBy === "antigo") {
+    return filtered
+      ? ["dataHoraInicio,asc"]
+      : ["dataHoraInicio,asc", "id,asc"];
+  }
+  return filtered
+    ? ["dataHoraInicio,desc"]
+    : ["dataHoraInicio,desc", "id,desc"];
+}
 
 export default function RequestsPage() {
   useEffect(() => {
-    document.title = "Solicitações";
+    document.title = "SGPJ | Solicitações";
   }, []);
 
-  const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState(() => {
-    const tab = searchParams.get("tab");
-    return TABS.some(t => t.id === tab) ? tab : "todas";
-  });
   const [search, setSearch] = useState("");
-  const [filterState, setFilterState] = useState("Todos");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [filterState, setFilterState] = useState("");
   const [sortBy, setSortBy] = useState("recente");
+  const [page, setPage] = useState(1);
+  const [result, setResult] = useState({ content: [], totalElements: 0, totalPages: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [retryIndex, setRetryIndex] = useState(0);
+  const requestSequence = useRef(0);
+  const activeController = useRef(null);
   const navigate = useNavigate();
+  const activeFilters = useMemo(() => ({ search: debouncedSearch, state: filterState }), [debouncedSearch, filterState]);
 
-  const stateOptions = ["Todos", ...Array.from(new Set(mockRequests.map(r => r.state)))];
-
-  const searchFiltered = mockRequests.filter(r => {
-    const q = search.trim().toLowerCase();
-    const cleanQ = q.replace(/[.\-/]/g, "");
-    const matchQ = !q ||
-      r.name.toLowerCase().includes(q) ||
-      (r.companyName && r.companyName.toLowerCase().includes(q)) ||
-      r.email.toLowerCase().includes(q) ||
-      (r.processNumber && (
-        r.processNumber.toLowerCase().includes(q) ||
-        (cleanQ && r.processNumber.replace(/[.\-/]/g, "").includes(cleanQ))
-      ));
-    const matchState = filterState === "Todos" || r.state === filterState;
-    return matchQ && matchState;
-  });
-
-  const counts = {
-    todas: searchFiltered.length,
-    pendente: searchFiltered.filter(r => r.status === "pendente").length,
-    aceita: searchFiltered.filter(r => r.status === "aceita").length
-  };
-
-  const filtered = activeTab === "todas"
-    ? searchFiltered
-    : searchFiltered.filter(r => r.status === activeTab);
-
-  const sorted = [...filtered].sort((a, b) => {
-    if (sortBy === "nome_asc" || sortBy === "az") return a.name.localeCompare(b.name, "pt");
-    if (sortBy === "nome_desc" || sortBy === "za") return b.name.localeCompare(a.name, "pt");
-    if (sortBy === "antigo") {
-      const [dayA, monthA, yearA] = a.createdAt.split("/");
-      const [dayB, monthB, yearB] = b.createdAt.split("/");
-      return new Date(`${yearA}-${monthA}-${dayA}`).getTime() - new Date(`${yearB}-${monthB}-${dayB}`).getTime();
+  useEffect(() => {
+    const normalizedSearch = search.trim();
+    if (normalizedSearch !== debouncedSearch) {
+      requestSequence.current += 1;
+      activeController.current?.abort();
+      setLoading(true);
     }
-    if (sortBy === "recente") {
-      const [dayA, monthA, yearA] = a.createdAt.split("/");
-      const [dayB, monthB, yearB] = b.createdAt.split("/");
-      return new Date(`${yearB}-${monthB}-${dayB}`).getTime() - new Date(`${yearA}-${monthA}-${dayA}`).getTime();
-    }
-    return 0;
-  });
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(normalizedSearch);
+      setPage(1);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [search, debouncedSearch]);
 
-  const hasActiveFilters = search !== "" || filterState !== "Todos" || activeTab !== "todas";
+  useEffect(() => {
+    const controller = new AbortController();
+    activeController.current = controller;
+    const sequence = ++requestSequence.current;
+    const filtered = Boolean(activeFilters.search || activeFilters.state);
+    const firstItemIndex = (page - 1) * PAGE_SIZE;
+    const apiPage = Math.floor(firstItemIndex / API_PAGE_SIZE);
+    const itemOffset = firstItemIndex % API_PAGE_SIZE;
+    const params = {
+      page: apiPage,
+      size: API_PAGE_SIZE,
+      sort: sortParams(sortBy, filtered),
+      signal: controller.signal,
+    };
+
+    setLoading(true);
+    setError(null);
+    const load = filtered
+      ? filtrarSolicitacoes({
+        ...params,
+        pesquisa: activeFilters.search,
+        estado: activeFilters.state,
+      })
+      : listarSolicitacoes(params);
+
+    load.then(async (response) => {
+      if (sequence !== requestSequence.current) return;
+      let content = Array.isArray(response?.content) ? response.content : [];
+      if (itemOffset + PAGE_SIZE > content.length && apiPage + 1 < (Number(response?.totalPages) || 0)) {
+        const nextParams = {
+          ...params,
+          page: apiPage + 1,
+        };
+        const nextResponse = filtered
+          ? await filtrarSolicitacoes({
+            ...nextParams,
+            pesquisa: activeFilters.search,
+            estado: activeFilters.state,
+          })
+          : await listarSolicitacoes(nextParams);
+        if (sequence !== requestSequence.current) return;
+        content = [...content, ...(Array.isArray(nextResponse?.content) ? nextResponse.content : [])];
+      }
+      const visibleContent = content.slice(itemOffset, itemOffset + PAGE_SIZE);
+      setResult({
+        content: visibleContent.map(mapearSolicitacao),
+        totalElements: Number(response?.totalElements) || 0,
+        totalPages: Number(response?.totalPages) || 0,
+        number: Number(response?.number) || 0,
+      });
+    }).catch((requestError) => {
+      if (controller.signal.aborted || sequence !== requestSequence.current) return;
+      setError(requestError.message || "Não foi possível carregar as solicitações.");
+      setResult({ content: [], totalElements: 0, totalPages: 0 });
+    }).finally(() => {
+      if (sequence === requestSequence.current && !controller.signal.aborted) setLoading(false);
+    });
+
+    return () => {
+      controller.abort();
+      if (activeController.current === controller) activeController.current = null;
+    };
+  }, [activeFilters, page, sortBy, retryIndex]);
+
+  const hasActiveFilters = Boolean(activeFilters.search || activeFilters.state);
+  const stateOptions = useMemo(() => ["", ...brazilStates], []);
+  const totalPages = Math.ceil(result.totalElements / PAGE_SIZE);
+  const safePage = totalPages ? Math.min(page, totalPages) : 1;
   const clearFilters = () => {
     setSearch("");
-    setFilterState("Todos");
-    setActiveTab("todas");
+    setFilterState("");
     setPage(1);
   };
 
-  const PAGE_SIZE = 6;
-  const [page, setPage] = useState(1);
-  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
-  const safePage = Math.min(page, totalPages);
-  const paginated = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
-
   return <div className="requests-page">
-      {/* ── Header ── */}
       <div className="requests-header">
-        <p className="page-kicker">
-          SGPJ
-        </p>
-        <h1 className="page-title">
-          Solicitações
-        </h1>
+        <p className="page-kicker">SGPJ</p>
+        <h1 className="page-title">Solicitações</h1>
       </div>
 
-      {/* ── Tab bar ── */}
-      <div className="requests-tabs-panel">
-        <div className="requests-tabs">
-          {TABS.map(tab => {
-          const isActive = activeTab === tab.id;
-          return <button key={tab.id} onClick={() => { setActiveTab(tab.id); setPage(1); }} className={`requests-tab ${isActive ? "is-active" : ""}`}>
-                <span className="requests-tab-label">{tab.label}</span>
-                <span className={`requests-tab-count ${isActive ? "is-active" : ""}`}>
-                  {counts[tab.id]}
-                </span>
-                {isActive && <div className="requests-tab-indicator" />}
-              </button>;
-        })}
-        </div>
-      </div>
-
-      {/* ── Search + Filters panel ── */}
       <div className="requests-panel">
-        {/* Search row */}
         <div className="requests-search-row">
           <div className="requests-search-wrap">
             <Search size={16} className="requests-search-icon" />
@@ -126,48 +143,34 @@ export default function RequestsPage() {
               type="text"
               placeholder="Pesquisar por nome, e-mail ou número CNJ..."
               value={search}
-              onChange={e => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
+              onChange={(event) => setSearch(event.target.value)}
               className="requests-search-input"
+              aria-label="Pesquisar solicitações"
             />
           </div>
-          <button className="requests-search-button">
+          <button className="requests-search-button" type="button" onClick={() => { setDebouncedSearch(search.trim()); setPage(1); }}>
             Buscar
           </button>
         </div>
 
-        {/* Divider */}
         <div className="requests-divider" />
-
-        {/* Filters row */}
         <div className="requests-filter-row">
           <div className="requests-filter-group-left">
-            <span className="requests-filter-label">
-              Filtros
-            </span>
-
+            <span className="requests-filter-label">Filtros</span>
             <FilterSelect
               prefix="requests"
+              className={`requests-filter-select${filterState ? " requests-filter-select--active" : ""}`}
               label="Estado"
               value={filterState}
-              onChange={val => {
-                setFilterState(val);
-                setPage(1);
-              }}
+              onChange={(value) => { setFilterState(value); setPage(1); }}
             >
-              {stateOptions.map(st => (
-                <option key={st} value={st}>
-                  {st}
-                </option>
+              {stateOptions.map((state) => (
+                <option key={state || "todos"} value={state}>{state || "Todos"}</option>
               ))}
             </FilterSelect>
-
             {hasActiveFilters && (
-              <button onClick={clearFilters} className="requests-clear-button">
-                <X size={11} />
-                Limpar filtros
+              <button onClick={clearFilters} className="requests-clear-button" type="button">
+                <X size={11} /> Limpar filtros
               </button>
             )}
           </div>
@@ -176,138 +179,93 @@ export default function RequestsPage() {
             <span className="requests-sort-label">Ordenar:</span>
             <select
               value={sortBy}
-              onChange={e => {
-                setSortBy(e.target.value);
-                setPage(1);
-              }}
+              onChange={(event) => { setSortBy(event.target.value); setPage(1); }}
               className="requests-sort-select"
+              aria-label="Ordenar solicitações"
             >
               <option value="recente">Data (Mais recente)</option>
               <option value="antigo">Data (Mais antiga)</option>
-              <option value="nome_asc">Nome do solicitante (A → Z)</option>
-              <option value="nome_desc">Nome do solicitante (Z → A)</option>
             </select>
           </div>
         </div>
       </div>
 
-      {/* ── Results count ── */}
       <div className="requests-results-row">
         <p className="requests-results-count">
-          {sorted.length === mockRequests.length
-            ? `${sorted.length} solicitações`
-            : `${sorted.length} de ${mockRequests.length} solicitações`}
+          {loading ? "Carregando solicitações..." : `${result.totalElements} solicitações`}
         </p>
-        {sorted.length > 0 && (
-          <p className="requests-results-tip">
-            Clique em uma solicitação para ver detalhes
-          </p>
+        {!loading && result.totalElements > 0 && (
+          <p className="requests-results-tip">Clique em uma solicitação para ver detalhes</p>
         )}
       </div>
 
-      {/* ── List / empty state ── */}
-      {sorted.length === 0 ? (
+      {loading ? (
+        <div className="requests-empty-state" role="status">
+          <p className="requests-empty-title">Carregando solicitações...</p>
+        </div>
+      ) : error ? (
+        <div className="requests-empty-state" role="alert">
+          <p className="requests-empty-title">Não foi possível carregar as solicitações</p>
+          <p className="requests-empty-text">{error}</p>
+          <button onClick={() => setRetryIndex((index) => index + 1)} className="requests-empty-clear" type="button">
+            Tentar novamente
+          </button>
+        </div>
+      ) : result.content.length === 0 ? (
         <div className="requests-empty-state">
-          <div className="requests-empty-icon-wrap">
-            <Inbox size={24} className="requests-empty-icon" />
-          </div>
-          <p className="requests-empty-title">
-            Nenhuma solicitação encontrada
-          </p>
-          <p className="requests-empty-text">
-            Tente ajustar os filtros de busca
-          </p>
+          <div className="requests-empty-icon-wrap"><Inbox size={24} className="requests-empty-icon" /></div>
+          <p className="requests-empty-title">Nenhuma solicitação encontrada</p>
+          <p className="requests-empty-text">Tente ajustar os filtros de busca</p>
           {hasActiveFilters && (
-            <button onClick={clearFilters} className="requests-empty-clear">
-              Limpar filtros
-            </button>
+            <button onClick={clearFilters} className="requests-empty-clear" type="button">Limpar filtros</button>
           )}
         </div>
       ) : (
         <div className="requests-grid">
-          {paginated.map(r => (
+          {result.content.map((request) => (
             <RequestCard
-              key={r.id}
-              request={r}
-              onClick={() => navigate(`/app/solicitacoes/${r.id}`)}
+              key={request.id}
+              request={request}
+              onClick={() => navigate(`/app/solicitacoes/${request.id}`)}
             />
           ))}
         </div>
       )}
-      <PaginationBar page={safePage} total={totalPages} onPage={setPage} />
+      {!loading && !error && <PaginationBar page={safePage} total={totalPages} onPage={setPage} />}
     </div>;
 }
 
-function RequestCard({
-  request,
-  onClick
-}) {
-  return <div onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === "Enter" && onClick()} className="request-card">
-      {/* Card body */}
+function RequestCard({ request, onClick }) {
+  return <div onClick={onClick} role="button" tabIndex={0} onKeyDown={(event) => event.key === "Enter" && onClick()} className="request-card">
       <div className="request-card-body">
-        {/* Name + status + chevron */}
         <div className="request-card-topline">
-          <p className="request-card-name">
-            {request.companyName || request.name}
-          </p>
+          <p className="request-card-name">{request.companyName || request.name}</p>
           <div className="request-card-actions">
-            <span
-              style={{
-                fontSize: "0.6875rem",
-                fontWeight: "700",
-                padding: "0.15rem 0.45rem",
-                borderRadius: "0.375rem",
-                backgroundColor: request.type === "PJ" ? "#eef1f8" : "#f1f5f9",
-                color: request.type === "PJ" ? "#0f2357" : "#475569",
-                border: "1px solid #e2e8f0"
-              }}
-            >
-              {request.type === "PJ" ? "PJ" : "PF"}
-            </span>
+            <span style={{
+              fontSize: "0.6875rem",
+              fontWeight: "700",
+              padding: "0.15rem 0.45rem",
+              borderRadius: "0.375rem",
+              backgroundColor: request.type === "PJ" ? "#f5edd8" : "#eef1f8",
+              color: request.type === "PJ" ? "#8b6234" : "#1d4ed8",
+              border: "1px solid #e2e8f0",
+            }}>{request.type}</span>
             <StatusBadge status={request.status} />
             <ChevronRight size={14} className="request-card-chevron" />
           </div>
         </div>
-
-        {/* State + date — secondary hierarchy */}
         <div className="request-card-meta">
-          {request.companyName && (
-            <>
-              <span className="request-card-contact-name">Contato: {request.name}</span>
-              <span className="request-card-dot">·</span>
-            </>
-          )}
+          {request.companyName && <><span className="request-card-contact-name">Contato: {request.name}</span><span className="request-card-dot">·</span></>}
           <span className="request-card-state">{request.state}</span>
           <span className="request-card-dot">·</span>
-          <span className="request-card-date">
-            <Calendar size={10} className="request-card-date-icon" />
-            {request.createdAt}
-          </span>
+          <span className="request-card-date"><Calendar size={10} className="request-card-date-icon" />{request.createdAt}</span>
         </div>
-
-        {/* Description */}
-        <p className="request-card-description">
-          {request.description}
-        </p>
-
-        {/* Process number (if linked) */}
+        <p className="request-card-description">{request.description}</p>
         {request.processNumber && <div className="request-card-process">
-            <div className="request-card-process-pill">
-              <span className="request-card-process-number">
-                {request.processNumber}
-              </span>
-            </div>
-            {request.judgingBody && <p className="request-card-body-text">
-                <span className="request-card-body-label">Órgão:</span>{" "}
-                {request.judgingBody}
-              </p>}
-          </div>}
+          <div className="request-card-process-pill"><span className="request-card-process-number">{request.processNumber}</span></div>
+          {request.judgingBody && <p className="request-card-body-text"><span className="request-card-body-label">Órgão:</span> {request.judgingBody}</p>}
+        </div>}
       </div>
-
-      {/* Card footer — email */}
-      <div className="request-card-footer">
-        <Mail size={11} className="request-card-mail" />
-        <span className="request-card-email">{request.email}</span>
-      </div>
+      <div className="request-card-footer"><Mail size={11} className="request-card-mail" /><span className="request-card-email">{request.email}</span></div>
     </div>;
 }

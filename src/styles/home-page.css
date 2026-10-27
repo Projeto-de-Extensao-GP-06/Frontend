@@ -15,7 +15,7 @@
 .page-kicker {
   margin: 0 0 0.125rem;
   color: #9ca3af;
-  font-size: 11px;
+  font-size: clamp(0.58rem, 0.52rem + 0.2vw, 0.6875rem);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -25,7 +25,7 @@
   margin: 0;
   color: #0f2357;
   font-family: "Playfair Display", serif;
-  font-size: 26px;
+  font-size: clamp(1.2rem, 1.05rem + 0.8vw, 1.625rem);
   font-weight: 700;
   line-height: 1.2;
 }
@@ -114,6 +114,17 @@
   padding: 0.875rem;
   box-shadow: 0 1px 2px rgba(17, 24, 39, 0.06);
   min-width: 0;
+}
+
+.metric-card--clickable {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.metric-card--clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(17, 24, 39, 0.08);
+  border-color: #cbd5e1;
 }
 
 .metric-card-badge {
@@ -500,7 +511,7 @@
 .process-card-name {
   margin: 0 0 0.75rem;
   color: #0f2357;
-  font-size: 15px;
+  font-size: clamp(0.85rem, 0.8rem + 0.2vw, 0.95rem);
   font-weight: 600;
   line-height: 1.3;
 }

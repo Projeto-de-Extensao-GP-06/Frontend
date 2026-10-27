@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronUp,
   Calendar,
+  Download,
 } from "lucide-react";
 import {
   StatusBadge,
@@ -53,6 +54,8 @@ import {
 import { maskCNJ } from "../utils/masks";
 import { toast } from "sonner";
 import { useSyncProcess } from "../contexts/SyncProcessContext";
+import { useAuth } from "../contexts/AuthContext";
+import { hasPermission } from "../utils/permissions";
 import "../../styles/process-detail-page.css";
 
 /* ─ helpers ─ */
@@ -116,6 +119,10 @@ export default function ProcessDetailPage() {
   const location = useLocation();
   const { iniciarSincronizacao, isSincronizando, ultimoProcessoSincronizadoId } = useSyncProcess();
   const syncing = isSincronizando(id);
+  const { user } = useAuth();
+  const canEditProcess = hasPermission(user, "EDITAR PROCESSO");
+  const canDeleteProcess = hasPermission(user, "EXCLUIR PROCESSO");
+  const canCreateDocument = hasPermission(user, "CRIAR DOCUMENTO");
 
   const [deleting, setDeleting] = useState(false);
   const [reactivating, setReactivating] = useState(false);
@@ -186,7 +193,7 @@ export default function ProcessDetailPage() {
         setObservationsText(dados.observationsText);
         setDocuments(docs);
         setHistoryVisible(HISTORY_INITIAL);
-        document.title = `Processo - ${dados.clientName}`;
+        document.title = `SGPJ | Processo - ${dados.clientName}`;
       } catch (err) {
         console.error("Erro ao carregar processo:", err);
         if (err.response?.status === 401) {
@@ -797,8 +804,9 @@ export default function ProcessDetailPage() {
               <button
                 type="button"
                 className="proc-doc-empty"
-                onClick={() => setUploadModalOpen(true)}
-                disabled={uploadingDocuments}
+                onClick={() => canCreateDocument && setUploadModalOpen(true)}
+                disabled={uploadingDocuments || !canCreateDocument}
+                title={canCreateDocument ? "Adicionar arquivo" : "Sem permissão para criar documento"}
               >
                 <Plus size={20} className="proc-doc-empty__icon" />
                 <p className="proc-doc-empty__text">Adicionar arquivo</p>
@@ -830,13 +838,27 @@ export default function ProcessDetailPage() {
 
                 return (
                   <div key={doc.id} className="proc-doc-card">
+                    {(doc.downloadUrl || doc.url) && (
+                      <a
+                        href={doc.downloadUrl || doc.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        download={doc.name}
+                        className="proc-doc-card__download"
+                        title={`Baixar ${doc.name}`}
+                        aria-label={`Baixar documento ${doc.name}`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Download size={13} />
+                      </a>
+                    )}
                     {doc.url ? (
                       <a
                         href={doc.url}
                         target="_blank"
                         rel="noreferrer"
                         className="proc-doc-card__link"
-                        title={`Abrir ${doc.name}`}
+                        title={`Visualizar ${doc.name}`}
                       >
                         {content}
                       </a>
@@ -850,8 +872,9 @@ export default function ProcessDetailPage() {
                 <button
                   type="button"
                   className="proc-doc-add"
-                  onClick={() => setUploadModalOpen(true)}
-                  disabled={uploadingDocuments}
+                  onClick={() => canCreateDocument && setUploadModalOpen(true)}
+                  disabled={uploadingDocuments || !canCreateDocument}
+                  title={canCreateDocument ? "Adicionar arquivo" : "Sem permissão para criar documento"}
                 >
                   <Plus size={20} className="proc-doc-add__icon" />
                   <p className="proc-doc-add__label">Adicionar arquivo</p>
@@ -873,16 +896,20 @@ export default function ProcessDetailPage() {
           )}
           {!isClosed && !isSuspended && (
             <button
-              onClick={() => navigate(`/app/processos/${id}/editar`)}
+              onClick={() => canEditProcess && navigate(`/app/processos/${id}/editar`)}
               className="proc-actions__btn proc-actions__btn--primary"
+              disabled={!canEditProcess}
+              title={canEditProcess ? "Editar Processo" : "Sem permissão para editar processo"}
             >
               <Pencil size={15} />
               Editar Processo
             </button>
           )}
           <button
-            onClick={() => setDeleteDialog(true)}
+            onClick={() => canDeleteProcess && setDeleteDialog(true)}
             className="proc-actions__btn proc-actions__btn--danger"
+            disabled={!canDeleteProcess}
+            title={canDeleteProcess ? "Excluir" : "Sem permissão para excluir processo"}
           >
             <Trash2 size={15} />
             Excluir

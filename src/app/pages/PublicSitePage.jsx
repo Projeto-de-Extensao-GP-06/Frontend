@@ -1,15 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router";
-import { Menu, X, Instagram, Linkedin, Phone, Mail, ChevronRight, CheckCircle, Send, Shield, Briefcase, Users, User, Building2, Check, HeartHandshake, Landmark } from "lucide-react";
+import { Menu, X, Instagram, Linkedin, Phone, Mail, ChevronRight, CheckCircle, Send, Shield, Briefcase, Users, User, Building2, Check, HeartHandshake, Landmark, Loader2 } from "lucide-react";
 import WhatsAppIcon from "@mui/icons-material/WhatsApp";
+import { Turnstile } from "@marsidev/react-turnstile";
+import { toast } from "sonner";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
 import { Checkbox } from "../components/ui/checkbox";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
-import { maskPhone, maskCNJ } from "../utils/masks";
+import { maskPhone, maskCNJ, maskCNPJ } from "../utils/masks";
+import { isValidCNPJ, isValidEmail, isValidPhone, isValidCNJ } from "../utils/validators";
 import { brazilStates } from "../data/mockData";
+import { criarSolicitacao } from "../services/solicitacaoService";
 import siteLogoImage from "../../imports/Captura_de_tela_2026-05-29_235111-1.png";
 import "../../styles/public-site-page.css";
 const areas = [{
@@ -42,28 +46,116 @@ const steps = [{
   title: "Entramos em contato",
   desc: "Retornamos com orientações claras e próximos passos personalizados."
 }];
+const COMO_CONHECEU_OPTIONS = [
+  { value: "INSTAGRAM", label: "Instagram" },
+  { value: "SITE", label: "Site" },
+  { value: "INDICACAO", label: "Indicação" },
+  { value: "OUTROS", label: "Outros" },
+];
+
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || "1x00000000000000000000AA";
+
+const STORAGE_KEY_FORM = "public_site_contact_form";
+const STORAGE_KEY_SCROLL = "public_site_scroll_pos";
+
+const getSavedFormData = () => {
+  try {
+    const saved = sessionStorage.getItem(STORAGE_KEY_FORM);
+    return saved ? JSON.parse(saved) : null;
+  } catch {
+    return null;
+  }
+};
+
 export default function PublicSitePage() {
+  const savedData = getSavedFormData();
+
   useEffect(() => {
-    document.title = "Thauany Bezerra Advogada";
+    document.title = "SGPJ | Início";
   }, []);
 
   const [menuOpen, setMenuOpen] = useState(false);
-  const [accepted, setAccepted] = useState(false);
-  const [clientType, setClientType] = useState("PF");
+  const [accepted, setAccepted] = useState(savedData?.accepted ?? false);
+  const [clientType, setClientType] = useState(savedData?.clientType ?? "PF");
   const [submitted, setSubmitted] = useState(false);
 
   // Form states
-  const [name, setName] = useState("");
-  const [companyName, setCompanyName] = useState("");
-  const [contactName, setContactName] = useState("");
-  const [profession, setProfession] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [state, setState] = useState("");
-  const [processNumber, setProcessNumber] = useState("");
-  const [description, setDescription] = useState("");
+  const [name, setName] = useState(savedData?.name ?? "");
+  const [companyName, setCompanyName] = useState(savedData?.companyName ?? "");
+  const [cnpj, setCnpj] = useState(savedData?.cnpj ?? "");
+  const [contactName, setContactName] = useState(savedData?.contactName ?? "");
+  const [profession, setProfession] = useState(savedData?.profession ?? "");
+  const [email, setEmail] = useState(savedData?.email ?? "");
+  const [phone, setPhone] = useState(savedData?.phone ?? "");
+  const [state, setState] = useState(savedData?.state ?? "");
+  const [processNumber, setProcessNumber] = useState(savedData?.processNumber ?? "");
+  const [comoConheceu, setComoConheceu] = useState(savedData?.comoConheceu ?? "");
+  const [description, setDescription] = useState(savedData?.description ?? "");
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [honeypot, setHoneypot] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const turnstileRef = useRef(null);
 
   const navigate = useNavigate();
+
+  // Scroll restoration & tracking
+  useEffect(() => {
+    try {
+      const savedScroll = sessionStorage.getItem(STORAGE_KEY_SCROLL);
+      if (savedScroll !== null) {
+        const scrollY = parseFloat(savedScroll);
+        if (!isNaN(scrollY) && scrollY > 0) {
+          requestAnimationFrame(() => {
+            window.scrollTo({ top: scrollY, behavior: "instant" });
+          });
+          const t = setTimeout(() => {
+            window.scrollTo({ top: scrollY, behavior: "instant" });
+          }, 50);
+          return () => clearTimeout(t);
+        }
+      }
+    } catch {}
+
+    const saveScroll = () => {
+      try {
+        sessionStorage.setItem(STORAGE_KEY_SCROLL, String(window.scrollY));
+      } catch {}
+    };
+
+    window.addEventListener("scroll", saveScroll, { passive: true });
+    window.addEventListener("beforeunload", saveScroll);
+
+    return () => {
+      saveScroll();
+      window.removeEventListener("scroll", saveScroll);
+      window.removeEventListener("beforeunload", saveScroll);
+    };
+  }, []);
+
+  // Save form data continuously
+  useEffect(() => {
+    if (!submitted) {
+      const formData = {
+        clientType,
+        name,
+        companyName,
+        cnpj,
+        contactName,
+        profession,
+        email,
+        phone,
+        state,
+        processNumber,
+        comoConheceu,
+        description,
+        accepted,
+      };
+      try {
+        sessionStorage.setItem(STORAGE_KEY_FORM, JSON.stringify(formData));
+      } catch {}
+    }
+  }, [clientType, name, companyName, cnpj, contactName, profession, email, phone, state, processNumber, comoConheceu, description, accepted, submitted]);
+
   const scrollTo = id => {
     document.getElementById(id)?.scrollIntoView({
       behavior: "smooth"
@@ -71,23 +163,208 @@ export default function PublicSitePage() {
     setMenuOpen(false);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitted(true);
+    if (honeypot) {
+      // Descarte silencioso de envio automatizado de bot (honeypot)
+      return;
+    }
+
+    const isPF = clientType === "PF";
+    const nomeCompletoValor = (isPF ? name : contactName).trim();
+    const profissaoValor = profession.trim();
+    const emailValor = email.trim();
+    const telefoneValor = phone.trim();
+    const descricaoValor = description.trim();
+    const razaoSocialValor = companyName.trim();
+
+    // 1. Validações de Identificação (PF / PJ)
+    if (isPF) {
+      if (!nomeCompletoValor) {
+        toast.warning("Por favor, preencha o seu nome completo.");
+        return;
+      }
+      if (nomeCompletoValor.length > 150) {
+        toast.warning("O nome completo deve ter no máximo 150 caracteres.");
+        return;
+      }
+      if (nomeCompletoValor.split(/\s+/).length < 2) {
+        toast.warning("Por favor, informe seu nome completo (nome e sobrenome).");
+        return;
+      }
+      if (!profissaoValor) {
+        toast.warning("Por favor, informe sua profissão ou ocupação.");
+        return;
+      }
+      if (profissaoValor.length > 100) {
+        toast.warning("A profissão deve ter no máximo 100 caracteres.");
+        return;
+      }
+    } else {
+      if (!razaoSocialValor) {
+        toast.warning("Por favor, informe a razão social ou nome da empresa.");
+        return;
+      }
+      if (razaoSocialValor.length > 150) {
+        toast.warning("A razão social deve ter no máximo 150 caracteres.");
+        return;
+      }
+      if (!cnpj.trim()) {
+        toast.warning("Por favor, informe o CNPJ da empresa.");
+        return;
+      }
+      if (!isValidCNPJ(cnpj)) {
+        toast.warning("O CNPJ informado é inválido. Verifique os dígitos informados.");
+        return;
+      }
+      if (!nomeCompletoValor) {
+        toast.warning("Por favor, informe o nome do contato principal.");
+        return;
+      }
+      if (nomeCompletoValor.length > 150) {
+        toast.warning("O nome do contato principal deve ter no máximo 150 caracteres.");
+        return;
+      }
+      if (!profissaoValor) {
+        toast.warning("Por favor, informe o cargo do contato principal.");
+        return;
+      }
+      if (profissaoValor.length > 100) {
+        toast.warning("O cargo deve ter no máximo 100 caracteres.");
+        return;
+      }
+    }
+
+    // 2. Validações de Contato (E-mail e Telefone)
+    if (!emailValor) {
+      toast.warning("Por favor, informe o endereço de e-mail.");
+      return;
+    }
+    if (emailValor.length > 255) {
+      toast.warning("O e-mail deve ter no máximo 255 caracteres.");
+      return;
+    }
+    if (!isValidEmail(emailValor)) {
+      toast.warning("Por favor, informe um endereço de e-mail válido (ex: seu@email.com).");
+      return;
+    }
+
+    if (!telefoneValor) {
+      toast.warning("Por favor, informe o telefone / WhatsApp para contato.");
+      return;
+    }
+    if (!isValidPhone(telefoneValor)) {
+      toast.warning("Por favor, informe um telefone válido com DDD (ex: (11) 98765-4321).");
+      return;
+    }
+
+    // 3. Validação do Número do Processo (CNJ) - se informado
+    if (processNumber && processNumber.trim()) {
+      if (!isValidCNJ(processNumber)) {
+        toast.warning("O número do processo (CNJ) deve conter os 20 dígitos completos ou ser deixado em branco.");
+        return;
+      }
+    }
+
+    // 4. Como conheceu
+    if (!comoConheceu || !COMO_CONHECEU_OPTIONS.some((o) => o.value === comoConheceu)) {
+      toast.warning("Por favor, selecione como você conheceu o escritório.");
+      return;
+    }
+
+    // 5. Descrição do caso
+    if (!descricaoValor) {
+      toast.warning("Por favor, descreva sua situação ou dúvida.");
+      return;
+    }
+    if (descricaoValor.length < 10) {
+      toast.warning("Por favor, forneça mais detalhes sobre o seu caso (mínimo de 10 caracteres).");
+      return;
+    }
+    if (descricaoValor.length > 2000) {
+      toast.warning("A descrição deve ter no máximo 2000 caracteres.");
+      return;
+    }
+
+    // 6. Aceite dos termos
+    if (!accepted) {
+      toast.warning("É necessário aceitar as Políticas de Privacidade e os Termos de Uso.");
+      return;
+    }
+
+    // 7. Verificação Cloudflare Turnstile
+    if (!turnstileToken) {
+      toast.warning("Por favor, resolva a verificação anti-robô antes de enviar.");
+      return;
+    }
+
+    const payload = {
+      isPF,
+      nomeCompleto: nomeCompletoValor,
+      email: emailValor,
+      telefone: telefoneValor.replace(/\D/g, ""),
+      descricao: descricaoValor,
+      comoConheceu,
+      aceitouTermos: accepted,
+      numeroProcesso: processNumber?.trim() ? processNumber.replace(/\D/g, "") : null,
+      razaoSocial: !isPF ? razaoSocialValor : null,
+      cnpj: !isPF && cnpj ? cnpj.replace(/[^0-9A-Za-z]/g, "").toUpperCase() : null,
+      estado,
+      turnstileToken,
+    };
+
+    setIsSubmitting(true);
+    try {
+      await criarSolicitacao(payload);
+      setSubmitted(true);
+      toast.success("Solicitação enviada com sucesso!");
+      try {
+        sessionStorage.removeItem(STORAGE_KEY_FORM);
+        sessionStorage.removeItem(STORAGE_KEY_SCROLL);
+      } catch {}
+    } catch (err) {
+      let mensagemErro = "Não foi possível enviar sua solicitação. Tente novamente mais tarde.";
+      if (err.response?.data?.errors && typeof err.response.data.errors === "object") {
+        const errorList = Object.values(err.response.data.errors);
+        if (errorList.length > 0) {
+          mensagemErro = errorList[0];
+        }
+      } else if (err.response?.data?.message) {
+        mensagemErro = err.response.data.message;
+      } else if (err.response?.data?.mensagem) {
+        mensagemErro = err.response.data.mensagem;
+      } else if (err.message) {
+        mensagemErro = err.message;
+      }
+      toast.error(mensagemErro);
+      setTurnstileToken("");
+      turnstileRef.current?.reset?.();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleReset = () => {
     setName("");
     setCompanyName("");
+    setCnpj("");
     setContactName("");
     setProfession("");
     setEmail("");
     setPhone("");
     setState("");
     setProcessNumber("");
+    setComoConheceu("");
     setDescription("");
     setAccepted(false);
+    setTurnstileToken("");
+    setHoneypot("");
+    turnstileRef.current?.reset?.();
     setSubmitted(false);
+    try {
+      sessionStorage.removeItem(STORAGE_KEY_FORM);
+      sessionStorage.removeItem(STORAGE_KEY_SCROLL);
+    } catch {}
   };
   return <div className="public-site">
 
@@ -308,6 +585,7 @@ export default function PublicSitePage() {
                           onChange={(e) => setName(e.target.value)}
                           className="site-contact-input"
                           placeholder="Seu nome completo"
+                          maxLength={150}
                         />
                       </div>
 
@@ -319,6 +597,7 @@ export default function PublicSitePage() {
                           onChange={(e) => setProfession(e.target.value)}
                           className="site-contact-input"
                           placeholder="Ex: Engenheiro, Professor, Autônomo"
+                          maxLength={100}
                         />
                       </div>
 
@@ -331,6 +610,7 @@ export default function PublicSitePage() {
                           onChange={(e) => setEmail(e.target.value)}
                           className="site-contact-input"
                           placeholder="seu@email.com"
+                          maxLength={255}
                         />
                       </div>
 
@@ -348,7 +628,7 @@ export default function PublicSitePage() {
                     </>
                   ) : (
                     <>
-                      <div className="site-contact-grid__full">
+                      <div>
                         <Label className="site-contact-label">Razão Social / Nome da Empresa *</Label>
                         <Input
                           required
@@ -356,6 +636,19 @@ export default function PublicSitePage() {
                           onChange={(e) => setCompanyName(e.target.value)}
                           className="site-contact-input"
                           placeholder="Ex: Construtech Soluções e Engenharia LTDA"
+                          maxLength={150}
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="site-contact-label">CNPJ *</Label>
+                        <Input
+                          required
+                          value={cnpj}
+                          onChange={(e) => setCnpj(maskCNPJ(e.target.value))}
+                          className="site-contact-input site-contact-input--mono"
+                          placeholder="00.000.000/0000-00"
+                          maxLength={18}
                         />
                       </div>
 
@@ -365,9 +658,6 @@ export default function PublicSitePage() {
                             <User size={16} style={{ color: "#0f2357" }} />
                             <h4 className="site-contact-pj-title">Contato Principal da Empresa</h4>
                           </div>
-                          <span className="site-contact-pj-badge">
-                            <Check size={11} /> Contato Principal
-                          </span>
                         </div>
                         <p className="site-contact-pj-notice">
                           Informe abaixo o responsável que será registrado como o <strong>contato principal</strong> para o acompanhamento deste caso.
@@ -382,6 +672,7 @@ export default function PublicSitePage() {
                               onChange={(e) => setContactName(e.target.value)}
                               className="site-contact-input"
                               placeholder="Ex: Carlos Mendes"
+                              maxLength={150}
                             />
                           </div>
 
@@ -393,6 +684,7 @@ export default function PublicSitePage() {
                               onChange={(e) => setProfession(e.target.value)}
                               className="site-contact-input"
                               placeholder="Ex: Diretor Executivo, Gerente Jurídico"
+                              maxLength={100}
                             />
                           </div>
 
@@ -405,6 +697,7 @@ export default function PublicSitePage() {
                               onChange={(e) => setEmail(e.target.value)}
                               className="site-contact-input"
                               placeholder="carlos@empresa.com.br"
+                              maxLength={255}
                             />
                           </div>
 
@@ -425,19 +718,17 @@ export default function PublicSitePage() {
                   )}
 
                   <div>
-                    <Label className="site-contact-label">Estado *</Label>
+                    <Label htmlFor="estado" className="site-contact-label">Estado (UF) *</Label>
                     <select
+                      id="estado"
+                      name="estado"
                       required
                       value={state}
                       onChange={(e) => setState(e.target.value)}
                       className="site-contact-select"
                     >
-                      <option value="">Selecione...</option>
-                      {brazilStates.map((st) => (
-                        <option key={st} value={st}>
-                          {st}
-                        </option>
-                      ))}
+                      <option value="" disabled>Selecione seu estado</option>
+                      {brazilStates.map((uf) => <option key={uf} value={uf}>{uf}</option>)}
                     </select>
                   </div>
 
@@ -452,15 +743,44 @@ export default function PublicSitePage() {
                     />
                   </div>
 
-                  <div className="site-contact-grid__full">
-                    <Label className="site-contact-label">
-                      {clientType === "PF" ? "Descreva sua Situação *" : "Descreva a Necessidade da Empresa *"}
+                  <div>
+                    <Label htmlFor="comoConheceu" className="site-contact-label">
+                      Como conheceu? *
                     </Label>
+                    <select
+                      id="comoConheceu"
+                      name="comoConheceu"
+                      required
+                      value={comoConheceu}
+                      onChange={(e) => setComoConheceu(e.target.value)}
+                      className="site-contact-select"
+                    >
+                      <option value="" disabled>
+                        Selecione uma opção
+                      </option>
+                      {COMO_CONHECEU_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="site-contact-grid__full">
+                    <div className="site-contact-label-wrap">
+                      <Label className="site-contact-label" style={{ marginBottom: 0 }}>
+                        {clientType === "PF" ? "Descreva sua Situação *" : "Descreva a Necessidade da Empresa *"}
+                      </Label>
+                      <span className="site-contact-char-count">
+                        {description.length}/2000 caracteres
+                      </span>
+                    </div>
                     <Textarea
                       required
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       className="site-contact-textarea"
+                      maxLength={2000}
                       placeholder={
                         clientType === "PF"
                           ? "Descreva brevemente o seu caso..."
@@ -489,10 +809,53 @@ export default function PublicSitePage() {
                   </label>
                 </div>
 
-                <Button type="submit" disabled={!accepted} className="site-contact-submit">
-                  <Send size={16} />
-                  Enviar caso
-                </Button>
+                {/* Honeypot field (proteção silenciosa contra bots) */}
+                <div style={{ display: "none" }} aria-hidden="true">
+                  <input
+                    type="text"
+                    name="website_url_hp"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={honeypot}
+                    onChange={(e) => setHoneypot(e.target.value)}
+                  />
+                </div>
+
+                {/* Ações: Desafio Cloudflare Turnstile + Botão Enviar caso */}
+                <div className="site-contact-actions">
+                  <div className="site-contact-turnstile">
+                    <Turnstile
+                      ref={turnstileRef}
+                      siteKey={TURNSTILE_SITE_KEY}
+                      onSuccess={(token) => setTurnstileToken(token)}
+                      onError={() => setTurnstileToken("")}
+                      onExpire={() => setTurnstileToken("")}
+                      options={{
+                        theme: "light",
+                        language: "pt-br",
+                        appearance: "always",
+                      }}
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={!accepted || !turnstileToken || isSubmitting}
+                    className="site-contact-submit"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <Send size={16} />
+                        Enviar caso
+                      </>
+                    )}
+                  </Button>
+                </div>
               </form>
             )}
           </div>
@@ -501,7 +864,7 @@ export default function PublicSitePage() {
 
       <footer className="site-footer">
         <div className="site-footer__inner">
-          <div className="site-footer__logo"><ImageWithFallback src={siteLogoImage} alt="Thauany Bezerra Advocacia" className="site-logo" /></div>
+          <div className="site-footer__logo"><ImageWithFallback src={siteLogoImage} alt="Thauany Bezerra Advocacia" style={{ width: '13rem', height: 'auto', marginTop: '1.2rem' }} className="site-logo" /></div>
           <div className="site-footer__contacts">
             <a href={whatsappUrl} target="_blank" rel="noreferrer" className="site-footer__contact"><Phone size={16} className="site-footer__contact-icon" /><span className="site-footer__contact-text">(11) 98766-4030</span></a>
             <a href="mailto:tthauany.bezerra@gmail.com" className="site-footer__contact"><Mail size={16} className="site-footer__contact-icon" /><span className="site-footer__contact-text">tthauany.bezerra@gmail.com</span></a>

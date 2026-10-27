@@ -23,7 +23,7 @@ export default function PasswordResetPage() {
   const title = isFirstAccess ? "Definir Senha" : "Redefinir Senha";
 
   useEffect(() => {
-    document.title = title;
+    document.title = `SGPJ | ${title}`;
   }, [title]);
 
   // Controle de etapas do fluxo: "email" -> "code" -> "newpass"
