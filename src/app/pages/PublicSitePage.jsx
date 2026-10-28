@@ -14,7 +14,7 @@ import { maskPhone, maskCNJ, maskCNPJ } from "../utils/masks";
 import { isValidCNPJ, isValidEmail, isValidPhone, isValidCNJ } from "../utils/validators";
 import { brazilStates } from "../data/mockData";
 import { criarSolicitacao } from "../services/solicitacaoService";
-import siteLogoImage from "../../imports/Captura_de_tela_2026-05-29_235111-1.png";
+import siteLogoImage from "../../imports/nova_logo.jpeg";
 import "../../styles/public-site-page.css";
 const areas = [{
   icon: Briefcase,

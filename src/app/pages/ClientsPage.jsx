@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { Plus, Search, Users, Trash2, Pencil, LoaderCircle, AlertCircle } from "lucide-react";
+import { Plus, Search, Users, LoaderCircle, AlertCircle } from "lucide-react";
 import { ClientCard } from "../components/ClientCard";
 import { PaginationBar } from "../components/PaginationBar";
 import { clienteService, getClienteError } from "../services/clienteService";
@@ -16,8 +16,6 @@ export default function ClientsPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const canCreateClient = hasPermission(user, "CRIAR CLIENTE");
-  const canEditClient = hasPermission(user, "EDITAR CLIENTE");
-  const canDeleteClient = hasPermission(user, "EXCLUIR CLIENTE");
 
   const [clients, setClients] = useState([]);
   const [search, setSearch] = useState("");
@@ -52,16 +50,6 @@ export default function ClientsPage() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const visible = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
-
-  const handleDelete = async (client) => {
-    if (!window.confirm(`Excluir o cliente ${client.name}?`)) return;
-    try {
-      await clienteService.remove(client.id);
-      await loadClients();
-    } catch (requestError) {
-      window.alert(getClienteError(requestError));
-    }
-  };
 
   return <div className="clients-page">
       {/* ── Header ── */}
@@ -156,32 +144,6 @@ export default function ClientsPage() {
               key={client.id}
               client={client}
               onClick={() => navigate(`/app/clientes/${client.id}`)}
-              actions={
-                <>
-                  <button
-                    aria-label={`Editar ${client.name}`}
-                    title={canEditClient ? "Editar" : "Sem permissão para editar cliente"}
-                    disabled={!canEditClient}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      if (canEditClient) navigate(`/app/clientes/${client.id}/editar`);
-                    }}
-                  >
-                    <Pencil size={15} />
-                  </button>
-                  <button
-                    aria-label={`Excluir ${client.name}`}
-                    title={canDeleteClient ? "Excluir" : "Sem permissão para excluir cliente"}
-                    disabled={!canDeleteClient}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      if (canDeleteClient) handleDelete(client);
-                    }}
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </>
-              }
             />
           ))}
         </div>
