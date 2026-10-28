@@ -246,7 +246,7 @@ function montarPayloadExistente(raw, observacao) {
     observacao,
     prioridadeId: raw.prioridade?.id,
     faseProcessoId: raw.faseProcesso?.id,
-    siglaTribunalId: raw.siglaTribunal?.id,
+
     dataAudiencia: raw.dataAudiencia || null,
     valorCausa: raw.valorCausa ?? null,
     status: raw.status,

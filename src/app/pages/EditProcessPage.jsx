@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from "react-router";
 import { ArrowLeft, X, Trash2, Save, CheckCircle, AlertTriangle, Loader2, Plus, CloudUpload } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -58,6 +58,7 @@ export default function EditProcessPage() {
   const [process, setProcess] = useState(null);
   const [selectedClient, setSelectedClient] = useState(null);
   const [cnj, setCnj] = useState("");
+  const [hasExistingCnj, setHasExistingCnj] = useState(false);
   const [documents, setDocuments] = useState([]);
   const [documentsToDelete, setDocumentsToDelete] = useState([]);
   const [tiposDocumento, setTiposDocumento] = useState([]);
@@ -75,8 +76,11 @@ export default function EditProcessPage() {
 
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [cnjConfirmDialogOpen, setCnjConfirmDialogOpen] = useState(false);
   const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
+
+  const cnjInputRef = useRef(null);
 
   // campos do formulário
   const [descricaoCaso, setDescricaoCaso] = useState("");
@@ -124,9 +128,11 @@ export default function EditProcessPage() {
         setHearingDate(parseDataBrParaInput(dadosProcesso.hearingDate));
         setHearingTime(dadosProcesso.hearingTime || "");
 
-        // CNJ: inicializa formatado com a máscara oficial CNJ
+        // CNJ: inicializa formatado com a máscara oficial CNJ e bloqueia edição caso já exista
         const rawCnj = raw.processoApi?.numeroCnj || raw.numeroProcesso || (dadosProcesso.cnj !== "-" ? dadosProcesso.cnj : "");
-        setCnj(rawCnj ? maskCNJ(rawCnj) : "");
+        const cnjFormatado = rawCnj ? maskCNJ(rawCnj) : "";
+        setCnj(cnjFormatado);
+        setHasExistingCnj(Boolean(rawCnj && String(rawCnj).replace(/\D/g, "").length > 0));
 
         // observações vêm como texto único (campo "obervacao", com o typo do banco) — separa em array pra exibir
         setObservacoesArray(separarObservacoes(raw.obervacao || ""));
@@ -242,7 +248,6 @@ export default function EditProcessPage() {
       observacao: juntarObservacoes(observacoesArray),
       prioridadeId: Number(prioridadeId),
       faseProcessoId: Number(faseProcessoId),
-      siglaTribunalId: Number(siglaTribunalId),
       dataAudiencia: montarDataHoraIso(hearingDate, hearingTime),
       valorCausa: valorCausa ? Number(valorCausa.replace(/\D/g, "")) / 100 : null,
       numeroCnj: cnj ? cnj.replace(/\D/g, "") : null,
@@ -279,7 +284,7 @@ export default function EditProcessPage() {
   }
 
   const validarCnj = () => {
-    if (cnj) {
+    if (!hasExistingCnj && cnj) {
       const cnjLimpo = cnj.replace(/\D/g, "");
       if (cnjLimpo.length !== 20) {
         toast.warning("O CNJ deve conter exatamente 20 dígitos numéricos (ou deixe em branco).");
@@ -321,23 +326,44 @@ export default function EditProcessPage() {
   const handleSalvar = () => {
     if (!validarAudiencia()) {
       setSaveDialogOpen(false);
+      setCnjConfirmDialogOpen(false);
       return;
     }
     if (!validarCnj()) {
       setSaveDialogOpen(false);
+      setCnjConfirmDialogOpen(false);
       return;
     }
     if (!validarObservacoes()) {
       setSaveDialogOpen(false);
+      setCnjConfirmDialogOpen(false);
       return;
     }
     const payload = { ...montarPayloadBase(), status: "ATIVO" };
     enviarAtualizacao(payload, "Processo atualizado com sucesso.", true);
     setSaveDialogOpen(false);
+    setCnjConfirmDialogOpen(false);
+  };
+
+  const handleClickSalvarAlteracoes = () => {
+    if (!validarCnj()) return;
+    if (!validarAudiencia()) return;
+    if (!validarObservacoes()) return;
+
+    const informandoNovoCnj = !hasExistingCnj && Boolean(cnj && cnj.replace(/\D/g, "").length === 20);
+    if (informandoNovoCnj) {
+      setCnjConfirmDialogOpen(true);
+    } else {
+      setSaveDialogOpen(true);
+    }
   };
 
   const handleEncerrar = () => {
     if (!validarAudiencia()) {
+      setCloseDialogOpen(false);
+      return;
+    }
+    if (!validarCnj()) {
       setCloseDialogOpen(false);
       return;
     }
@@ -361,6 +387,10 @@ export default function EditProcessPage() {
 
   const handleDesativar = () => {
     if (!validarAudiencia()) {
+      setDeactivateDialogOpen(false);
+      return;
+    }
+    if (!validarCnj()) {
       setDeactivateDialogOpen(false);
       return;
     }
@@ -480,15 +510,25 @@ export default function EditProcessPage() {
           <Label className="edit-process-label" htmlFor="edit-process-cnj">
             Número CNJ
           </Label>
-          <Input
-            id="edit-process-cnj"
-            type="text"
-            value={cnj}
-            onChange={(event) => setCnj(maskCNJ(event.target.value))}
-            placeholder="0000000-00.0000.0.00.0000"
-            maxLength={25}
-            className="edit-process-input edit-process-input--mono"
-          />
+          {hasExistingCnj ? (
+            <Label
+              className="edit-process-input edit-process-input--mono edit-process-input-cadeado"
+              style={{ fontSize: "0.875rem", fontWeight: "normal", padding: "0.2rem" }}
+            >
+              {cnj}
+            </Label>
+          ) : (
+            <Input
+              ref={cnjInputRef}
+              id="edit-process-cnj"
+              type="text"
+              value={cnj}
+              onChange={(event) => setCnj(maskCNJ(event.target.value))}
+              placeholder="0000000-00.0000.0.00.0000"
+              maxLength={25}
+              className="edit-process-input edit-process-input--mono"
+            />
+          )}
         </div>
 
         {/* Cliente — somente leitura */}
@@ -541,7 +581,7 @@ export default function EditProcessPage() {
             Sigla Tribunal
           </Label>
           <Label className="edit-process-input edit-process-input--mono edit-process-input-cadeado" style={{ fontSize: "0.875rem", fontWeight: "normal", padding: "0.2rem" }}>
-            {tribunais.find(t => t.id === siglaTribunalId)?.siglaTribunal || "Tribunal não selecionado"}
+            {tribunais.find(t => t.id === siglaTribunalId)?.siglaTribunal || process.raw?.siglaTribunal?.nome || "Tribunal não selecionado"}
           </Label>
         </div>
 
@@ -740,15 +780,12 @@ export default function EditProcessPage() {
       {/* Actions */}
       <div className="edit-process-actions">
         <div className="edit-process-actions-row">
-          <Button onClick={() => {
-            if (!validarCnj()) return;
-            if (!validarAudiencia()) return;
-            setSaveDialogOpen(true);
-          }} className="edit-process-button edit-process-button--primary" disabled={saving}>
+          <Button onClick={handleClickSalvarAlteracoes} className="edit-process-button edit-process-button--primary" disabled={saving}>
             <Save size={15} />
             Salvar Alterações
           </Button>
           <Button onClick={() => {
+            if (!validarCnj()) return;
             if (!validarAudiencia()) return;
             setCloseDialogOpen(true);
           }} className="edit-process-button edit-process-button--close" disabled={saving}>
@@ -759,6 +796,7 @@ export default function EditProcessPage() {
 
         <div className="edit-process-actions-row">
           <Button className="edit-process-button edit-process-button--warn" onClick={() => {
+            if (!validarCnj()) return;
             if (!validarAudiencia()) return;
             setDeactivateDialogOpen(true);
           }} disabled={saving}>
@@ -777,6 +815,48 @@ export default function EditProcessPage() {
           </Button>
         </div>
       </div>
+
+      {/* Modal: confirmar vinculação irreversível de CNJ */}
+      <Dialog open={cnjConfirmDialogOpen} onOpenChange={setCnjConfirmDialogOpen}>
+        <DialogContent className="edit-process-dialog">
+          <DialogHeader>
+            <div className="edit-process-dialog__header">
+              <div className="edit-process-dialog__icon-wrap">
+                <AlertTriangle size={24} className="edit-process-dialog__icon" />
+              </div>
+              <DialogTitle className="edit-process-dialog-title">Confirmar número do CNJ?</DialogTitle>
+            </div>
+          </DialogHeader>
+          <p className="edit-process-dialog-text">
+            Esta ação <strong>não pode ser revertida</strong>. Uma vez vinculado ao processo, o número CNJ não poderá ser alterado ou removido. Revise o número informado:
+          </p>
+          <p className="edit-process-dialog-text" style={{ paddingTop: 0 }}>
+            <strong className="edit-process-dialog__highlight" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.95rem" }}>
+              {cnj}
+            </strong>
+          </p>
+          <DialogFooter className="edit-process-dialog-footer">
+            <Button
+              variant="outline"
+              className="edit-process-dialog-button edit-process-dialog-button--outline"
+              onClick={() => {
+                setCnjConfirmDialogOpen(false);
+                cnjInputRef.current?.focus?.();
+              }}
+              disabled={saving}
+            >
+              Revisar
+            </Button>
+            <Button
+              className="edit-process-dialog-button edit-process-dialog-button--primary"
+              onClick={handleSalvar}
+              disabled={saving}
+            >
+              {saving ? "Salvando..." : "Confirmar e Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Modal: confirmar salvar alterações */}
       <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>

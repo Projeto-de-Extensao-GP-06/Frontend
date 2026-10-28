@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router";
-import { ArrowLeft, Plus, Trash2, X, Search, Users, RefreshCw, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, X, Search, Users, RefreshCw, Loader2, AlertTriangle } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { ClientCard } from "../components/ClientCard";
 import { SelectClientModal } from "../components/SelectClientModal";
 import { DocumentUploadModal } from "../components/DocumentUploadModal";
@@ -13,7 +14,6 @@ import {
   criarProcesso,
   listarPrioridades,
   listarFases,
-  listarTribunais,
   listarTiposDocumento,
   enviarDocumentosDoCliente,
   obterCaminhoDoCliente,
@@ -34,20 +34,19 @@ export default function NewProcessPage() {
   const [submitting, setSubmitting] = useState(false);
   const [prioridades, setPrioridades] = useState([]);
   const [fases, setFases] = useState([]);
-  const [tribunais, setTribunais] = useState([]);
   const [tiposDocumento, setTiposDocumento] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
   const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
   const [cnj, setCnj] = useState("");
   const [prioridadeId, setPrioridadeId] = useState("");
   const [faseProcessoId, setFaseProcessoId] = useState("");
-  const [siglaTribunalId, setSiglaTribunalId] = useState("");
   const [causeValue, setCauseValue] = useState("");
   const [hearingDate, setHearingDate] = useState("");
   const [hearingTime, setHearingTime] = useState("");
   const [description, setDescription] = useState("");
   const [observations, setObservations] = useState([""]);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [cnjConfirmDialogOpen, setCnjConfirmDialogOpen] = useState(false);
   const [files, setFiles] = useState([]);
 
   // Modal de progresso
@@ -81,7 +80,6 @@ export default function NewProcessPage() {
   const clientBtnRef = useRef(null);
   const prioridadeRef = useRef(null);
   const faseRef = useRef(null);
-  const tribunalRef = useRef(null);
   const causeValueRef = useRef(null);
   const hearingDateRef = useRef(null);
   const hearingTimeRef = useRef(null);
@@ -91,12 +89,11 @@ export default function NewProcessPage() {
   useEffect(() => {
     document.title = "SGPJ | Novo Processo";
     let active = true;
-    Promise.all([listarPrioridades(), listarFases(), listarTribunais()])
-      .then(([priorityOptions, phases, courts]) => {
+    Promise.all([listarPrioridades(), listarFases()])
+      .then(([priorityOptions, phases]) => {
         if (!active) return;
         setPrioridades(priorityOptions);
         setFases(phases);
-        setTribunais(courts);
       })
       .catch((error) => {
         console.error("Erro ao carregar opções para novo processo:", error);
@@ -169,12 +166,7 @@ export default function NewProcessPage() {
       newErrors.fase = "Selecione a fase do processo.";
     }
 
-    // 4. Tribunal obrigatório
-    if (!siglaTribunalId) {
-      newErrors.tribunal = "Selecione o tribunal responsável.";
-    }
-
-    // 5. Descrição do caso (obrigatória, mín 10)
+    // 4. Descrição do caso (obrigatória, mín 10)
     if (!description.trim()) {
       newErrors.descricao = "A descrição do caso é obrigatória.";
     } else if (description.trim().length < 10) {
@@ -183,7 +175,7 @@ export default function NewProcessPage() {
       newErrors.descricao = "A descrição não pode ter mais de 5.000 caracteres.";
     }
 
-    // 6. CNJ: vazio ou exatamente 20 dígitos
+    // 5. CNJ: vazio ou exatamente 20 dígitos
     if (cnj) {
       const cnjLimpo = cnj.replace(/\D/g, "");
       if (cnjLimpo.length !== 20) {
@@ -191,7 +183,7 @@ export default function NewProcessPage() {
       }
     }
 
-    // 7. Data e hora da audiência: data real (rejeitar 31/02, ano com 4 dígitos, ano entre 2000 e o ano atual + 10); data e hora não podem ser registradas separadamente
+    // 6. Data e hora da audiência: data real (rejeitar 31/02, ano com 4 dígitos, ano entre 2000 e o ano atual + 10); data e hora não podem ser registradas separadamente
     if (hearingTime && !hearingDate) {
       newErrors.dataAudiencia = "Informe a data da audiência para o horário preenchido.";
     } else if (hearingDate) {
@@ -224,7 +216,7 @@ export default function NewProcessPage() {
       }
     }
 
-    // 8. Valor da causa: maior que zero quando informado
+    // 7. Valor da causa: maior que zero quando informado
     if (causeValue) {
       const numVal = Number(causeValue.replace(/\D/g, "")) / 100;
       if (isNaN(numVal) || numVal <= 0) {
@@ -234,7 +226,7 @@ export default function NewProcessPage() {
       }
     }
 
-    // 9. Observações: limites existentes
+    // 8. Observações: limites existentes
     if (observations.length > MAX_OBSERVACOES) {
       newErrors.observacoes = `O processo aceita até ${MAX_OBSERVACOES} observações.`;
     } else if (observations.some((item) => item.trim().length > MAX_CARACTERES_OBSERVACAO)) {
@@ -251,7 +243,7 @@ export default function NewProcessPage() {
     return newErrors;
   };
 
-  const handleCreate = async () => {
+  const handleCreate = () => {
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -262,7 +254,6 @@ export default function NewProcessPage() {
         { key: "cliente", ref: clientBtnRef },
         { key: "prioridade", ref: prioridadeRef },
         { key: "fase", ref: faseRef },
-        { key: "tribunal", ref: tribunalRef },
         { key: "valorCausa", ref: causeValueRef },
         { key: "dataAudiencia", ref: hearingDate && !hearingTime ? hearingTimeRef : hearingDateRef },
         { key: "descricao", ref: descriptionRef },
@@ -278,6 +269,17 @@ export default function NewProcessPage() {
       }
       return;
     }
+
+    if (cnj && cnj.replace(/\D/g, "").length === 20) {
+      setCnjConfirmDialogOpen(true);
+      return;
+    }
+
+    executarCriacaoProcesso();
+  };
+
+  const executarCriacaoProcesso = async () => {
+    setCnjConfirmDialogOpen(false);
 
     // Modal de progresso com etapas reais
     setStepState({
@@ -299,7 +301,6 @@ export default function NewProcessPage() {
       observacao: juntarObservacoes(observations) || null,
       prioridadeId: Number(prioridadeId),
       faseProcessoId: Number(faseProcessoId),
-      siglaTribunalId: Number(siglaTribunalId),
       numeroProcesso: cnj ? cnj.replace(/\D/g, "") : null,
       dataAudiencia: hearingDate && hearingTime
         ? `${hearingDate}T${hearingTime}:00`
@@ -436,7 +437,11 @@ export default function NewProcessPage() {
       setIsMinimized(false);
       isMinimizedRef.current = false;
 
-      if (error.response?.status === 409 || message.toLowerCase().includes("cnj")) {
+      if (
+        error.response?.status === 409 ||
+        message.toLowerCase().includes("cnj") ||
+        message.toLowerCase().includes("tribunal")
+      ) {
         setErrors((prev) => ({ ...prev, cnj: message }));
         cnjRef.current?.focus?.();
         cnjRef.current?.scrollIntoView?.({ behavior: "smooth", block: "center" });
@@ -601,31 +606,6 @@ export default function NewProcessPage() {
               </p>
             )}
           </div>
-        </div>
-
-        {/* Sigla Tribunal */}
-        <div className="edit-process-field">
-          <Label className="edit-process-label">Sigla Tribunal</Label>
-          <select
-            ref={tribunalRef}
-            className="edit-process-select"
-            value={siglaTribunalId}
-            onChange={(event) => {
-              setSiglaTribunalId(event.target.value);
-              if (errors.tribunal) setErrors((prev) => ({ ...prev, tribunal: undefined }));
-            }}
-            disabled={loadingOptions}
-          >
-            <option value="">Selecionar tribunal...</option>
-            {tribunais.map((item) => (
-              <option key={item.id} value={item.id}>{item.siglaTribunal}</option>
-            ))}
-          </select>
-          {errors.tribunal && (
-            <p className="edit-process-field-error" style={{ color: "#ef4444", fontSize: "0.8125rem", marginTop: "4px" }}>
-              {errors.tribunal}
-            </p>
-          )}
         </div>
 
         {/* Valor da causa e Audiência */}
@@ -837,6 +817,48 @@ export default function NewProcessPage() {
           </Button>
         </div>
       </div>
+
+      {/* Modal: confirmar vinculação irreversível de CNJ na criação */}
+      <Dialog open={cnjConfirmDialogOpen} onOpenChange={setCnjConfirmDialogOpen}>
+        <DialogContent className="edit-process-dialog">
+          <DialogHeader>
+            <div className="edit-process-dialog__header">
+              <div className="edit-process-dialog__icon-wrap">
+                <AlertTriangle size={24} className="edit-process-dialog__icon" />
+              </div>
+              <DialogTitle className="edit-process-dialog-title">Confirmar número do CNJ?</DialogTitle>
+            </div>
+          </DialogHeader>
+          <p className="edit-process-dialog-text">
+            Esta ação <strong>não pode ser revertida</strong>. Uma vez criado com número CNJ, ele não poderá ser alterado ou removido posteriormente. Revise o número informado:
+          </p>
+          <p className="edit-process-dialog-text" style={{ paddingTop: 0 }}>
+            <strong className="edit-process-dialog__highlight" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.95rem" }}>
+              {cnj}
+            </strong>
+          </p>
+          <DialogFooter className="edit-process-dialog-footer">
+            <Button
+              variant="outline"
+              className="edit-process-dialog-button edit-process-dialog-button--outline"
+              onClick={() => {
+                setCnjConfirmDialogOpen(false);
+                cnjRef.current?.focus?.();
+              }}
+              disabled={submitting}
+            >
+              Revisar
+            </Button>
+            <Button
+              className="edit-process-dialog-button edit-process-dialog-button--primary"
+              onClick={executarCriacaoProcesso}
+              disabled={submitting}
+            >
+              Confirmar e Criar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <DocumentUploadModal
         open={uploadModalOpen}
