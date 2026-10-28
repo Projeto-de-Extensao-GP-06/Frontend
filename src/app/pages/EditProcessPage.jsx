@@ -269,12 +269,24 @@ export default function EditProcessPage() {
       navigate(`/app/processos/${id}`);
     } catch (err) {
       console.error("Erro ao atualizar processo:", err);
-      if (err.response?.status === 401) {
+      const status = err.status || err.response?.status || err.originalError?.response?.status;
+      const responseData = err.response?.data || err.originalError?.response?.data;
+
+      if (status === 401) {
         toast.warning("Sessão inválida ou expirada.");
+      } else if (status === 409) {
+        const mensagemConflito =
+          responseData?.message ||
+          responseData?.mensagem ||
+          err.message ||
+          "Conflito ao atualizar o processo.";
+        toast.error(mensagemConflito);
       } else {
         const mensagemErro =
-          err.response?.data?.message ||
-          (err.response?.data?.errors && Object.values(err.response.data.errors)[0]) ||
+          responseData?.message ||
+          responseData?.mensagem ||
+          (responseData?.errors && Object.values(responseData.errors)[0]) ||
+          err.message ||
           "Não foi possível salvar as alterações.";
         toast.error(mensagemErro);
       }
