@@ -796,6 +796,12 @@ export default function EditProcessPage() {
             <Save size={15} />
             Salvar Alterações
           </Button>
+          <Button variant="outline" onClick={() => navigate(`/app/processos/${id}`)} className="edit-process-button edit-process-button--outline">
+            Cancelar
+          </Button>
+        </div>
+
+        <div className="edit-process-actions-row">
           <Button onClick={() => {
             if (!validarCnj()) return;
             if (!validarAudiencia()) return;
@@ -804,9 +810,6 @@ export default function EditProcessPage() {
             <CheckCircle size={15} />
             Encerrar Processo
           </Button>
-        </div>
-
-        <div className="edit-process-actions-row">
           <Button className="edit-process-button edit-process-button--warn" onClick={() => {
             if (!validarCnj()) return;
             if (!validarAudiencia()) return;
@@ -814,16 +817,6 @@ export default function EditProcessPage() {
           }} disabled={saving}>
             <AlertTriangle size={15} className="edit-process-dialog__icon" />
             Suspender Processo
-          </Button>
-          <Button onClick={() => setDeleteDialog(true)} className="edit-process-button edit-process-button--danger" disabled={saving}>
-            <Trash2 size={14} />
-            Excluir Processo
-          </Button>
-        </div>
-
-        <div className="edit-process-actions-row">
-          <Button variant="outline" onClick={() => navigate(`/app/processos/${id}`)} className="edit-process-button edit-process-button--outline">
-            Cancelar
           </Button>
         </div>
       </div>
