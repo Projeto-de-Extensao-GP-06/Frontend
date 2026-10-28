@@ -1,8 +1,38 @@
 import { api } from "../provider/api";
 
+export async function listarUsuarios() {
+  const response = await api.get("/usuarios");
+  return response.data;
+}
+
+export async function listarUsuariosPorCargo(cargo) {
+  const response = await api.get("/usuarios/cargo", {
+    params: { cargo },
+  });
+  return response.data;
+}
+
+export async function pesquisarUsuarios(pesquisa) {
+  const response = await api.get("/usuarios/pesquisar", {
+    params: { pesquisa },
+  });
+  return response.data;
+}
+
+export async function criarUsuario(dados) {
+  // dados esperados pelo Swagger: { nome, email, cargoId }
+  const response = await api.post("/usuarios", dados);
+  return response.data;
+}
+
 export async function atualizarUsuario(id, dados) {
   // dados esperados pelo Swagger: { nome, email, cargoId, ativo }
   const response = await api.put(`/usuarios/${id}`, dados);
+  return response.data;
+}
+
+export async function reativarUsuario(id) {
+  const response = await api.post(`/usuarios/reactivate/${id}`);
   return response.data;
 }
 

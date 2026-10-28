@@ -1,22 +1,48 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Navigate } from "react-router";
 import { ArrowLeft, User, Shield, AlertTriangle, Save, CheckCircle, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { StatusBadge } from "../components/StatusBadge";
 import { getInitials } from "../components/UserAvatar";
-import { mockUsers } from "../data/mockData";
+import { listarUsuarios, atualizarUsuario, reativarUsuario } from "../services/usuarioService";
+import { listarCargos } from "../services/cargoService";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import "../../styles/user-detail-page.css";
 
+const normalizeUser = (user) => ({
+  id: String(user.id),
+  name: user.nome,
+  email: user.email,
+  role: user.cargoNome,
+  cargoId: user.cargoId,
+  status: user.ativo ? "ativo" : "inativo",
+});
+
 export default function UserDetailPage() {
   const { id } = useParams();
-  const user = mockUsers.find((u) => u.id === id);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      document.title = `SGPJ | Usuário - ${user.name}`;
-    }
-  }, [user]);
+    const loadUser = async () => {
+      setLoading(true);
+      try {
+        const users = await listarUsuarios();
+        const foundUser = users.find((u) => String(u.id) === id);
+        if (foundUser) {
+          setUser(normalizeUser(foundUser));
+          document.title = `SGPJ | Usuário - ${foundUser.nome}`;
+        }
+      } catch (error) {
+        toast.error(error.message || "Não foi possível carregar o usuário.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadUser();
+  }, [id]);
 
+  if (loading) return <div className="user-detail-page">Carregando...</div>;
   if (!user) return <Navigate to="/app/usuarios" replace />;
 
   return <UserDetail user={user} />;
@@ -31,13 +57,84 @@ function UserDetail({ user }) {
   const [email, setEmail] = useState(user.email || "");
   const [status, setStatus] = useState(user.status);
   const [role, setRole] = useState(user.role);
+  const [cargos, setCargos] = useState([]);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const isInactive = status === "inativo";
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  useEffect(() => {
+    const loadCargos = async () => {
+      try {
+        const data = await listarCargos({ size: 100 });
+        const cargosList = Array.isArray(data) ? data : (data?.content || []);
+        setCargos(cargosList);
+      } catch (error) {
+        toast.error(error.message || "Não foi possível carregar cargos.");
+      }
+    };
+    loadCargos();
+  }, []);
+
+  const handleSave = async () => {
+    const selectedCargo = cargos.find((c) => c.nome === role);
+    if (!selectedCargo) {
+      toast.error("Selecione um cargo válido.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await atualizarUsuario(user.id, {
+        nome: name,
+        email,
+        cargoId: selectedCargo.cargoId,
+        ativo: status === "ativo",
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+      toast.success("Usuário atualizado com sucesso.");
+    } catch (error) {
+      toast.error(error.message || "Não foi possível atualizar o usuário.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeactivate = async () => {
+    const selectedCargo = cargos.find((c) => c.nome === role);
+    setSaving(true);
+    try {
+      await atualizarUsuario(user.id, {
+        nome: name,
+        email,
+        cargoId: selectedCargo?.cargoId,
+        ativo: false,
+      });
+      setStatus("inativo");
+      setDeactivateDialogOpen(false);
+      navigate("/app/usuarios");
+      toast.success("Usuário desativado com sucesso.");
+    } catch (error) {
+      toast.error(error.message || "Não foi possível desativar o usuário.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleReactivate = async () => {
+    setSaving(true);
+    try {
+      await reativarUsuario(user.id);
+      setStatus("ativo");
+      setReactivateDialogOpen(false);
+      navigate("/app/usuarios");
+      toast.success("Usuário reativado com sucesso.");
+    } catch (error) {
+      toast.error(error.message || "Não foi possível reativar o usuário.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const initials = getInitials(name || user.name);
@@ -115,14 +212,17 @@ function UserDetail({ user }) {
               className="user-detail-select"
               disabled={isInactive}
             >
-              <option>Administrador</option>
-              <option>Advogado</option>
-              <option>Assistente</option>
+              {cargos.map((cargo) => (
+                <option key={cargo.cargoId} value={cargo.nome}>
+                  {cargo.nome}
+                </option>
+              ))}
             </select>
           </div>
 
           <button
             onClick={() => setSaveDialogOpen(true)}
+            disabled={saving}
             className={`user-detail-btn-save ${
               saved ? "is-saved" : ""
             }`}
@@ -132,7 +232,7 @@ function UserDetail({ user }) {
             ) : (
               <>
                 <Save size={15} />
-                Salvar alterações
+                {saving ? "Salvando..." : "Salvar alterações"}
               </>
             )}
           </button>
@@ -219,13 +319,10 @@ function UserDetail({ user }) {
             </button>
             <button
               className="user-detail-dialog-btn-warn"
-              onClick={() => {
-                setDeactivateDialogOpen(false);
-                setStatus("inativo");
-                navigate("/app/usuarios");
-              }}
+              onClick={handleDeactivate}
+              disabled={saving}
             >
-              Desativar
+              {saving ? "Desativando..." : "Desativar"}
             </button>
           </DialogFooter>
         </DialogContent>
@@ -256,13 +353,10 @@ function UserDetail({ user }) {
             </button>
             <button
               className="user-detail-dialog-btn-success"
-              onClick={() => {
-                setReactivateDialogOpen(false);
-                setStatus("ativo");
-                navigate("/app/usuarios");
-              }}
+              onClick={handleReactivate}
+              disabled={saving}
             >
-              Reativar
+              {saving ? "Reativando..." : "Reativar"}
             </button>
           </DialogFooter>
         </DialogContent>
