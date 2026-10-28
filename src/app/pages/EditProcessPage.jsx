@@ -91,6 +91,7 @@ export default function EditProcessPage() {
   const [hearingDate, setHearingDate] = useState("");
   const [hearingTime, setHearingTime] = useState("");
   const [audienciaError, setAudienciaError] = useState("");
+  const [initialValues, setInitialValues] = useState(null);
 
   // campos usados só nos dialogs de encerrar/desativar
   const [motivoStatusProcessoId, setMotivoStatusProcessoId] = useState("");
@@ -120,13 +121,20 @@ export default function EditProcessPage() {
         if (raw.clienteId) {
           setDocuments(await listarDocumentosDoCliente(raw.clienteId));
         }
-        setDescricaoCaso(raw.descricaoCaso || "");
-        setPrioridadeId(raw.prioridade?.id ?? "");
-        setFaseProcessoId(raw.faseProcesso?.id ?? "");
+        const descricaoInicial = raw.descricaoCaso || "";
+        const prioridadeInicial = raw.prioridade?.id ?? "";
+        const faseInicial = raw.faseProcesso?.id ?? "";
+        const valorCausaInicial = raw.valorCausa != null ? maskCurrency(raw.valorCausa) : "";
+        const hearingDateInicial = parseDataBrParaInput(dadosProcesso.hearingDate);
+        const hearingTimeInicial = dadosProcesso.hearingTime || "";
+
+        setDescricaoCaso(descricaoInicial);
+        setPrioridadeId(prioridadeInicial);
+        setFaseProcessoId(faseInicial);
         setSiglaTribunalId(raw.siglaTribunal?.id ?? "");
-        setValorCausa(raw.valorCausa != null ? maskCurrency(raw.valorCausa) : "");
-        setHearingDate(parseDataBrParaInput(dadosProcesso.hearingDate));
-        setHearingTime(dadosProcesso.hearingTime || "");
+        setValorCausa(valorCausaInicial);
+        setHearingDate(hearingDateInicial);
+        setHearingTime(hearingTimeInicial);
 
         // CNJ: inicializa formatado com a máscara oficial CNJ e bloqueia edição caso já exista
         const rawCnj = raw.processoApi?.numeroCnj || raw.numeroProcesso || (dadosProcesso.cnj !== "-" ? dadosProcesso.cnj : "");
@@ -135,7 +143,19 @@ export default function EditProcessPage() {
         setHasExistingCnj(Boolean(rawCnj && String(rawCnj).replace(/\D/g, "").length > 0));
 
         // observações vêm como texto único (campo "obervacao", com o typo do banco) — separa em array pra exibir
-        setObservacoesArray(separarObservacoes(raw.obervacao || ""));
+        const observacoesIniciais = separarObservacoes(raw.obervacao || "");
+        setObservacoesArray(observacoesIniciais);
+
+        setInitialValues({
+          cnj: cnjFormatado,
+          descricaoCaso: descricaoInicial,
+          prioridadeId: String(prioridadeInicial),
+          faseProcessoId: String(faseInicial),
+          valorCausa: valorCausaInicial,
+          hearingDate: hearingDateInicial,
+          hearingTime: hearingTimeInicial,
+          observacao: juntarObservacoes(observacoesIniciais),
+        });
 
         if (raw.clienteId) {
           try {
@@ -295,6 +315,23 @@ export default function EditProcessPage() {
     }
   }
 
+  const hasEmptyObservacao = observacoesArray.some((item) => !item.trim());
+
+  const hasProcessChanges = Boolean(
+    initialValues && (
+      cnj.replace(/\D/g, "") !== initialValues.cnj.replace(/\D/g, "") ||
+      descricaoCaso.trim() !== initialValues.descricaoCaso.trim() ||
+      String(prioridadeId) !== initialValues.prioridadeId ||
+      String(faseProcessoId) !== initialValues.faseProcessoId ||
+      valorCausa !== initialValues.valorCausa ||
+      hearingDate !== initialValues.hearingDate ||
+      hearingTime !== initialValues.hearingTime ||
+      juntarObservacoes(observacoesArray) !== initialValues.observacao
+    )
+  );
+
+  const hasChanges = hasProcessChanges || documentsToDelete.length > 0;
+
   const validarCnj = () => {
     if (!hasExistingCnj && cnj) {
       const cnjLimpo = cnj.replace(/\D/g, "");
@@ -307,6 +344,10 @@ export default function EditProcessPage() {
   };
 
   const validarObservacoes = () => {
+    if (hasEmptyObservacao) {
+      toast.warning("Preencha todas as observações adicionadas com um texto válido ou remova os campos em branco.");
+      return false;
+    }
     if (observacoesArray.length > MAX_OBSERVACOES) {
       toast.warning(`O processo aceita no máximo ${MAX_OBSERVACOES} observações.`);
       return false;
@@ -336,6 +377,11 @@ export default function EditProcessPage() {
   };
 
   const handleSalvar = () => {
+    if (!hasChanges) {
+      setSaveDialogOpen(false);
+      setCnjConfirmDialogOpen(false);
+      return;
+    }
     if (!validarAudiencia()) {
       setSaveDialogOpen(false);
       setCnjConfirmDialogOpen(false);
@@ -358,6 +404,7 @@ export default function EditProcessPage() {
   };
 
   const handleClickSalvarAlteracoes = () => {
+    if (!hasChanges) return;
     if (!validarCnj()) return;
     if (!validarAudiencia()) return;
     if (!validarObservacoes()) return;
@@ -685,41 +732,59 @@ export default function EditProcessPage() {
             </span>
           </div>
           <div className="edit-process-observation-list">
-            {observacoesArray.map((texto, index) => (
-              <div
-                key={index}
-                className="edit-process-observation-row"
-                style={{ display: "flex", flexDirection: "column", gap: "0.25rem", width: "100%" }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", width: "100%" }}>
-                  <Input
-                    value={texto}
-                    onChange={(e) => handleChangeObservacao(index, e.target.value)}
-                    placeholder="Digite a observação..."
-                    maxLength={MAX_CARACTERES_OBSERVACAO}
-                    className="edit-process-input edit-process-input--with-action"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleRemoverObservacaoLocal(index)}
-                    className="edit-process-remove-observation"
-                    title="Remover observação"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-                <div style={{ display: "flex", justifyContent: "flex-end", paddingRight: "2.5rem" }}>
-                  <span
+            {observacoesArray.map((texto, index) => {
+              const isObservacaoVazia = !texto.trim();
+              return (
+                <div
+                  key={index}
+                  className="edit-process-observation-row"
+                  style={{ display: "flex", flexDirection: "column", gap: "0.25rem", width: "100%" }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", width: "100%" }}>
+                    <Input
+                      value={texto}
+                      onChange={(e) => handleChangeObservacao(index, e.target.value)}
+                      placeholder="Digite a observação..."
+                      maxLength={MAX_CARACTERES_OBSERVACAO}
+                      className="edit-process-input edit-process-input--with-action"
+                      style={isObservacaoVazia ? { borderColor: "#f59e0b" } : undefined}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoverObservacaoLocal(index)}
+                      className="edit-process-remove-observation"
+                      title="Remover observação"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                  <div
                     style={{
-                      fontSize: "0.7rem",
-                      color: texto.length >= MAX_CARACTERES_OBSERVACAO ? "#ef4444" : "#94a3b8",
+                      display: "flex",
+                      justifyContent: isObservacaoVazia ? "space-between" : "flex-end",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                      paddingRight: "2.5rem",
                     }}
                   >
-                    {texto.length}/{MAX_CARACTERES_OBSERVACAO} caracteres
-                  </span>
+                    {isObservacaoVazia && (
+                      <span style={{ fontSize: "0.75rem", color: "#d97706" }}>
+                        Preencha com um texto válido ou remova o campo para permitir a atualização.
+                      </span>
+                    )}
+                    <span
+                      style={{
+                        fontSize: "0.7rem",
+                        color: texto.length >= MAX_CARACTERES_OBSERVACAO ? "#ef4444" : "#94a3b8",
+                        marginLeft: "auto",
+                      }}
+                    >
+                      {texto.length}/{MAX_CARACTERES_OBSERVACAO} caracteres
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <button
             type="button"
@@ -792,7 +857,11 @@ export default function EditProcessPage() {
       {/* Actions */}
       <div className="edit-process-actions">
         <div className="edit-process-actions-row">
-          <Button onClick={handleClickSalvarAlteracoes} className="edit-process-button edit-process-button--primary" disabled={saving}>
+          <Button
+            onClick={handleClickSalvarAlteracoes}
+            className="edit-process-button edit-process-button--primary"
+            disabled={!hasChanges || hasEmptyObservacao || saving}
+          >
             <Save size={15} />
             Salvar Alterações
           </Button>
