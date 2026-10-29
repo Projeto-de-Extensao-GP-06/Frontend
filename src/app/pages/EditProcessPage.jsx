@@ -5,6 +5,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
+import { Checkbox } from "../components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { ClientCard } from "../components/ClientCard";
 import { maskCNJ, maskCPF, maskCNPJ, maskCurrency } from "../utils/masks";
@@ -30,6 +31,8 @@ import {
 import { toast } from "sonner";
 import "../../styles/edit-process-page.css";
 import "../../styles/clients-page.css";
+
+const MAX_CARACTERES_DESCRICAO_ALTERACAO = 80;
 
 /* ─ helpers ─ */
 
@@ -76,6 +79,8 @@ export default function EditProcessPage() {
 
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [descricaoPersonalizadaAtiva, setDescricaoPersonalizadaAtiva] = useState(false);
+  const [descricaoAlteracao, setDescricaoAlteracao] = useState("");
   const [cnjConfirmDialogOpen, setCnjConfirmDialogOpen] = useState(false);
   const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
@@ -229,6 +234,14 @@ export default function EditProcessPage() {
     carregarTiposDocumento();
   }, []);
 
+  // reseta interruptor e texto sempre que o modal de confirmação for fechado
+  useEffect(() => {
+    if (!saveDialogOpen) {
+      setDescricaoPersonalizadaAtiva(false);
+      setDescricaoAlteracao("");
+    }
+  }, [saveDialogOpen]);
+
   if (loading) {
     return (
       <div className="edit-process-page edit-process-page--empty">
@@ -377,6 +390,10 @@ export default function EditProcessPage() {
   };
 
   const handleSalvar = () => {
+    if (descricaoPersonalizadaAtiva && !descricaoAlteracao.trim()) {
+      toast.warning("Informe a descrição personalizada ou desative a opção.");
+      return;
+    }
     if (!hasChanges) {
       setSaveDialogOpen(false);
       setCnjConfirmDialogOpen(false);
@@ -398,6 +415,9 @@ export default function EditProcessPage() {
       return;
     }
     const payload = { ...montarPayloadBase(), status: "ATIVO" };
+    if (descricaoPersonalizadaAtiva) {
+      payload.descricaoAlteracao = descricaoAlteracao.trim();
+    }
     enviarAtualizacao(payload, "Processo atualizado com sucesso.", true);
     setSaveDialogOpen(false);
     setCnjConfirmDialogOpen(false);
@@ -923,10 +943,13 @@ export default function EditProcessPage() {
             </Button>
             <Button
               className="edit-process-dialog-button edit-process-dialog-button--primary"
-              onClick={handleSalvar}
+              onClick={() => {
+                setCnjConfirmDialogOpen(false);
+                setSaveDialogOpen(true);
+              }}
               disabled={saving}
             >
-              {saving ? "Salvando..." : "Confirmar e Salvar"}
+              Confirmar
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -947,6 +970,43 @@ export default function EditProcessPage() {
             Deseja salvar as alterações realizadas no processo{" "}
             <strong className="edit-process-dialog__highlight">{cnj || process.cnj || id}</strong>?
           </p>
+          <div className="edit-process-field" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
+            <Label htmlFor="descricao-personalizada-checkbox" className="edit-process-label">
+              Deseja adicionar uma descrição personalizada?
+            </Label>
+            <Checkbox
+              id="descricao-personalizada-checkbox"
+              checked={descricaoPersonalizadaAtiva}
+              onCheckedChange={(checked) => {
+                const ativo = checked === true;
+                setDescricaoPersonalizadaAtiva(ativo);
+                if (!ativo) setDescricaoAlteracao("");
+              }}
+              disabled={saving}
+            />
+          </div>
+          {descricaoPersonalizadaAtiva && (
+            <div className="edit-process-field">
+              <Input
+                value={descricaoAlteracao}
+                onChange={(e) => setDescricaoAlteracao(e.target.value)}
+                maxLength={MAX_CARACTERES_DESCRICAO_ALTERACAO}
+                placeholder="Ex.: Altera fase do processo."
+                aria-label="Descrição personalizada da alteração"
+                disabled={saving}
+              />
+              <span
+                style={{
+                  display: "block",
+                  textAlign: "right",
+                  fontSize: "0.75rem",
+                  color: descricaoAlteracao.length >= MAX_CARACTERES_DESCRICAO_ALTERACAO ? "#ef4444" : "#94a3b8",
+                }}
+              >
+                {descricaoAlteracao.length}/{MAX_CARACTERES_DESCRICAO_ALTERACAO} caracteres
+              </span>
+            </div>
+          )}
           <DialogFooter className="edit-process-dialog-footer">
             <Button variant="outline" className="edit-process-dialog-button edit-process-dialog-button--outline" onClick={() => setSaveDialogOpen(false)} disabled={saving}>
               Cancelar
