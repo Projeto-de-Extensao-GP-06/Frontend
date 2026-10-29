@@ -47,7 +47,7 @@ export function SelectProcessModal({
         const tribs = Array.isArray(tribRes.data) ? tribRes.data : [];
         setPhasesList(fases.map((f) => f.nome).filter(Boolean));
         setTribunalsList(
-          tribs.map((t) => t.nome?.toUpperCase() || t.nome).filter(Boolean)
+          tribs.map((t) => (t.siglaTribunal ?? t.nome)?.toUpperCase()).filter(Boolean)
         );
       } catch (err) {
         console.error("Erro ao carregar opções no modal de processos:", err);

@@ -32,8 +32,8 @@ const SORT_MAP = {
   cliente_desc:     "cliente.nomeRazaoSocial,desc",
   audiencia_asc:    "dataAudiencia,asc",
   audiencia_desc:   "dataAudiencia,desc",
-  prioridade_desc:  "prioridade.id,desc",
-  prioridade_asc:   "prioridade.id,asc",
+  prioridade_desc:  "prioridade.id,asc",
+  prioridade_asc:   "prioridade.id,desc",
 };
 
 const PAGE_SIZE = 6;
@@ -136,7 +136,10 @@ export default function HomePage() {
         ]);
 
         const fases = Array.isArray(fasesRes.data) ? fasesRes.data : [];
-        const tribunais = Array.isArray(tribunaisRes.data) ? tribunaisRes.data : [];
+        const tribunaisRaw = Array.isArray(tribunaisRes.data) ? tribunaisRes.data : (tribunaisRes.data?.content || []);
+        const tribunais = tribunaisRaw
+          .map(t => ({ id: t.id, nome: t.siglaTribunal ?? t.nome ?? t.sigla ?? t.descricao }))
+          .filter(t => t.id != null && t.nome);
         const prioridades = Array.isArray(prioridadesRes.data) ? prioridadesRes.data : [];
 
         setFaseOpts([
