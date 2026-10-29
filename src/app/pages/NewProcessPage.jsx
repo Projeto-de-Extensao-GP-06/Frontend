@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router";
-import { ArrowLeft, Plus, Trash2, X, Search, Users, RefreshCw, Loader2, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, X, Search, Users, RefreshCw, Loader2, AlertTriangle, CloudUpload } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -8,7 +8,6 @@ import { Textarea } from "../components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { ClientCard } from "../components/ClientCard";
 import { SelectClientModal } from "../components/SelectClientModal";
-import { DocumentUploadModal } from "../components/DocumentUploadModal";
 import { ProcessCreationProgressModal } from "../components/ProcessCreationProgressModal";
 import {
   criarProcesso,
@@ -45,7 +44,7 @@ export default function NewProcessPage() {
   const [hearingTime, setHearingTime] = useState("");
   const [description, setDescription] = useState("");
   const [observations, setObservations] = useState([""]);
-  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [tipoDocumentoId, setTipoDocumentoId] = useState("");
   const [cnjConfirmDialogOpen, setCnjConfirmDialogOpen] = useState(false);
   const [files, setFiles] = useState([]);
 
@@ -135,13 +134,20 @@ export default function NewProcessPage() {
     }
   };
 
-  const handleStageDocuments = (items) => {
+  const handleSelectFiles = (event) => {
+    const arquivos = Array.from(event.target.files || []);
+    event.target.value = "";
+    if (!arquivos.length) return;
+    if (!tipoDocumentoId) {
+      toast.warning("Selecione o tipo de documento antes de adicionar o arquivo.");
+      return;
+    }
     setFiles((prev) => [
       ...prev,
-      ...items.map(({ file, tipoId }) => ({
+      ...arquivos.map((file) => ({
         key: `${file.name}-${file.size}-${file.lastModified}-${Math.random()}`,
         file,
-        tipoId: String(tipoId),
+        tipoId: String(tipoDocumentoId),
       })),
     ]);
   };
@@ -747,43 +753,62 @@ export default function NewProcessPage() {
         <div className="edit-process-field">
           <Label className="edit-process-label edit-process-label--spaced">Documentos (opcional)</Label>
           <p className="edit-process-doc-hint">
-            Adicione os arquivos e classifique cada um. Eles serão enviados ao OneDrive quando o processo for criado.
+            Os documentos são compartilhados entre os processos deste cliente. Eles serão enviados ao OneDrive quando o processo for criado.
           </p>
-          {files.length > 0 && (
-            <div className="new-process-file-list">
-              {files.map(({ key, file, tipoId }) => (
-                <div key={key} className="new-process-file-item">
-                  <div className={`edit-process-doc-badge ${getDocBadgeClass(file.name.split(".").pop())}`}>
-                    {file.name.split(".").pop().slice(0, 4).toUpperCase()}
-                  </div>
-                  <div className="new-process-file-item__info">
-                    <span title={file.name}>{file.name}</span>
-                    <small>
-                      {tiposDocumento.find((tipo) => String(tipo.id) === String(tipoId))?.nome || "Documento"}
-                    </small>
-                  </div>
+          <div className="edit-process-document-type">
+            <Label className="edit-process-label" htmlFor="new-process-document-type">
+              Tipo do documento
+            </Label>
+            <select
+              id="new-process-document-type"
+              className="edit-process-select"
+              value={tipoDocumentoId}
+              onChange={(event) => setTipoDocumentoId(event.target.value)}
+              disabled={submitting}
+            >
+              <option value="">Selecione o tipo</option>
+              {tiposDocumento.map((tipo) => (
+                <option key={tipo.id} value={tipo.id}>{tipo.nome}</option>
+              ))}
+            </select>
+          </div>
+          <div className="edit-process-doc-grid">
+            {files.map(({ key, file, tipoId }) => {
+              const ext = file.name.includes(".") ? file.name.split(".").pop() : "";
+              const tipoNome = tiposDocumento.find((tipo) => String(tipo.id) === String(tipoId))?.nome || "Documento";
+              return (
+                <div key={key} className="edit-process-doc-card">
                   <button
                     type="button"
+                    className="edit-process-remove-doc"
                     onClick={() => setFiles((prev) => prev.filter((item) => item.key !== key))}
+                    title="Remover documento"
                     aria-label={`Remover ${file.name}`}
                   >
                     <X size={14} />
                   </button>
+                  <div className={`edit-process-doc-badge ${getDocBadgeClass(ext)}`}>
+                    {ext.slice(0, 4).toUpperCase()}
+                  </div>
+                  <p className="edit-process-doc-name" title={file.name}>{file.name}</p>
+                  <span className="edit-process-doc-date">{tipoNome}</span>
                 </div>
-              ))}
-            </div>
-          )}
-          <button
-            type="button"
-            className="edit-process-doc-upload"
-            onClick={() => setUploadModalOpen(true)}
-            disabled={!tiposDocumento.length}
-          >
-            <Plus size={18} className="edit-process-doc-upload-icon" />
-            <p className="edit-process-doc-upload-text">
-              {files.length ? "Adicionar mais arquivos" : "Adicionar arquivos"}
-            </p>
-          </button>
+              );
+            })}
+            <label htmlFor="new-process-file-upload" className="edit-process-doc-upload">
+              <input
+                id="new-process-file-upload"
+                type="file"
+                multiple
+                onChange={handleSelectFiles}
+                className="edit-process-file-input-hidden"
+                disabled={submitting || !tiposDocumento.length}
+              />
+              <CloudUpload size={18} className="edit-process-doc-upload-icon" />
+              <p className="edit-process-doc-upload-text">Adicionar arquivo</p>
+            </label>
+          </div>
+          {!files.length && <p className="edit-process-doc-empty">Nenhum documento adicionado.</p>}
           {!tiposDocumento.length && (
             <span className="new-process-field-hint">Tipos de documento indisponíveis no momento.</span>
           )}
@@ -859,14 +884,6 @@ export default function NewProcessPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <DocumentUploadModal
-        open={uploadModalOpen}
-        onOpenChange={setUploadModalOpen}
-        tiposDocumento={tiposDocumento}
-        onConfirm={handleStageDocuments}
-        note="Os arquivos ficam preparados aqui e serão enviados ao cliente após a criação do processo. Você pode definir um tipo padrão para o lote e ajustar o tipo de cada arquivo."
-      />
 
       <ProcessCreationProgressModal
         isOpen={creationModalOpen}
