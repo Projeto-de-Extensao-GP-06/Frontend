@@ -72,7 +72,7 @@ export function mapearProcesso(p) {
     id: p.id,
     cnj: formatarCnj(p.processoApi?.numeroCnj || p.numeroProcesso),
     clientName: p.clientNomeRazaoSocial || "Sem nome",
-    tribunal: p.siglaTribunal?.nome?.toUpperCase() || "-",
+    tribunal: (p.siglaTribunal?.siglaTribunal || p.siglaTribunal?.nome)?.toUpperCase() || "-",
     status: p.status ? p.status.trim().toLowerCase() : "ativo",
     priority: p.prioridade?.nome ? p.prioridade.nome.trim().toLowerCase() : "baixa",
     phase: normalizarTexto(p.faseProcesso?.nome),
