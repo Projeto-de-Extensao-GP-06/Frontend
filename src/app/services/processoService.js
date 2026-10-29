@@ -97,6 +97,20 @@ export function mapearProcesso(p) {
       : null,
     closedAt: encerramento.data,
     closedBy: p.encerradoSuspensoPorUsuarioNome || "-",
+    motivoStatusId:
+      p.motivoStatusId ??
+      p.motivoStatusProcessoId ??
+      p.motivoStatus?.id ??
+      p.motivoStatusProcesso?.id ??
+      null,
+    motivoStatus:
+      p.motivoStatusNome ||
+      p.motivoStatusProcessoNome ||
+      p.motivoStatus?.nome ||
+      p.motivoStatusProcesso?.nome ||
+      (typeof p.motivoStatus === "string" ? p.motivoStatus : null) ||
+      null,
+    justificativa: p.justificativa || null,
     lastSyncDate: ultimaAtualizacao.hora ? `${ultimaAtualizacao.data} às ${ultimaAtualizacao.hora}` : ultimaAtualizacao.data,
     ultimaAtualizacaoIso: p.ultimaAtualizacao || null,
     history: mapearHistorico(p.historicoProcessoResponses),

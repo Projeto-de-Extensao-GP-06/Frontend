@@ -9,6 +9,7 @@ import {
   Plus,
   Scale,
   AlertTriangle,
+  CheckCircle,
   Flag,
   RotateCcw,
   RefreshCw,
@@ -43,6 +44,7 @@ import {
   excluirProcesso,
   listarHistoricoDoProcesso,
   listarTiposDocumento,
+  listarMotivosStatus,
   enviarDocumentosDoCliente,
   adicionarObservacaoAoProcesso,
   separarObservacoes,
@@ -142,6 +144,7 @@ export default function ProcessDetailPage() {
   const [observationsText, setObservationsText] = useState("");
   const [documents, setDocuments] = useState([]);
   const [tiposDocumento, setTiposDocumento] = useState([]);
+  const [motivosStatus, setMotivosStatus] = useState([]);
   const [isAddingComment, setIsAddingComment] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [historyVisible, setHistoryVisible] = useState(HISTORY_INITIAL);
@@ -222,6 +225,18 @@ export default function ProcessDetailPage() {
     }
 
     carregarTiposDocumento();
+  }, []);
+
+  useEffect(() => {
+    async function carregarMotivosStatus() {
+      try {
+        setMotivosStatus(await listarMotivosStatus());
+      } catch (err) {
+        console.error("Erro ao carregar motivos de status:", err);
+      }
+    }
+
+    carregarMotivosStatus();
   }, []);
 
   const handleAtualizarDados = () => {
@@ -451,6 +466,15 @@ export default function ProcessDetailPage() {
     process.encerradoPor ||
     process.responsible ||
     "Thauany Bezerra";
+  const statusReason =
+    process.motivoStatus ||
+    motivosStatus.find(
+      (m) =>
+        process.motivoStatusId != null &&
+        Number(m.id) === Number(process.motivoStatusId),
+    )?.nome ||
+    "—";
+  const statusJustification = process.justificativa?.trim() || "—";
 
   // Observações
   const observacoes = separarObservacoes(observationsText);
@@ -592,18 +616,47 @@ export default function ProcessDetailPage() {
                 variant="proc"
               />
             </div>
-            {isClosed && (
-              <>
-                <InfoRow label="Encerrado em" value={closedAt} variant="proc" />
-                <InfoRow
-                  label="Encerrado por"
-                  value={closedBy}
-                  variant="proc"
-                />
-              </>
-            )}
           </div>
         </div>
+
+        {(isClosed || isSuspended) && (
+          <div
+            className={`proc-card proc-status-card ${isClosed ? "proc-status-card--closed" : "proc-status-card--suspended"}`}
+          >
+            <h3 className="proc-card__title proc-status-card__title">
+              {isClosed ? (
+                <CheckCircle size={15} className="proc-card__title-icon" />
+              ) : (
+                <AlertTriangle size={15} className="proc-card__title-icon" />
+              )}
+              {isClosed ? "Detalhes do Encerramento" : "Detalhes da Suspensão"}
+            </h3>
+            <div className="proc-grid">
+              <InfoRow
+                label={isClosed ? "Encerrado em" : "Suspenso em"}
+                value={closedAt}
+                variant="proc"
+              />
+              <InfoRow
+                label={isClosed ? "Encerrado por" : "Suspenso por"}
+                value={closedBy}
+                variant="proc"
+              />
+              <InfoRow
+                label={
+                  isClosed ? "Motivo do encerramento" : "Motivo da suspensão"
+                }
+                value={statusReason}
+                variant="proc"
+              />
+              <InfoRow
+                label="Justificativa"
+                value={statusJustification}
+                variant="proc"
+              />
+            </div>
+          </div>
+        )}
 
         <div className="proc-card">
           <h3 className="proc-card__title">
@@ -885,7 +938,7 @@ export default function ProcessDetailPage() {
         </div>
 
         <div className="proc-actions">
-          {isSuspended && (
+          {(isSuspended || isClosed) && (
             <button
               onClick={() => setReactivateDialog(true)}
               className="proc-actions__btn proc-actions__btn--reactivate"

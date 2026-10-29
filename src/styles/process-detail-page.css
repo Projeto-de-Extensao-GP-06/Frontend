@@ -115,6 +115,50 @@
   box-shadow: 0 1px 3px rgba(17, 24, 39, 0.06);
 }
 
+.proc-status-card {
+  border-left-width: 4px;
+}
+
+.proc-status-card__title {
+  margin: 0 0 1rem;
+}
+
+.proc-status-card--closed {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 70%);
+  border-color: #a7f3d0;
+  border-left-color: #059669;
+}
+
+.proc-status-card--closed .proc-card__title {
+  color: #065f46;
+}
+
+.proc-status-card--closed .proc-card__title-icon {
+  color: #059669;
+}
+
+.proc-status-card--closed .proc-info-row__label {
+  color: #047857;
+}
+
+.proc-status-card--suspended {
+  background: linear-gradient(135deg, #fffbeb 0%, #ffffff 70%);
+  border-color: #fde68a;
+  border-left-color: #d97706;
+}
+
+.proc-status-card--suspended .proc-card__title {
+  color: #92400e;
+}
+
+.proc-status-card--suspended .proc-card__title-icon {
+  color: #d97706;
+}
+
+.proc-status-card--suspended .proc-info-row__label {
+  color: #b45309;
+}
+
 .proc-card__title {
   display: flex;
   align-items: center;
