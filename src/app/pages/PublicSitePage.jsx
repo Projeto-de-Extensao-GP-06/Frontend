@@ -14,7 +14,7 @@ import { maskPhone, maskCNJ, maskCNPJ } from "../utils/masks";
 import { isValidCNPJ, isValidEmail, isValidPhone, isValidCNJ } from "../utils/validators";
 import { brazilStates } from "../data/mockData";
 import { criarSolicitacao } from "../services/solicitacaoService";
-import siteLogoImage from "../../imports/nova_logo.jpeg";
+import siteLogoImage from "../../imports/nova_logo.png";
 import "../../styles/public-site-page.css";
 const areas = [{
   icon: Briefcase,
@@ -864,7 +864,13 @@ export default function PublicSitePage() {
 
       <footer className="site-footer">
         <div className="site-footer__inner">
-          <div className="site-footer__logo"><ImageWithFallback src={siteLogoImage} alt="Thauany Bezerra Advocacia" style={{ width: '13rem', height: 'auto', marginTop: '1.2rem' }} className="site-logo" /></div>
+          <div className="site-footer__logo">
+            <ImageWithFallback
+              src={siteLogoImage}
+              alt="Thauany Bezerra Advocacia"
+              className="site-footer__logo-img"
+            />
+          </div>
           <div className="site-footer__contacts">
             <a href={whatsappUrl} target="_blank" rel="noreferrer" className="site-footer__contact"><Phone size={16} className="site-footer__contact-icon" /><span className="site-footer__contact-text">(11) 98766-4030</span></a>
             <a href="mailto:tthauany.bezerra@gmail.com" className="site-footer__contact"><Mail size={16} className="site-footer__contact-icon" /><span className="site-footer__contact-text">tthauany.bezerra@gmail.com</span></a>
