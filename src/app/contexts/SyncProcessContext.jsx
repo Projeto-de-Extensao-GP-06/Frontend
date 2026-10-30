@@ -6,6 +6,7 @@ import { atualizarDadosProcesso, conectarStatusSincronizacao } from "../services
 const SyncProcessContext = createContext({
   processosSincronizando: new Set(),
   iniciarSincronizacao: () => {},
+  acompanharSincronizacao: () => {},
   isSincronizando: () => false,
   ultimoProcessoSincronizadoId: null,
 });
@@ -34,12 +35,11 @@ export function SyncProcessProvider({ children }) {
     [sincronizandoIds]
   );
 
-  const iniciarSincronizacao = useCallback(
-    async ({ processoId, clientName }) => {
+  const acompanharSincronizacao = useCallback(
+    ({ processoId, clientName }) => {
       const idStr = String(processoId);
 
       if (sincronizandoIds.has(idStr)) {
-        toast.info("A sincronização deste processo já está em andamento.", { duration: 4000 });
         return;
       }
 
@@ -53,17 +53,10 @@ export function SyncProcessProvider({ children }) {
 
       // Conecta ao SSE global mantido no layout da aplicação
       const desconectarSse = conectarStatusSincronizacao(processoId, {
-        onIniciado: () => {
-          // Processo enfileirado no RabbitMQ
-        },
-        onProcessando: () => {
-          // Mantém limpo sem toasts redundantes (o botão já exibe "Atualizando...")
-        },
-        onReprocessando: () => {
-          // Retentativa em andamento em segundo plano
-        },
+        onIniciado: () => {},
+        onProcessando: () => {},
+        onReprocessando: () => {},
         onConcluido: (data) => {
-          // Remove da lista de processos em sincronização
           setSincronizandoIds((prev) => {
             const next = new Set(prev);
             next.delete(idStr);
@@ -108,7 +101,6 @@ export function SyncProcessProvider({ children }) {
           );
         },
         onError: () => {
-          // Caso a conexão SSE caia, libera o estado do botão
           setSincronizandoIds((prev) => {
             const next = new Set(prev);
             next.delete(idStr);
@@ -119,6 +111,20 @@ export function SyncProcessProvider({ children }) {
       });
 
       conexoesSseRef.current.set(idStr, desconectarSse);
+    },
+    [sincronizandoIds, navigate]
+  );
+
+  const iniciarSincronizacao = useCallback(
+    async ({ processoId, clientName }) => {
+      const idStr = String(processoId);
+
+      if (sincronizandoIds.has(idStr)) {
+        toast.info("A sincronização deste processo já está em andamento.", { duration: 4000 });
+        return;
+      }
+
+      acompanharSincronizacao({ processoId, clientName });
 
       try {
         const resposta = await atualizarDadosProcesso(processoId);
@@ -143,7 +149,7 @@ export function SyncProcessProvider({ children }) {
         toast.error(msg, { duration: 5000 });
       }
     },
-    [sincronizandoIds, navigate]
+    [sincronizandoIds, acompanharSincronizacao]
   );
 
   return (
@@ -151,6 +157,7 @@ export function SyncProcessProvider({ children }) {
       value={{
         processosSincronizando: sincronizandoIds,
         iniciarSincronizacao,
+        acompanharSincronizacao,
         isSincronizando,
         ultimoProcessoSincronizadoId,
       }}

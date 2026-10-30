@@ -11,6 +11,7 @@ import { SelectClientModal } from "../components/SelectClientModal";
 import { ProcessCreationProgressModal } from "../components/ProcessCreationProgressModal";
 import {
   criarProcesso,
+  conectarStatusSincronizacao,
   listarPrioridades,
   listarFases,
   listarTiposDocumento,
@@ -23,12 +24,15 @@ import {
 import { maskCNJ, maskCurrency } from "../utils/masks";
 import { getDocBadgeClass } from "../utils/document";
 import { toast } from "sonner";
+import { useSyncProcess } from "../contexts/SyncProcessContext";
 import "../../styles/edit-process-page.css";
 import "../../styles/select-client-modal.css";
 import "../../styles/process-creation-modal.css";
 
 export default function NewProcessPage() {
   const navigate = useNavigate();
+  const { acompanharSincronizacao } = useSyncProcess();
+  const sseConnRef = useRef(null);
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [prioridades, setPrioridades] = useState([]);
@@ -61,11 +65,37 @@ export default function NewProcessPage() {
   });
   const [uploadCount, setUploadCount] = useState({ current: 0, total: 0 });
 
+  useEffect(() => {
+    return () => {
+      if (sseConnRef.current) {
+        try {
+          sseConnRef.current();
+        } catch (_) {}
+        sseConnRef.current = null;
+      }
+    };
+  }, []);
+
   const handleMinimize = () => {
+    if (sseConnRef.current) {
+      try {
+        sseConnRef.current();
+      } catch (_) {}
+      sseConnRef.current = null;
+    }
+
     isMinimizedRef.current = true;
     setIsMinimized(true);
     setCreationModalOpen(false);
-    toast.info("A criação do processo continua em segundo plano. Você será notificado assim que for concluída.", {
+
+    if (createdProcessId) {
+      acompanharSincronizacao({
+        processoId: createdProcessId,
+        clientName: selectedClient?.nomeRazaoSocial || selectedClient?.name,
+      });
+    }
+
+    toast.info("A sincronização do processo continua em segundo plano. Você será notificado assim que for concluída.", {
       duration: 4000,
     });
     navigate("/app/inicio");
@@ -287,10 +317,13 @@ export default function NewProcessPage() {
   const executarCriacaoProcesso = async () => {
     setCnjConfirmDialogOpen(false);
 
+    const hasCnj = Boolean(cnj && cnj.replace(/\D/g, "").length > 0);
+
     // Modal de progresso com etapas reais
     setStepState({
       criando: "em_andamento",
       upload: files.length > 0 ? "pendente" : null,
+      datajud: hasCnj ? "pendente" : null,
       concluido: "pendente",
     });
     setUploadCount({ current: 0, total: files.length });
@@ -385,51 +418,66 @@ export default function NewProcessPage() {
         }
       }
 
-      // 3. Concluído
-      setStepState((prev) => ({ ...prev, concluido: "concluida" }));
-      setIsFinished(true);
-
-      const foiMinimizado = isMinimizedRef.current;
-
-      if (foiMinimizado) {
-        // Se o usuário colocou em segundo plano, NUNCA redirecionamos forçado para não atrapalhar o que ele estiver fazendo!
-        setIsMinimized(false);
-        setCreationModalOpen(false);
-
-        if (created?.sincronizado === false && payload.numeroProcesso) {
-          toast.info("Processo criado com sucesso!", {
-            description: "Não foi possível carregar os dados do DataJud no momento. Você poderá tentar sincronizar mais tarde diretamente na página do processo.",
-            action: {
-              label: "Ver Processo",
-              onClick: () => navigate(`/app/processos/${created.id}`),
-            },
-            duration: 15000,
-          });
-        } else {
-          toast.success("Processo criado e sincronizado com o DataJud!", {
-            action: {
-              label: "Ver Processo",
-              onClick: () => navigate(`/app/processos/${created.id}`),
-            },
-            duration: 12000,
-          });
-        }
-      } else {
-        // Se o usuário optou por aguardar no modal aberto
-        if (created?.sincronizado === false && payload.numeroProcesso) {
-          toast.info(
-            "Processo criado com sucesso! Não foi possível estabelecer conexão com o DataJud no momento. Você poderá tentar sincronizar mais tarde diretamente na página do processo.",
-            { duration: 8000 }
-          );
-        } else {
-          toast.success("Processo criado e dados sincronizados com sucesso!");
-        }
-
-        setTimeout(() => {
-          setCreationModalOpen(false);
-          navigate(`/app/processos/${created.id}`);
-        }, 1200);
+      // 3. Finalização
+      // Se NÃO foi informado CNJ: processo está totalmente pronto
+      if (!hasCnj) {
+        setStepState((prev) => ({ ...prev, concluido: "concluida" }));
+        setIsFinished(true);
+        setSubmitting(false);
+        toast.success("Processo criado com sucesso!");
+        return;
       }
+
+      // Se FOI informado CNJ: a consulta ao DataJud ocorre em segundo plano via RabbitMQ
+      setStepState((prev) => ({ ...prev, datajud: "em_andamento" }));
+
+      // Conecta ao SSE para atualizar o modal em tempo real caso o usuário aguarde na tela
+      const desconectar = conectarStatusSincronizacao(created.id, {
+        onProcessando: () => {
+          setStepState((prev) => ({ ...prev, datajud: "em_andamento" }));
+        },
+        onReprocessando: () => {
+          setStepState((prev) => ({ ...prev, datajud: "em_andamento" }));
+        },
+        onConcluido: (data) => {
+          if (sseConnRef.current) {
+            sseConnRef.current = null;
+          }
+
+          const isErro = data?.status === "ERRO" || data?.status === "AVISO";
+          setStepState((prev) => ({
+            ...prev,
+            datajud: isErro ? "falha" : "concluida",
+            concluido: "concluida",
+          }));
+          setIsFinished(true);
+          setSubmitting(false);
+
+          if (isErro) {
+            toast.info("Processo criado com sucesso!", {
+              description: "Não foi possível carregar os dados do DataJud no momento. Você poderá tentar sincronizar mais tarde diretamente na página do processo.",
+              duration: 8000,
+            });
+          } else {
+            toast.success("Processo criado e dados sincronizados com o DataJud!");
+          }
+        },
+        onError: () => {
+          if (sseConnRef.current) {
+            sseConnRef.current = null;
+          }
+          // Caso a conexão SSE caia, libera o modal permitindo acessar o processo
+          setStepState((prev) => ({
+            ...prev,
+            datajud: prev.datajud === "concluida" ? "concluida" : "falha",
+            concluido: "concluida",
+          }));
+          setIsFinished(true);
+          setSubmitting(false);
+        },
+      });
+
+      sseConnRef.current = desconectar;
 
     } catch (error) {
       console.error("Erro ao criar processo:", error);
@@ -891,6 +939,7 @@ export default function NewProcessPage() {
         stepState={stepState}
         uploadCount={uploadCount}
         isFinished={isFinished}
+        hasCnj={Boolean(cnj && cnj.replace(/\D/g, "").length > 0)}
         onFinish={() => {
           setCreationModalOpen(false);
           if (createdProcessId) {
