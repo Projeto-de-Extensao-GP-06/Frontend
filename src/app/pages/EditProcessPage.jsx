@@ -8,11 +8,13 @@ import { Textarea } from "../components/ui/textarea";
 import { Checkbox } from "../components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { ClientCard } from "../components/ClientCard";
+import { ProcessCreationProgressModal } from "../components/ProcessCreationProgressModal";
 import { maskCNJ, maskCPF, maskCNPJ, maskCurrency } from "../utils/masks";
 import { getDocBadgeClass } from "../utils/document";
 import {
   buscarProcessoPorId,
   atualizarProcesso,
+  conectarStatusSincronizacao,
   excluirProcesso,
   listarPrioridades,
   listarFases,
@@ -29,8 +31,10 @@ import {
   MAX_CARACTERES_OBSERVACAO,
 } from "../services/processoService";
 import { toast } from "sonner";
+import { useSyncProcess } from "../contexts/SyncProcessContext";
 import "../../styles/edit-process-page.css";
 import "../../styles/clients-page.css";
+import "../../styles/process-creation-modal.css";
 
 const MAX_CARACTERES_DESCRICAO_ALTERACAO = 80;
 
@@ -86,6 +90,19 @@ export default function EditProcessPage() {
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
 
   const cnjInputRef = useRef(null);
+  const sseConnRef = useRef(null);
+  const { acompanharSincronizacao } = useSyncProcess();
+
+  // Modal de progresso (ao informar novo CNJ)
+  const [progressModalOpen, setProgressModalOpen] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const isMinimizedRef = useRef(false);
+  const [isFinished, setIsFinished] = useState(false);
+  const [stepState, setStepState] = useState({
+    criando: "pendente",
+    datajud: null,
+    concluido: "pendente",
+  });
 
   // campos do formulário
   const [descricaoCaso, setDescricaoCaso] = useState("");
@@ -101,6 +118,17 @@ export default function EditProcessPage() {
   // campos usados só nos dialogs de encerrar/desativar
   const [motivoStatusProcessoId, setMotivoStatusProcessoId] = useState("");
   const [justificativa, setJustificativa] = useState("");
+
+  useEffect(() => {
+    return () => {
+      if (sseConnRef.current) {
+        try {
+          sseConnRef.current();
+        } catch (_) {}
+        sseConnRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     document.title = "SGPJ | Editar Processo";
@@ -389,6 +417,145 @@ export default function EditProcessPage() {
     return true;
   };
 
+  const handleMinimize = () => {
+    if (sseConnRef.current) {
+      try {
+        sseConnRef.current();
+      } catch (_) {}
+      sseConnRef.current = null;
+    }
+
+    isMinimizedRef.current = true;
+    setIsMinimized(true);
+    setProgressModalOpen(false);
+
+    acompanharSincronizacao({
+      processoId: Number(id),
+      clientName: selectedClient?.name || selectedClient?.nomeRazaoSocial || process?.clientName,
+    });
+
+    toast.info("A sincronização do processo continua em segundo plano. Você será notificado assim que for concluída.", {
+      duration: 4000,
+    });
+    navigate(`/app/processos/${id}`);
+  };
+
+  const handleFinish = () => {
+    if (sseConnRef.current) {
+      try {
+        sseConnRef.current();
+      } catch (_) {}
+      sseConnRef.current = null;
+    }
+    setProgressModalOpen(false);
+    navigate(`/app/processos/${id}`);
+  };
+
+  async function executarAtualizacaoComProgresso(payload) {
+    setStepState({
+      criando: "em_andamento",
+      upload: null,
+      datajud: "pendente",
+      concluido: "pendente",
+    });
+    setIsFinished(false);
+    setIsMinimized(false);
+    isMinimizedRef.current = false;
+    setProgressModalOpen(true);
+    setSaving(true);
+
+    try {
+      await atualizarProcesso(id, payload);
+      if (documentsToDelete.length) {
+        await Promise.all(
+          documentsToDelete.map((document) =>
+            excluirArquivoDoCliente(document.caminhoDeArmazenamentoId, document.name)
+          )
+        );
+        setDocumentsToDelete([]);
+      }
+
+      setStepState((prev) => ({
+        ...prev,
+        criando: "concluida",
+        datajud: "em_andamento",
+      }));
+
+      // Conecta ao SSE para atualizar o modal em tempo real caso o usuário aguarde na tela
+      const desconectar = conectarStatusSincronizacao(id, {
+        onProcessando: () => {
+          setStepState((prev) => ({ ...prev, datajud: "em_andamento" }));
+        },
+        onReprocessando: () => {
+          setStepState((prev) => ({ ...prev, datajud: "em_andamento" }));
+        },
+        onConcluido: (data) => {
+          if (sseConnRef.current) {
+            sseConnRef.current = null;
+          }
+
+          const isErro = data?.status === "ERRO" || data?.status === "AVISO";
+          setStepState((prev) => ({
+            ...prev,
+            datajud: isErro ? "falha" : "concluida",
+            concluido: "concluida",
+          }));
+          setIsFinished(true);
+          setSaving(false);
+
+          if (isErro) {
+            toast.info("Processo atualizado com sucesso!", {
+              description: "Não foi possível carregar os dados do DataJud no momento. Você poderá tentar sincronizar mais tarde diretamente na página do processo.",
+              duration: 8000,
+            });
+          } else {
+            toast.success("Processo atualizado e dados sincronizados com o DataJud!");
+          }
+        },
+        onError: () => {
+          if (sseConnRef.current) {
+            sseConnRef.current = null;
+          }
+          setStepState((prev) => ({
+            ...prev,
+            datajud: prev.datajud === "concluida" ? "concluida" : "falha",
+            concluido: "concluida",
+          }));
+          setIsFinished(true);
+          setSaving(false);
+        },
+      });
+
+      sseConnRef.current = desconectar;
+    } catch (err) {
+      console.error("Erro ao atualizar processo com novo CNJ:", err);
+      setProgressModalOpen(false);
+      setSaving(false);
+
+      const status = err.status || err.response?.status || err.originalError?.response?.status;
+      const responseData = err.response?.data || err.originalError?.response?.data;
+
+      if (status === 401) {
+        toast.warning("Sessão inválida ou expirada.");
+      } else if (status === 409) {
+        const mensagemConflito =
+          responseData?.message ||
+          responseData?.mensagem ||
+          err.message ||
+          "Conflito ao atualizar o processo.";
+        toast.error(mensagemConflito);
+      } else {
+        const mensagemErro =
+          responseData?.message ||
+          responseData?.mensagem ||
+          (responseData?.errors && Object.values(responseData.errors)[0]) ||
+          err.message ||
+          "Não foi possível salvar as alterações.";
+        toast.error(mensagemErro);
+      }
+    }
+  }
+
   const handleSalvar = () => {
     if (descricaoPersonalizadaAtiva && !descricaoAlteracao.trim()) {
       toast.warning("Informe a descrição personalizada ou desative a opção.");
@@ -418,7 +585,12 @@ export default function EditProcessPage() {
     if (descricaoPersonalizadaAtiva) {
       payload.descricaoAlteracao = descricaoAlteracao.trim();
     }
-    enviarAtualizacao(payload, "Processo atualizado com sucesso.", true);
+    const informandoNovoCnj = !hasExistingCnj && Boolean(cnj && cnj.replace(/\D/g, "").length === 20);
+    if (informandoNovoCnj) {
+      executarAtualizacaoComProgresso(payload);
+    } else {
+      enviarAtualizacao(payload, "Processo atualizado com sucesso.", true);
+    }
     setSaveDialogOpen(false);
     setCnjConfirmDialogOpen(false);
   };
@@ -1101,6 +1273,17 @@ export default function EditProcessPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de progresso (ao informar novo CNJ) */}
+      <ProcessCreationProgressModal
+        isOpen={progressModalOpen}
+        onMinimize={handleMinimize}
+        stepState={stepState}
+        isFinished={isFinished}
+        onFinish={handleFinish}
+        hasCnj={true}
+        mode="update"
+      />
 
       {/* Modal: excluir */}
       <Dialog open={deleteDialog} onOpenChange={setDeleteDialog}>

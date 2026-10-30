@@ -22,11 +22,21 @@ export function ProcessCreationProgressModal({
   isFinished = false,
   onFinish = null,
   hasCnj = false,
+  mode = "create",
 }) {
+  const isUpdate = mode === "update";
+
+  const getPrimeiraEtapaTitulo = () => {
+    if (isUpdate) {
+      return "Atualizando processo no sistema";
+    }
+    return hasCnj ? "Registrando processo no sistema" : "Criando processo";
+  };
+
   const steps = [
     {
       id: "criando",
-      title: hasCnj ? "Registrando processo no sistema" : "Criando processo",
+      title: getPrimeiraEtapaTitulo(),
       status: stepState.criando || "pendente",
     },
   ];
@@ -98,14 +108,20 @@ export function ProcessCreationProgressModal({
   const getDescricao = () => {
     if (isFinished) {
       if (hasCnj && stepState.datajud === "falha") {
-        return "Processo criado! Os dados do DataJud poderão ser sincronizados posteriormente.";
+        return isUpdate
+          ? "Processo atualizado! Os dados do DataJud poderão ser sincronizados posteriormente."
+          : "Processo criado! Os dados do DataJud poderão ser sincronizados posteriormente.";
       }
-      return "O processo foi registrado com sucesso no sistema.";
+      return isUpdate
+        ? "O processo foi atualizado com sucesso no sistema."
+        : "O processo foi registrado com sucesso no sistema.";
     }
     if (hasCnj) {
       return "A consulta no DataJud está em andamento. Você pode aguardar a conclusão ou continuar em segundo plano:";
     }
-    return "Aguarde enquanto o processo é registrado no sistema:";
+    return isUpdate
+      ? "Aguarde enquanto o processo é atualizado no sistema:"
+      : "Aguarde enquanto o processo é registrado no sistema:";
   };
 
   return (
@@ -143,7 +159,9 @@ export function ProcessCreationProgressModal({
         <div className="creation-progress-header">
           <div>
             <DialogTitle className="creation-progress-dialog-title">
-              {isFinished ? "Processo Criado!" : "Criando Processo"}
+              {isFinished
+                ? (isUpdate ? "Processo Atualizado!" : "Processo Criado!")
+                : (isUpdate ? "Atualizando Processo" : "Criando Processo")}
             </DialogTitle>
             <DialogDescription className="creation-progress-dialog-desc">
               {getDescricao()}
