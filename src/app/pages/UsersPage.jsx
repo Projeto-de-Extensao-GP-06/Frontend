@@ -193,6 +193,7 @@ export default function UsersPage() {
 
             <FilterSelect
               prefix="users"
+              className={`users-filter-select${filterRole !== "Todos" ? " users-filter-select--active" : ""}`}
               label="Cargo"
               value={filterRole}
               onChange={(val) => {
@@ -209,6 +210,7 @@ export default function UsersPage() {
 
             <FilterSelect
               prefix="users"
+              className={`users-filter-select${filterStatus !== "Todos" ? " users-filter-select--active" : ""}`}
               label="Status"
               value={filterStatus}
               onChange={(val) => {

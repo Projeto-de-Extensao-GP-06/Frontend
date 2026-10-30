@@ -311,6 +311,21 @@
   overflow: hidden;
 }
 
+.home-filter-select--active {
+  border-color: #8ba8e8;
+  background: #e8efff;
+}
+
+.home-filter-select--active .home-filter-select-label {
+  color: #0f2357;
+}
+
+.home-filter-select--active .home-filter-select-input {
+  border-left-color: #c2d0f0;
+  color: #0f2357;
+  font-weight: 700;
+}
+
 .home-filter-select-label {
   padding: 0.375rem 0.5rem 0.375rem 0.75rem;
   color: #374151;

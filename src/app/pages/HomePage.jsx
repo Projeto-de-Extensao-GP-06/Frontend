@@ -57,7 +57,7 @@ function mapearProcesso(p) {
     id: p.id,
     cnj: p.numeroProcesso || p.processoApi?.numeroCnj || "-",
     clientName: p.clientNomeRazaoSocial || "Sem nome",
-    tribunal: p.siglaTribunal?.nome?.toUpperCase() || "-",
+    tribunal: (p.siglaTribunal?.siglaTribunal || p.siglaTribunal?.nome)?.toUpperCase() || "-",
     hearingDate: formatarData(p.dataAudiencia),
     status: p.status ? p.status.trim().toLowerCase() : "ativo",
     priority: p.prioridade?.nome ? p.prioridade.nome.trim().toLowerCase() : "baixa",
@@ -148,7 +148,10 @@ export default function HomePage() {
         ]);
         setTribunalOpts([
           { value: "Todos", label: "Todos" },
-          ...tribunais.map(t => ({ value: String(t.id), label: t.nome?.toUpperCase() || t.nome })),
+          ...tribunais.map(t => {
+            const label = t.siglaTribunal || t.nome || "";
+            return { value: String(t.id), label: label.toUpperCase() || label };
+          }),
         ]);
         setPrioridadeOpts([
           { value: "Todas", label: "Todas" },
@@ -325,7 +328,13 @@ export default function HomePage() {
           <div className="home-filter-group-left">
             <span className="home-filter-label">Filtros</span>
 
-            <FilterSelect prefix="home" label="Status" value={filterStatus} onChange={v => { setFilterStatus(v); setPage(1); }}>
+            <FilterSelect
+              prefix="home"
+              className={`home-filter-select${filterStatus !== "Todos" ? " home-filter-select--active" : ""}`}
+              label="Status"
+              value={filterStatus}
+              onChange={v => { setFilterStatus(v); setPage(1); }}
+            >
               {STATUS_OPTS.map(o => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
@@ -333,6 +342,7 @@ export default function HomePage() {
 
             <FilterSelect
               prefix="home"
+              className={`home-filter-select${faseId != null ? " home-filter-select--active" : ""}`}
               label="Fase"
               value={faseId != null ? String(faseId) : "Todas"}
               onChange={v => { setFaseId(v === "Todas" ? null : Number(v)); setPage(1); }}
@@ -344,6 +354,7 @@ export default function HomePage() {
 
             <FilterSelect
               prefix="home"
+              className={`home-filter-select${prioridadeId != null ? " home-filter-select--active" : ""}`}
               label="Prioridade"
               value={prioridadeId != null ? String(prioridadeId) : "Todas"}
               onChange={v => { setPrioridadeId(v === "Todas" ? null : Number(v)); setPage(1); }}
@@ -353,7 +364,13 @@ export default function HomePage() {
               ))}
             </FilterSelect>
 
-            <FilterSelect prefix="home" label="Audiência" value={filterHearing} onChange={v => { setFilterHearing(v); setPage(1); }}>
+            <FilterSelect
+              prefix="home"
+              className={`home-filter-select${filterHearing !== "Todos" ? " home-filter-select--active" : ""}`}
+              label="Audiência"
+              value={filterHearing}
+              onChange={v => { setFilterHearing(v); setPage(1); }}
+            >
               {HEARING_OPTS.map(o => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
@@ -361,6 +378,7 @@ export default function HomePage() {
 
             <FilterSelect
               prefix="home"
+              className={`home-filter-select${tribunalId != null ? " home-filter-select--active" : ""}`}
               label="Tribunal"
               value={tribunalId != null ? String(tribunalId) : "Todos"}
               onChange={v => { setTribunalId(v === "Todos" ? null : Number(v)); setPage(1); }}

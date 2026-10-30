@@ -983,8 +983,15 @@
 .site-footer__logo {
   display: flex;
   align-items: center;
-  height: 2.5rem;
   margin-bottom: 1.5rem;
+}
+
+.site-footer__logo-img {
+  width: 100%;
+  max-width: clamp(9.5rem, 40vw, 12rem);
+  height: auto;
+  object-fit: contain;
+  display: block;
 }
 
 .site-footer__contacts {
@@ -1243,6 +1250,10 @@
     margin-bottom: 0;
   }
 
+  .site-footer__logo-img {
+    max-width: 13rem;
+  }
+
   .site-footer__legal {
     grid-column: 1 / -1;
     margin-top: 2.5rem;
@@ -1253,6 +1264,10 @@
   .site-section,
   .site-footer {
     padding-inline: 1rem;
+  }
+
+  .site-footer__logo-img {
+    max-width: 9rem;
   }
 
   .site-contact-card {
