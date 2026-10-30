@@ -344,7 +344,7 @@ export function juntarObservacoes(observacoes) {
     .join(SEPARADOR_OBSERVACAO);
 }
 
-export function conectarStatusSincronizacao(id, { onIniciado, onProcessando, onConcluido, onError } = {}) {
+export function conectarStatusSincronizacao(id, { onIniciado, onProcessando, onReprocessando, onConcluido, onError } = {}) {
   const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
   const url = `${baseUrl}/processos/${id}/sincronizacao-status`;
   const eventSource = new EventSource(url, { withCredentials: true });
@@ -367,6 +367,13 @@ export function conectarStatusSincronizacao(id, { onIniciado, onProcessando, onC
     try {
       const data = JSON.parse(e.data);
       onProcessando?.(data);
+    } catch (_) {}
+  });
+
+  eventSource.addEventListener("REPROCESSANDO", (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      onReprocessando?.(data);
     } catch (_) {}
   });
 
