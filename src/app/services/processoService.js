@@ -135,7 +135,9 @@ export async function listarProcessos(filtros = {}) {
 }
 
 export async function listarClientesParaProcesso() {
-  const response = await api.get("/clientes");
+  const response = await api.get("/clientes", {
+    params: { excluirLead: true },
+  });
   const clientes = Array.isArray(response.data) ? response.data : [];
 
   return clientes.map((cliente) => {
