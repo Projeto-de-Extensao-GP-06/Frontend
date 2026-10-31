@@ -3,7 +3,11 @@ import { useNavigate } from "react-router";
 import { ChevronRight, Mail, Calendar, Inbox, Search, X } from "lucide-react";
 import { FilterSelect } from "../components/FilterSelect";
 import { PaginationBar } from "../components/PaginationBar";
-import { filtrarSolicitacoes, listarSolicitacoes, mapearSolicitacao } from "../services/solicitacaoService";
+import {
+  filtrarSolicitacoes,
+  listarSolicitacoes,
+  mapearSolicitacao,
+} from "../services/solicitacaoService";
 import { brazilStates } from "../data/mockData";
 import "../../styles/requests-page.css";
 

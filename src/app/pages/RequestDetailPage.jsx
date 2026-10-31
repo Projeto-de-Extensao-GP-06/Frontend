@@ -3,7 +3,13 @@ import { useNavigate, useParams } from "react-router";
 import { ArrowLeft, Mail, Phone, Calendar, FileText, Check, X, User, Building2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { StatusBadge } from "../components/StatusBadge";
-import { aceitarSolicitacao, buscarSolicitacaoPorId, mapearSolicitacao, negarSolicitacao } from "../services/solicitacaoService";
+import {
+  aceitarSolicitacao,
+  buscarDuplicidadesSolicitacao,
+  buscarSolicitacaoPorId,
+  mapearSolicitacao,
+  negarSolicitacao,
+} from "../services/solicitacaoService";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { AcceptRequestModal } from "../components/AcceptRequestModal";
 import { maskPhone, maskCNJ } from "../utils/masks";
@@ -13,6 +19,7 @@ export default function RequestDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [request, setRequest] = useState(null);
+  const [duplicateStatus, setDuplicateStatus] = useState("checking");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [retryIndex, setRetryIndex] = useState(0);
@@ -51,6 +58,32 @@ export default function RequestDetailPage() {
   }, [id, retryIndex]);
 
   useEffect(() => {
+    const controller = new AbortController();
+    let current = true;
+    setDuplicateStatus("checking");
+
+    buscarDuplicidadesSolicitacao(id, { signal: controller.signal })
+      .then((candidates) => {
+        if (!Array.isArray(candidates)) {
+          throw new Error("Resposta inválida ao consultar possíveis duplicidades.");
+        }
+        if (current) {
+          setDuplicateStatus(candidates.length > 0 ? "duplicate" : "none");
+        }
+      })
+      .catch((requestError) => {
+        if (!current || controller.signal.aborted) return;
+        console.warn(`Não foi possível verificar duplicidades da solicitação ${id}.`, requestError);
+        setDuplicateStatus("error");
+      });
+
+    return () => {
+      current = false;
+      controller.abort();
+    };
+  }, [id, retryIndex]);
+
+  useEffect(() => {
     document.title = request ? `SGPJ | Solicitação - ${request.companyName || request.name}` : "SGPJ | Solicitação";
   }, [request]);
 
@@ -80,6 +113,17 @@ export default function RequestDetailPage() {
       <div className="req-detail-header">
         <div>
           <p className="req-detail-header__kicker">Solicitações › Detalhe</p>
+          {duplicateStatus === "duplicate" && (
+            <p className="req-detail-duplicate-badge">Possível duplicidade</p>
+          )}
+          {duplicateStatus === "checking" && (
+            <p className="req-detail-duplicate-status" role="status">Verificando duplicidade...</p>
+          )}
+          {duplicateStatus === "error" && (
+            <p className="req-detail-duplicate-status req-detail-duplicate-status--error" role="status">
+              Não foi possível verificar duplicidade.
+            </p>
+          )}
           <h1 className="req-detail-header__title">{request.companyName || request.name}</h1>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>

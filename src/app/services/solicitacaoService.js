@@ -59,6 +59,11 @@ export async function buscarSolicitacaoPorId(id, { signal } = {}) {
   return response.data;
 }
 
+export async function buscarDuplicidadesSolicitacao(id, { signal } = {}) {
+  const response = await api.get(`/solicitacoes/${encodeURIComponent(id)}/duplicidades`, { signal });
+  return response.data;
+}
+
 export async function aceitarSolicitacao(id, dados) {
   const response = await api.patch(`/solicitacoes/${encodeURIComponent(id)}/aceitar`, dados);
   return response.data;
