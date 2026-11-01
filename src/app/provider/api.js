@@ -69,7 +69,14 @@ api.interceptors.response.use(
         const originalRequest = error.config;
         const status = error.response?.status;
         const requestUrl = originalRequest?.url || "";
-        const serverMessage = error.response?.data?.mensagem || error.response?.data?.message;
+        const responseData = error.response?.data;
+        let serverMessage = responseData?.mensagem || responseData?.message;
+        if (!serverMessage && responseData?.errors && typeof responseData.errors === 'object') {
+            const errValues = Object.values(responseData.errors);
+            if (errValues.length > 0) serverMessage = errValues[0];
+        } else if (!serverMessage && typeof responseData === 'string' && responseData.trim()) {
+            serverMessage = responseData;
+        }
 
         const isNoRefreshEndpoint = NO_REFRESH_ENDPOINTS.some((endpoint) =>
             requestUrl.includes(endpoint)
