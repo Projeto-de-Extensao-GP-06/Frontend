@@ -6,6 +6,7 @@ import { atualizarDadosProcesso, conectarStatusSincronizacao } from "../services
 const SyncProcessContext = createContext({
   processosSincronizando: new Set(),
   iniciarSincronizacao: () => {},
+  acompanharSincronizacao: () => {},
   isSincronizando: () => false,
   ultimoProcessoSincronizadoId: null,
 });
@@ -34,12 +35,11 @@ export function SyncProcessProvider({ children }) {
     [sincronizandoIds]
   );
 
-  const iniciarSincronizacao = useCallback(
-    async ({ processoId, clientName }) => {
+  const acompanharSincronizacao = useCallback(
+    ({ processoId, clientName }) => {
       const idStr = String(processoId);
 
       if (sincronizandoIds.has(idStr)) {
-        toast.info("A sincronização deste processo já está em andamento.");
         return;
       }
 
@@ -53,16 +53,10 @@ export function SyncProcessProvider({ children }) {
 
       // Conecta ao SSE global mantido no layout da aplicação
       const desconectarSse = conectarStatusSincronizacao(processoId, {
-        onIniciado: () => {
-          // Processo enfileirado no RabbitMQ
-        },
-        onProcessando: () => {
-          toast.info("Processando na fila RabbitMQ: buscando dados oficiais no DataJud...", {
-            duration: 6000,
-          });
-        },
+        onIniciado: () => {},
+        onProcessando: () => {},
+        onReprocessando: () => {},
         onConcluido: (data) => {
-          // Remove da lista de processos em sincronização
           setSincronizandoIds((prev) => {
             const next = new Set(prev);
             next.delete(idStr);
@@ -70,16 +64,25 @@ export function SyncProcessProvider({ children }) {
           });
 
           conexoesSseRef.current.delete(idStr);
+
+          // Trata status de falha/aviso retornado pelo backend
+          if (data?.status === "ERRO" || data?.status === "AVISO") {
+            toast.error(
+              data?.mensagem || "Não foi possível sincronizar os dados oficiais no DataJud.",
+              { duration: 6000 }
+            );
+            return;
+          }
+
           setUltimoProcessoSincronizadoId(processoId);
 
-          // Dispara notificação global sonner que persiste em qualquer rota.
-          // O scroll/highlight é feito pelo ProcessDetailPage após recarregar os dados.
+          // Dispara notificação de sucesso com ação para ver o processo
           toast.success(
             clientName
               ? `Dados do processo de ${clientName} sincronizados com sucesso!`
               : "Dados do processo sincronizados com sucesso!",
             {
-              duration: 15000,
+              duration: 10000,
               action: {
                 label: "Ver Processo",
                 onClick: () => {
@@ -98,19 +101,37 @@ export function SyncProcessProvider({ children }) {
           );
         },
         onError: () => {
-          // Caso a conexão SSE caia, desconecta o listener
+          setSincronizandoIds((prev) => {
+            const next = new Set(prev);
+            next.delete(idStr);
+            return next;
+          });
           conexoesSseRef.current.delete(idStr);
         },
       });
 
       conexoesSseRef.current.set(idStr, desconectarSse);
+    },
+    [sincronizandoIds, navigate]
+  );
+
+  const iniciarSincronizacao = useCallback(
+    async ({ processoId, clientName }) => {
+      const idStr = String(processoId);
+
+      if (sincronizandoIds.has(idStr)) {
+        toast.info("A sincronização deste processo já está em andamento.", { duration: 4000 });
+        return;
+      }
+
+      acompanharSincronizacao({ processoId, clientName });
 
       try {
         const resposta = await atualizarDadosProcesso(processoId);
         toast.info(
           resposta?.mensagem ||
-            "Solicitação de sincronização enviada para a fila RabbitMQ!",
-          { duration: 5000 }
+            "Solicitação de sincronização enviada para a fila de processamento.",
+          { duration: 4000 }
         );
       } catch (err) {
         setSincronizandoIds((prev) => {
@@ -125,10 +146,10 @@ export function SyncProcessProvider({ children }) {
         }
 
         const msg = err.response?.data?.message || "Não foi possível iniciar a sincronização do processo.";
-        toast.error(msg);
+        toast.error(msg, { duration: 5000 });
       }
     },
-    [sincronizandoIds, navigate]
+    [sincronizandoIds, acompanharSincronizacao]
   );
 
   return (
@@ -136,6 +157,7 @@ export function SyncProcessProvider({ children }) {
       value={{
         processosSincronizando: sincronizandoIds,
         iniciarSincronizacao,
+        acompanharSincronizacao,
         isSincronizando,
         ultimoProcessoSincronizadoId,
       }}

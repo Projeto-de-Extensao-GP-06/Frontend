@@ -1,19 +1,19 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router";
-import { ArrowLeft, Plus, Trash2, X, Search, Users, RefreshCw, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, X, Search, Users, RefreshCw, Loader2, AlertTriangle, CloudUpload } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { ClientCard } from "../components/ClientCard";
 import { SelectClientModal } from "../components/SelectClientModal";
-import { DocumentUploadModal } from "../components/DocumentUploadModal";
 import { ProcessCreationProgressModal } from "../components/ProcessCreationProgressModal";
 import {
   criarProcesso,
+  conectarStatusSincronizacao,
   listarPrioridades,
   listarFases,
-  listarTribunais,
   listarTiposDocumento,
   enviarDocumentosDoCliente,
   obterCaminhoDoCliente,
@@ -24,30 +24,32 @@ import {
 import { maskCNJ, maskCurrency } from "../utils/masks";
 import { getDocBadgeClass } from "../utils/document";
 import { toast } from "sonner";
+import { useSyncProcess } from "../contexts/SyncProcessContext";
 import "../../styles/edit-process-page.css";
 import "../../styles/select-client-modal.css";
 import "../../styles/process-creation-modal.css";
 
 export default function NewProcessPage() {
   const navigate = useNavigate();
+  const { acompanharSincronizacao } = useSyncProcess();
+  const sseConnRef = useRef(null);
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [prioridades, setPrioridades] = useState([]);
   const [fases, setFases] = useState([]);
-  const [tribunais, setTribunais] = useState([]);
   const [tiposDocumento, setTiposDocumento] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
   const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
   const [cnj, setCnj] = useState("");
   const [prioridadeId, setPrioridadeId] = useState("");
   const [faseProcessoId, setFaseProcessoId] = useState("");
-  const [siglaTribunalId, setSiglaTribunalId] = useState("");
   const [causeValue, setCauseValue] = useState("");
   const [hearingDate, setHearingDate] = useState("");
   const [hearingTime, setHearingTime] = useState("");
   const [description, setDescription] = useState("");
   const [observations, setObservations] = useState([""]);
-  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [tipoDocumentoId, setTipoDocumentoId] = useState("");
+  const [cnjConfirmDialogOpen, setCnjConfirmDialogOpen] = useState(false);
   const [files, setFiles] = useState([]);
 
   // Modal de progresso
@@ -63,11 +65,37 @@ export default function NewProcessPage() {
   });
   const [uploadCount, setUploadCount] = useState({ current: 0, total: 0 });
 
+  useEffect(() => {
+    return () => {
+      if (sseConnRef.current) {
+        try {
+          sseConnRef.current();
+        } catch (_) {}
+        sseConnRef.current = null;
+      }
+    };
+  }, []);
+
   const handleMinimize = () => {
+    if (sseConnRef.current) {
+      try {
+        sseConnRef.current();
+      } catch (_) {}
+      sseConnRef.current = null;
+    }
+
     isMinimizedRef.current = true;
     setIsMinimized(true);
     setCreationModalOpen(false);
-    toast.info("A criação do processo continua em segundo plano. Você será notificado assim que for concluída.", {
+
+    if (createdProcessId) {
+      acompanharSincronizacao({
+        processoId: createdProcessId,
+        clientName: selectedClient?.nomeRazaoSocial || selectedClient?.name,
+      });
+    }
+
+    toast.info("A sincronização do processo continua em segundo plano. Você será notificado assim que for concluída.", {
       duration: 4000,
     });
     navigate("/app/inicio");
@@ -81,21 +109,20 @@ export default function NewProcessPage() {
   const clientBtnRef = useRef(null);
   const prioridadeRef = useRef(null);
   const faseRef = useRef(null);
-  const tribunalRef = useRef(null);
   const causeValueRef = useRef(null);
   const hearingDateRef = useRef(null);
+  const hearingTimeRef = useRef(null);
   const descriptionRef = useRef(null);
   const observationRef = useRef(null);
 
   useEffect(() => {
     document.title = "SGPJ | Novo Processo";
     let active = true;
-    Promise.all([listarPrioridades(), listarFases(), listarTribunais()])
-      .then(([priorityOptions, phases, courts]) => {
+    Promise.all([listarPrioridades(), listarFases()])
+      .then(([priorityOptions, phases]) => {
         if (!active) return;
         setPrioridades(priorityOptions);
         setFases(phases);
-        setTribunais(courts);
       })
       .catch((error) => {
         console.error("Erro ao carregar opções para novo processo:", error);
@@ -137,13 +164,20 @@ export default function NewProcessPage() {
     }
   };
 
-  const handleStageDocuments = (items) => {
+  const handleSelectFiles = (event) => {
+    const arquivos = Array.from(event.target.files || []);
+    event.target.value = "";
+    if (!arquivos.length) return;
+    if (!tipoDocumentoId) {
+      toast.warning("Selecione o tipo de documento antes de adicionar o arquivo.");
+      return;
+    }
     setFiles((prev) => [
       ...prev,
-      ...items.map(({ file, tipoId }) => ({
+      ...arquivos.map((file) => ({
         key: `${file.name}-${file.size}-${file.lastModified}-${Math.random()}`,
         file,
-        tipoId: String(tipoId),
+        tipoId: String(tipoDocumentoId),
       })),
     ]);
   };
@@ -168,12 +202,7 @@ export default function NewProcessPage() {
       newErrors.fase = "Selecione a fase do processo.";
     }
 
-    // 4. Tribunal obrigatório
-    if (!siglaTribunalId) {
-      newErrors.tribunal = "Selecione o tribunal responsável.";
-    }
-
-    // 5. Descrição do caso (obrigatória, mín 10)
+    // 4. Descrição do caso (obrigatória, mín 10)
     if (!description.trim()) {
       newErrors.descricao = "A descrição do caso é obrigatória.";
     } else if (description.trim().length < 10) {
@@ -182,7 +211,7 @@ export default function NewProcessPage() {
       newErrors.descricao = "A descrição não pode ter mais de 5.000 caracteres.";
     }
 
-    // 6. CNJ: vazio ou exatamente 20 dígitos
+    // 5. CNJ: vazio ou exatamente 20 dígitos
     if (cnj) {
       const cnjLimpo = cnj.replace(/\D/g, "");
       if (cnjLimpo.length !== 20) {
@@ -190,7 +219,7 @@ export default function NewProcessPage() {
       }
     }
 
-    // 7. Data da audiência: data real (rejeitar 31/02, ano com 4 dígitos, ano entre 2000 e o ano atual + 10); se houver hora, data é obrigatória
+    // 6. Data e hora da audiência: data real (rejeitar 31/02, ano com 4 dígitos, ano entre 2000 e o ano atual + 10); data e hora não podem ser registradas separadamente
     if (hearingTime && !hearingDate) {
       newErrors.dataAudiencia = "Informe a data da audiência para o horário preenchido.";
     } else if (hearingDate) {
@@ -216,12 +245,14 @@ export default function NewProcessPage() {
             dateObj.getDate() !== day
           ) {
             newErrors.dataAudiencia = "Data da audiência inexistente no calendário (ex: 31/02).";
+          } else if (!hearingTime) {
+            newErrors.dataAudiencia = "Informe o horário da audiência para a data preenchida.";
           }
         }
       }
     }
 
-    // 8. Valor da causa: maior que zero quando informado
+    // 7. Valor da causa: maior que zero quando informado
     if (causeValue) {
       const numVal = Number(causeValue.replace(/\D/g, "")) / 100;
       if (isNaN(numVal) || numVal <= 0) {
@@ -231,7 +262,7 @@ export default function NewProcessPage() {
       }
     }
 
-    // 9. Observações: limites existentes
+    // 8. Observações: limites existentes
     if (observations.length > MAX_OBSERVACOES) {
       newErrors.observacoes = `O processo aceita até ${MAX_OBSERVACOES} observações.`;
     } else if (observations.some((item) => item.trim().length > MAX_CARACTERES_OBSERVACAO)) {
@@ -248,7 +279,7 @@ export default function NewProcessPage() {
     return newErrors;
   };
 
-  const handleCreate = async () => {
+  const handleCreate = () => {
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -259,9 +290,8 @@ export default function NewProcessPage() {
         { key: "cliente", ref: clientBtnRef },
         { key: "prioridade", ref: prioridadeRef },
         { key: "fase", ref: faseRef },
-        { key: "tribunal", ref: tribunalRef },
         { key: "valorCausa", ref: causeValueRef },
-        { key: "dataAudiencia", ref: hearingDateRef },
+        { key: "dataAudiencia", ref: hearingDate && !hearingTime ? hearingTimeRef : hearingDateRef },
         { key: "descricao", ref: descriptionRef },
         { key: "observacoes", ref: observationRef },
       ];
@@ -276,10 +306,24 @@ export default function NewProcessPage() {
       return;
     }
 
+    if (cnj && cnj.replace(/\D/g, "").length === 20) {
+      setCnjConfirmDialogOpen(true);
+      return;
+    }
+
+    executarCriacaoProcesso();
+  };
+
+  const executarCriacaoProcesso = async () => {
+    setCnjConfirmDialogOpen(false);
+
+    const hasCnj = Boolean(cnj && cnj.replace(/\D/g, "").length > 0);
+
     // Modal de progresso com etapas reais
     setStepState({
       criando: "em_andamento",
       upload: files.length > 0 ? "pendente" : null,
+      datajud: hasCnj ? "pendente" : null,
       concluido: "pendente",
     });
     setUploadCount({ current: 0, total: files.length });
@@ -296,10 +340,9 @@ export default function NewProcessPage() {
       observacao: juntarObservacoes(observations) || null,
       prioridadeId: Number(prioridadeId),
       faseProcessoId: Number(faseProcessoId),
-      siglaTribunalId: Number(siglaTribunalId),
       numeroProcesso: cnj ? cnj.replace(/\D/g, "") : null,
-      dataAudiencia: hearingDate
-        ? `${hearingDate}T${hearingTime || "00:00"}:00`
+      dataAudiencia: hearingDate && hearingTime
+        ? `${hearingDate}T${hearingTime}:00`
         : null,
       valorCausa: causeValue ? Number(causeValue.replace(/\D/g, "")) / 100 : null,
     };
@@ -375,51 +418,66 @@ export default function NewProcessPage() {
         }
       }
 
-      // 3. Concluído
-      setStepState((prev) => ({ ...prev, concluido: "concluida" }));
-      setIsFinished(true);
-
-      const foiMinimizado = isMinimizedRef.current;
-
-      if (foiMinimizado) {
-        // Se o usuário colocou em segundo plano, NUNCA redirecionamos forçado para não atrapalhar o que ele estiver fazendo!
-        setIsMinimized(false);
-        setCreationModalOpen(false);
-
-        if (created?.sincronizado === false && payload.numeroProcesso) {
-          toast.info("Processo criado com sucesso!", {
-            description: "Não foi possível carregar os dados do DataJud no momento. Você poderá tentar sincronizar mais tarde diretamente na página do processo.",
-            action: {
-              label: "Ver Processo",
-              onClick: () => navigate(`/app/processos/${created.id}`),
-            },
-            duration: 15000,
-          });
-        } else {
-          toast.success("Processo criado e sincronizado com o DataJud!", {
-            action: {
-              label: "Ver Processo",
-              onClick: () => navigate(`/app/processos/${created.id}`),
-            },
-            duration: 12000,
-          });
-        }
-      } else {
-        // Se o usuário optou por aguardar no modal aberto
-        if (created?.sincronizado === false && payload.numeroProcesso) {
-          toast.info(
-            "Processo criado com sucesso! Não foi possível estabelecer conexão com o DataJud no momento. Você poderá tentar sincronizar mais tarde diretamente na página do processo.",
-            { duration: 8000 }
-          );
-        } else {
-          toast.success("Processo criado e dados sincronizados com sucesso!");
-        }
-
-        setTimeout(() => {
-          setCreationModalOpen(false);
-          navigate(`/app/processos/${created.id}`);
-        }, 1200);
+      // 3. Finalização
+      // Se NÃO foi informado CNJ: processo está totalmente pronto
+      if (!hasCnj) {
+        setStepState((prev) => ({ ...prev, concluido: "concluida" }));
+        setIsFinished(true);
+        setSubmitting(false);
+        toast.success("Processo criado com sucesso!");
+        return;
       }
+
+      // Se FOI informado CNJ: a consulta ao DataJud ocorre em segundo plano via RabbitMQ
+      setStepState((prev) => ({ ...prev, datajud: "em_andamento" }));
+
+      // Conecta ao SSE para atualizar o modal em tempo real caso o usuário aguarde na tela
+      const desconectar = conectarStatusSincronizacao(created.id, {
+        onProcessando: () => {
+          setStepState((prev) => ({ ...prev, datajud: "em_andamento" }));
+        },
+        onReprocessando: () => {
+          setStepState((prev) => ({ ...prev, datajud: "em_andamento" }));
+        },
+        onConcluido: (data) => {
+          if (sseConnRef.current) {
+            sseConnRef.current = null;
+          }
+
+          const isErro = data?.status === "ERRO" || data?.status === "AVISO";
+          setStepState((prev) => ({
+            ...prev,
+            datajud: isErro ? "falha" : "concluida",
+            concluido: "concluida",
+          }));
+          setIsFinished(true);
+          setSubmitting(false);
+
+          if (isErro) {
+            toast.info("Processo criado com sucesso!", {
+              description: "Não foi possível carregar os dados do DataJud no momento. Você poderá tentar sincronizar mais tarde diretamente na página do processo.",
+              duration: 8000,
+            });
+          } else {
+            toast.success("Processo criado e dados sincronizados com o DataJud!");
+          }
+        },
+        onError: () => {
+          if (sseConnRef.current) {
+            sseConnRef.current = null;
+          }
+          // Caso a conexão SSE caia, libera o modal permitindo acessar o processo
+          setStepState((prev) => ({
+            ...prev,
+            datajud: prev.datajud === "concluida" ? "concluida" : "falha",
+            concluido: "concluida",
+          }));
+          setIsFinished(true);
+          setSubmitting(false);
+        },
+      });
+
+      sseConnRef.current = desconectar;
 
     } catch (error) {
       console.error("Erro ao criar processo:", error);
@@ -433,7 +491,11 @@ export default function NewProcessPage() {
       setIsMinimized(false);
       isMinimizedRef.current = false;
 
-      if (error.response?.status === 409 || message.toLowerCase().includes("cnj")) {
+      if (
+        error.response?.status === 409 ||
+        message.toLowerCase().includes("cnj") ||
+        message.toLowerCase().includes("tribunal")
+      ) {
         setErrors((prev) => ({ ...prev, cnj: message }));
         cnjRef.current?.focus?.();
         cnjRef.current?.scrollIntoView?.({ behavior: "smooth", block: "center" });
@@ -600,31 +662,6 @@ export default function NewProcessPage() {
           </div>
         </div>
 
-        {/* Sigla Tribunal */}
-        <div className="edit-process-field">
-          <Label className="edit-process-label">Sigla Tribunal</Label>
-          <select
-            ref={tribunalRef}
-            className="edit-process-select"
-            value={siglaTribunalId}
-            onChange={(event) => {
-              setSiglaTribunalId(event.target.value);
-              if (errors.tribunal) setErrors((prev) => ({ ...prev, tribunal: undefined }));
-            }}
-            disabled={loadingOptions}
-          >
-            <option value="">Selecionar tribunal...</option>
-            {tribunais.map((item) => (
-              <option key={item.id} value={item.id}>{item.siglaTribunal}</option>
-            ))}
-          </select>
-          {errors.tribunal && (
-            <p className="edit-process-field-error" style={{ color: "#ef4444", fontSize: "0.8125rem", marginTop: "4px" }}>
-              {errors.tribunal}
-            </p>
-          )}
-        </div>
-
         {/* Valor da causa e Audiência */}
         <div className="edit-process-grid edit-process-grid--2">
           <div className="edit-process-field">
@@ -663,6 +700,7 @@ export default function NewProcessPage() {
                 className="edit-process-input edit-process-input--mono"
               />
               <Input
+                ref={hearingTimeRef}
                 type="time"
                 value={hearingTime}
                 onChange={(event) => {
@@ -763,43 +801,62 @@ export default function NewProcessPage() {
         <div className="edit-process-field">
           <Label className="edit-process-label edit-process-label--spaced">Documentos (opcional)</Label>
           <p className="edit-process-doc-hint">
-            Adicione os arquivos e classifique cada um. Eles serão enviados ao OneDrive quando o processo for criado.
+            Os documentos são compartilhados entre os processos deste cliente. Eles serão enviados ao OneDrive quando o processo for criado.
           </p>
-          {files.length > 0 && (
-            <div className="new-process-file-list">
-              {files.map(({ key, file, tipoId }) => (
-                <div key={key} className="new-process-file-item">
-                  <div className={`edit-process-doc-badge ${getDocBadgeClass(file.name.split(".").pop())}`}>
-                    {file.name.split(".").pop().slice(0, 4).toUpperCase()}
-                  </div>
-                  <div className="new-process-file-item__info">
-                    <span title={file.name}>{file.name}</span>
-                    <small>
-                      {tiposDocumento.find((tipo) => String(tipo.id) === String(tipoId))?.nome || "Documento"}
-                    </small>
-                  </div>
+          <div className="edit-process-document-type">
+            <Label className="edit-process-label" htmlFor="new-process-document-type">
+              Tipo do documento
+            </Label>
+            <select
+              id="new-process-document-type"
+              className="edit-process-select"
+              value={tipoDocumentoId}
+              onChange={(event) => setTipoDocumentoId(event.target.value)}
+              disabled={submitting}
+            >
+              <option value="">Selecione o tipo</option>
+              {tiposDocumento.map((tipo) => (
+                <option key={tipo.id} value={tipo.id}>{tipo.nome}</option>
+              ))}
+            </select>
+          </div>
+          <div className="edit-process-doc-grid">
+            {files.map(({ key, file, tipoId }) => {
+              const ext = file.name.includes(".") ? file.name.split(".").pop() : "";
+              const tipoNome = tiposDocumento.find((tipo) => String(tipo.id) === String(tipoId))?.nome || "Documento";
+              return (
+                <div key={key} className="edit-process-doc-card">
                   <button
                     type="button"
+                    className="edit-process-remove-doc"
                     onClick={() => setFiles((prev) => prev.filter((item) => item.key !== key))}
+                    title="Remover documento"
                     aria-label={`Remover ${file.name}`}
                   >
                     <X size={14} />
                   </button>
+                  <div className={`edit-process-doc-badge ${getDocBadgeClass(ext)}`}>
+                    {ext.slice(0, 4).toUpperCase()}
+                  </div>
+                  <p className="edit-process-doc-name" title={file.name}>{file.name}</p>
+                  <span className="edit-process-doc-date">{tipoNome}</span>
                 </div>
-              ))}
-            </div>
-          )}
-          <button
-            type="button"
-            className="edit-process-doc-upload"
-            onClick={() => setUploadModalOpen(true)}
-            disabled={!tiposDocumento.length}
-          >
-            <Plus size={18} className="edit-process-doc-upload-icon" />
-            <p className="edit-process-doc-upload-text">
-              {files.length ? "Adicionar mais arquivos" : "Adicionar arquivos"}
-            </p>
-          </button>
+              );
+            })}
+            <label htmlFor="new-process-file-upload" className="edit-process-doc-upload">
+              <input
+                id="new-process-file-upload"
+                type="file"
+                multiple
+                onChange={handleSelectFiles}
+                className="edit-process-file-input-hidden"
+                disabled={submitting || !tiposDocumento.length}
+              />
+              <CloudUpload size={18} className="edit-process-doc-upload-icon" />
+              <p className="edit-process-doc-upload-text">Adicionar arquivo</p>
+            </label>
+          </div>
+          {!files.length && <p className="edit-process-doc-empty">Nenhum documento adicionado.</p>}
           {!tiposDocumento.length && (
             <span className="new-process-field-hint">Tipos de documento indisponíveis no momento.</span>
           )}
@@ -834,13 +891,47 @@ export default function NewProcessPage() {
         </div>
       </div>
 
-      <DocumentUploadModal
-        open={uploadModalOpen}
-        onOpenChange={setUploadModalOpen}
-        tiposDocumento={tiposDocumento}
-        onConfirm={handleStageDocuments}
-        note="Os arquivos ficam preparados aqui e serão enviados ao cliente após a criação do processo. Você pode definir um tipo padrão para o lote e ajustar o tipo de cada arquivo."
-      />
+      {/* Modal: confirmar vinculação irreversível de CNJ na criação */}
+      <Dialog open={cnjConfirmDialogOpen} onOpenChange={setCnjConfirmDialogOpen}>
+        <DialogContent className="edit-process-dialog">
+          <DialogHeader>
+            <div className="edit-process-dialog__header">
+              <div className="edit-process-dialog__icon-wrap">
+                <AlertTriangle size={24} className="edit-process-dialog__icon" />
+              </div>
+              <DialogTitle className="edit-process-dialog-title">Confirmar número do CNJ?</DialogTitle>
+            </div>
+          </DialogHeader>
+          <p className="edit-process-dialog-text">
+            Esta ação <strong>não pode ser revertida</strong>. Uma vez criado com número CNJ, ele não poderá ser alterado ou removido posteriormente. Revise o número informado:
+          </p>
+          <p className="edit-process-dialog-text" style={{ paddingTop: 0 }}>
+            <strong className="edit-process-dialog__highlight" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.95rem" }}>
+              {cnj}
+            </strong>
+          </p>
+          <DialogFooter className="edit-process-dialog-footer">
+            <Button
+              variant="outline"
+              className="edit-process-dialog-button edit-process-dialog-button--outline"
+              onClick={() => {
+                setCnjConfirmDialogOpen(false);
+                cnjRef.current?.focus?.();
+              }}
+              disabled={submitting}
+            >
+              Revisar
+            </Button>
+            <Button
+              className="edit-process-dialog-button edit-process-dialog-button--primary"
+              onClick={executarCriacaoProcesso}
+              disabled={submitting}
+            >
+              Confirmar e Criar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ProcessCreationProgressModal
         isOpen={creationModalOpen}
@@ -848,6 +939,7 @@ export default function NewProcessPage() {
         stepState={stepState}
         uploadCount={uploadCount}
         isFinished={isFinished}
+        hasCnj={Boolean(cnj && cnj.replace(/\D/g, "").length > 0)}
         onFinish={() => {
           setCreationModalOpen(false);
           if (createdProcessId) {

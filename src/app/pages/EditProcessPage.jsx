@@ -1,17 +1,20 @@
 import { useNavigate, useParams } from "react-router";
 import { ArrowLeft, X, Trash2, Save, CheckCircle, AlertTriangle, Loader2, Plus, CloudUpload } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
+import { Checkbox } from "../components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { ClientCard } from "../components/ClientCard";
+import { ProcessCreationProgressModal } from "../components/ProcessCreationProgressModal";
 import { maskCNJ, maskCPF, maskCNPJ, maskCurrency } from "../utils/masks";
 import { getDocBadgeClass } from "../utils/document";
 import {
   buscarProcessoPorId,
   atualizarProcesso,
+  conectarStatusSincronizacao,
   excluirProcesso,
   listarPrioridades,
   listarFases,
@@ -28,8 +31,12 @@ import {
   MAX_CARACTERES_OBSERVACAO,
 } from "../services/processoService";
 import { toast } from "sonner";
+import { useSyncProcess } from "../contexts/SyncProcessContext";
 import "../../styles/edit-process-page.css";
 import "../../styles/clients-page.css";
+import "../../styles/process-creation-modal.css";
+
+const MAX_CARACTERES_DESCRICAO_ALTERACAO = 80;
 
 /* ─ helpers ─ */
 
@@ -43,7 +50,7 @@ function parseDataBrParaInput(dataBr) {
 
 // junta input type=date + input type=time num ISO pro backend
 function montarDataHoraIso(dataInput, horaInput) {
-  if (!dataInput) return null;
+  if (!dataInput || !horaInput) return null;
   const hora = horaInput || "00:00";
   return `${dataInput}T${hora}:00`;
 }
@@ -58,6 +65,7 @@ export default function EditProcessPage() {
   const [process, setProcess] = useState(null);
   const [selectedClient, setSelectedClient] = useState(null);
   const [cnj, setCnj] = useState("");
+  const [hasExistingCnj, setHasExistingCnj] = useState(false);
   const [documents, setDocuments] = useState([]);
   const [documentsToDelete, setDocumentsToDelete] = useState([]);
   const [tiposDocumento, setTiposDocumento] = useState([]);
@@ -75,8 +83,26 @@ export default function EditProcessPage() {
 
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [descricaoPersonalizadaAtiva, setDescricaoPersonalizadaAtiva] = useState(false);
+  const [descricaoAlteracao, setDescricaoAlteracao] = useState("");
+  const [cnjConfirmDialogOpen, setCnjConfirmDialogOpen] = useState(false);
   const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
+
+  const cnjInputRef = useRef(null);
+  const sseConnRef = useRef(null);
+  const { acompanharSincronizacao } = useSyncProcess();
+
+  // Modal de progresso (ao informar novo CNJ)
+  const [progressModalOpen, setProgressModalOpen] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const isMinimizedRef = useRef(false);
+  const [isFinished, setIsFinished] = useState(false);
+  const [stepState, setStepState] = useState({
+    criando: "pendente",
+    datajud: null,
+    concluido: "pendente",
+  });
 
   // campos do formulário
   const [descricaoCaso, setDescricaoCaso] = useState("");
@@ -86,10 +112,23 @@ export default function EditProcessPage() {
   const [valorCausa, setValorCausa] = useState("");
   const [hearingDate, setHearingDate] = useState("");
   const [hearingTime, setHearingTime] = useState("");
+  const [audienciaError, setAudienciaError] = useState("");
+  const [initialValues, setInitialValues] = useState(null);
 
   // campos usados só nos dialogs de encerrar/desativar
   const [motivoStatusProcessoId, setMotivoStatusProcessoId] = useState("");
   const [justificativa, setJustificativa] = useState("");
+
+  useEffect(() => {
+    return () => {
+      if (sseConnRef.current) {
+        try {
+          sseConnRef.current();
+        } catch (_) {}
+        sseConnRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     document.title = "SGPJ | Editar Processo";
@@ -115,20 +154,41 @@ export default function EditProcessPage() {
         if (raw.clienteId) {
           setDocuments(await listarDocumentosDoCliente(raw.clienteId));
         }
-        setDescricaoCaso(raw.descricaoCaso || "");
-        setPrioridadeId(raw.prioridade?.id ?? "");
-        setFaseProcessoId(raw.faseProcesso?.id ?? "");
-        setSiglaTribunalId(raw.siglaTribunal?.id ?? "");
-        setValorCausa(raw.valorCausa != null ? maskCurrency(raw.valorCausa) : "");
-        setHearingDate(parseDataBrParaInput(dadosProcesso.hearingDate));
-        setHearingTime(dadosProcesso.hearingTime || "");
+        const descricaoInicial = raw.descricaoCaso || "";
+        const prioridadeInicial = raw.prioridade?.id ?? "";
+        const faseInicial = raw.faseProcesso?.id ?? "";
+        const valorCausaInicial = raw.valorCausa != null ? maskCurrency(raw.valorCausa) : "";
+        const hearingDateInicial = parseDataBrParaInput(dadosProcesso.hearingDate);
+        const hearingTimeInicial = dadosProcesso.hearingTime || "";
 
-        // CNJ: inicializa formatado com a máscara oficial CNJ
+        setDescricaoCaso(descricaoInicial);
+        setPrioridadeId(prioridadeInicial);
+        setFaseProcessoId(faseInicial);
+        setSiglaTribunalId(raw.siglaTribunal?.id ?? "");
+        setValorCausa(valorCausaInicial);
+        setHearingDate(hearingDateInicial);
+        setHearingTime(hearingTimeInicial);
+
+        // CNJ: inicializa formatado com a máscara oficial CNJ e bloqueia edição caso já exista
         const rawCnj = raw.processoApi?.numeroCnj || raw.numeroProcesso || (dadosProcesso.cnj !== "-" ? dadosProcesso.cnj : "");
-        setCnj(rawCnj ? maskCNJ(rawCnj) : "");
+        const cnjFormatado = rawCnj ? maskCNJ(rawCnj) : "";
+        setCnj(cnjFormatado);
+        setHasExistingCnj(Boolean(rawCnj && String(rawCnj).replace(/\D/g, "").length > 0));
 
         // observações vêm como texto único (campo "obervacao", com o typo do banco) — separa em array pra exibir
-        setObservacoesArray(separarObservacoes(raw.obervacao || ""));
+        const observacoesIniciais = separarObservacoes(raw.obervacao || "");
+        setObservacoesArray(observacoesIniciais);
+
+        setInitialValues({
+          cnj: cnjFormatado,
+          descricaoCaso: descricaoInicial,
+          prioridadeId: String(prioridadeInicial),
+          faseProcessoId: String(faseInicial),
+          valorCausa: valorCausaInicial,
+          hearingDate: hearingDateInicial,
+          hearingTime: hearingTimeInicial,
+          observacao: juntarObservacoes(observacoesIniciais),
+        });
 
         if (raw.clienteId) {
           try {
@@ -202,6 +262,14 @@ export default function EditProcessPage() {
     carregarTiposDocumento();
   }, []);
 
+  // reseta interruptor e texto sempre que o modal de confirmação for fechado
+  useEffect(() => {
+    if (!saveDialogOpen) {
+      setDescricaoPersonalizadaAtiva(false);
+      setDescricaoAlteracao("");
+    }
+  }, [saveDialogOpen]);
+
   if (loading) {
     return (
       <div className="edit-process-page edit-process-page--empty">
@@ -241,7 +309,6 @@ export default function EditProcessPage() {
       observacao: juntarObservacoes(observacoesArray),
       prioridadeId: Number(prioridadeId),
       faseProcessoId: Number(faseProcessoId),
-      siglaTribunalId: Number(siglaTribunalId),
       dataAudiencia: montarDataHoraIso(hearingDate, hearingTime),
       valorCausa: valorCausa ? Number(valorCausa.replace(/\D/g, "")) / 100 : null,
       numeroCnj: cnj ? cnj.replace(/\D/g, "") : null,
@@ -263,12 +330,24 @@ export default function EditProcessPage() {
       navigate(`/app/processos/${id}`);
     } catch (err) {
       console.error("Erro ao atualizar processo:", err);
-      if (err.response?.status === 401) {
+      const status = err.status || err.response?.status || err.originalError?.response?.status;
+      const responseData = err.response?.data || err.originalError?.response?.data;
+
+      if (status === 401) {
         toast.warning("Sessão inválida ou expirada.");
+      } else if (status === 409) {
+        const mensagemConflito =
+          responseData?.message ||
+          responseData?.mensagem ||
+          err.message ||
+          "Conflito ao atualizar o processo.";
+        toast.error(mensagemConflito);
       } else {
         const mensagemErro =
-          err.response?.data?.message ||
-          (err.response?.data?.errors && Object.values(err.response.data.errors)[0]) ||
+          responseData?.message ||
+          responseData?.mensagem ||
+          (responseData?.errors && Object.values(responseData.errors)[0]) ||
+          err.message ||
           "Não foi possível salvar as alterações.";
         toast.error(mensagemErro);
       }
@@ -277,8 +356,25 @@ export default function EditProcessPage() {
     }
   }
 
+  const hasEmptyObservacao = observacoesArray.some((item) => !item.trim());
+
+  const hasProcessChanges = Boolean(
+    initialValues && (
+      cnj.replace(/\D/g, "") !== initialValues.cnj.replace(/\D/g, "") ||
+      descricaoCaso.trim() !== initialValues.descricaoCaso.trim() ||
+      String(prioridadeId) !== initialValues.prioridadeId ||
+      String(faseProcessoId) !== initialValues.faseProcessoId ||
+      valorCausa !== initialValues.valorCausa ||
+      hearingDate !== initialValues.hearingDate ||
+      hearingTime !== initialValues.hearingTime ||
+      juntarObservacoes(observacoesArray) !== initialValues.observacao
+    )
+  );
+
+  const hasChanges = hasProcessChanges || documentsToDelete.length > 0;
+
   const validarCnj = () => {
-    if (cnj) {
+    if (!hasExistingCnj && cnj) {
       const cnjLimpo = cnj.replace(/\D/g, "");
       if (cnjLimpo.length !== 20) {
         toast.warning("O CNJ deve conter exatamente 20 dígitos numéricos (ou deixe em branco).");
@@ -289,6 +385,10 @@ export default function EditProcessPage() {
   };
 
   const validarObservacoes = () => {
+    if (hasEmptyObservacao) {
+      toast.warning("Preencha todas as observações adicionadas com um texto válido ou remova os campos em branco.");
+      return false;
+    }
     if (observacoesArray.length > MAX_OBSERVACOES) {
       toast.warning(`O processo aceita no máximo ${MAX_OBSERVACOES} observações.`);
       return false;
@@ -300,21 +400,224 @@ export default function EditProcessPage() {
     return true;
   };
 
+  const validarAudiencia = () => {
+    if (hearingDate && !hearingTime) {
+      const msg = "Informe o horário da audiência para a data preenchida.";
+      setAudienciaError(msg);
+      toast.warning(msg);
+      return false;
+    }
+    if (hearingTime && !hearingDate) {
+      const msg = "Informe a data da audiência para o horário preenchido.";
+      setAudienciaError(msg);
+      toast.warning(msg);
+      return false;
+    }
+    setAudienciaError("");
+    return true;
+  };
+
+  const handleMinimize = () => {
+    if (sseConnRef.current) {
+      try {
+        sseConnRef.current();
+      } catch (_) {}
+      sseConnRef.current = null;
+    }
+
+    isMinimizedRef.current = true;
+    setIsMinimized(true);
+    setProgressModalOpen(false);
+
+    acompanharSincronizacao({
+      processoId: Number(id),
+      clientName: selectedClient?.name || selectedClient?.nomeRazaoSocial || process?.clientName,
+    });
+
+    toast.info("A sincronização do processo continua em segundo plano. Você será notificado assim que for concluída.", {
+      duration: 4000,
+    });
+    navigate(`/app/processos/${id}`);
+  };
+
+  const handleFinish = () => {
+    if (sseConnRef.current) {
+      try {
+        sseConnRef.current();
+      } catch (_) {}
+      sseConnRef.current = null;
+    }
+    setProgressModalOpen(false);
+    navigate(`/app/processos/${id}`);
+  };
+
+  async function executarAtualizacaoComProgresso(payload) {
+    setStepState({
+      criando: "em_andamento",
+      upload: null,
+      datajud: "pendente",
+      concluido: "pendente",
+    });
+    setIsFinished(false);
+    setIsMinimized(false);
+    isMinimizedRef.current = false;
+    setProgressModalOpen(true);
+    setSaving(true);
+
+    try {
+      await atualizarProcesso(id, payload);
+      if (documentsToDelete.length) {
+        await Promise.all(
+          documentsToDelete.map((document) =>
+            excluirArquivoDoCliente(document.caminhoDeArmazenamentoId, document.name)
+          )
+        );
+        setDocumentsToDelete([]);
+      }
+
+      setStepState((prev) => ({
+        ...prev,
+        criando: "concluida",
+        datajud: "em_andamento",
+      }));
+
+      // Conecta ao SSE para atualizar o modal em tempo real caso o usuário aguarde na tela
+      const desconectar = conectarStatusSincronizacao(id, {
+        onProcessando: () => {
+          setStepState((prev) => ({ ...prev, datajud: "em_andamento" }));
+        },
+        onReprocessando: () => {
+          setStepState((prev) => ({ ...prev, datajud: "em_andamento" }));
+        },
+        onConcluido: (data) => {
+          if (sseConnRef.current) {
+            sseConnRef.current = null;
+          }
+
+          const isErro = data?.status === "ERRO" || data?.status === "AVISO";
+          setStepState((prev) => ({
+            ...prev,
+            datajud: isErro ? "falha" : "concluida",
+            concluido: "concluida",
+          }));
+          setIsFinished(true);
+          setSaving(false);
+
+          if (isErro) {
+            toast.info("Processo atualizado com sucesso!", {
+              description: "Não foi possível carregar os dados do DataJud no momento. Você poderá tentar sincronizar mais tarde diretamente na página do processo.",
+              duration: 8000,
+            });
+          } else {
+            toast.success("Processo atualizado e dados sincronizados com o DataJud!");
+          }
+        },
+        onError: () => {
+          if (sseConnRef.current) {
+            sseConnRef.current = null;
+          }
+          setStepState((prev) => ({
+            ...prev,
+            datajud: prev.datajud === "concluida" ? "concluida" : "falha",
+            concluido: "concluida",
+          }));
+          setIsFinished(true);
+          setSaving(false);
+        },
+      });
+
+      sseConnRef.current = desconectar;
+    } catch (err) {
+      console.error("Erro ao atualizar processo com novo CNJ:", err);
+      setProgressModalOpen(false);
+      setSaving(false);
+
+      const status = err.status || err.response?.status || err.originalError?.response?.status;
+      const responseData = err.response?.data || err.originalError?.response?.data;
+
+      if (status === 401) {
+        toast.warning("Sessão inválida ou expirada.");
+      } else if (status === 409) {
+        const mensagemConflito =
+          responseData?.message ||
+          responseData?.mensagem ||
+          err.message ||
+          "Conflito ao atualizar o processo.";
+        toast.error(mensagemConflito);
+      } else {
+        const mensagemErro =
+          responseData?.message ||
+          responseData?.mensagem ||
+          (responseData?.errors && Object.values(responseData.errors)[0]) ||
+          err.message ||
+          "Não foi possível salvar as alterações.";
+        toast.error(mensagemErro);
+      }
+    }
+  }
+
   const handleSalvar = () => {
+    if (descricaoPersonalizadaAtiva && !descricaoAlteracao.trim()) {
+      toast.warning("Informe a descrição personalizada ou desative a opção.");
+      return;
+    }
+    if (!hasChanges) {
+      setSaveDialogOpen(false);
+      setCnjConfirmDialogOpen(false);
+      return;
+    }
+    if (!validarAudiencia()) {
+      setSaveDialogOpen(false);
+      setCnjConfirmDialogOpen(false);
+      return;
+    }
     if (!validarCnj()) {
       setSaveDialogOpen(false);
+      setCnjConfirmDialogOpen(false);
       return;
     }
     if (!validarObservacoes()) {
       setSaveDialogOpen(false);
+      setCnjConfirmDialogOpen(false);
       return;
     }
     const payload = { ...montarPayloadBase(), status: "ATIVO" };
-    enviarAtualizacao(payload, "Processo atualizado com sucesso.", true);
+    if (descricaoPersonalizadaAtiva) {
+      payload.descricaoAlteracao = descricaoAlteracao.trim();
+    }
+    const informandoNovoCnj = !hasExistingCnj && Boolean(cnj && cnj.replace(/\D/g, "").length === 20);
+    if (informandoNovoCnj) {
+      executarAtualizacaoComProgresso(payload);
+    } else {
+      enviarAtualizacao(payload, "Processo atualizado com sucesso.", true);
+    }
     setSaveDialogOpen(false);
+    setCnjConfirmDialogOpen(false);
+  };
+
+  const handleClickSalvarAlteracoes = () => {
+    if (!hasChanges) return;
+    if (!validarCnj()) return;
+    if (!validarAudiencia()) return;
+    if (!validarObservacoes()) return;
+
+    const informandoNovoCnj = !hasExistingCnj && Boolean(cnj && cnj.replace(/\D/g, "").length === 20);
+    if (informandoNovoCnj) {
+      setCnjConfirmDialogOpen(true);
+    } else {
+      setSaveDialogOpen(true);
+    }
   };
 
   const handleEncerrar = () => {
+    if (!validarAudiencia()) {
+      setCloseDialogOpen(false);
+      return;
+    }
+    if (!validarCnj()) {
+      setCloseDialogOpen(false);
+      return;
+    }
     if (!validarObservacoes()) {
       setCloseDialogOpen(false);
       return;
@@ -334,6 +637,14 @@ export default function EditProcessPage() {
   };
 
   const handleDesativar = () => {
+    if (!validarAudiencia()) {
+      setDeactivateDialogOpen(false);
+      return;
+    }
+    if (!validarCnj()) {
+      setDeactivateDialogOpen(false);
+      return;
+    }
     if (!validarObservacoes()) {
       setDeactivateDialogOpen(false);
       return;
@@ -450,15 +761,25 @@ export default function EditProcessPage() {
           <Label className="edit-process-label" htmlFor="edit-process-cnj">
             Número CNJ
           </Label>
-          <Input
-            id="edit-process-cnj"
-            type="text"
-            value={cnj}
-            onChange={(event) => setCnj(maskCNJ(event.target.value))}
-            placeholder="0000000-00.0000.0.00.0000"
-            maxLength={25}
-            className="edit-process-input edit-process-input--mono"
-          />
+          {hasExistingCnj ? (
+            <Label
+              className="edit-process-input edit-process-input--mono edit-process-input-cadeado"
+              style={{ fontSize: "0.875rem", fontWeight: "normal", padding: "0.2rem" }}
+            >
+              {cnj}
+            </Label>
+          ) : (
+            <Input
+              ref={cnjInputRef}
+              id="edit-process-cnj"
+              type="text"
+              value={cnj}
+              onChange={(event) => setCnj(maskCNJ(event.target.value))}
+              placeholder="0000000-00.0000.0.00.0000"
+              maxLength={25}
+              className="edit-process-input edit-process-input--mono"
+            />
+          )}
         </div>
 
         {/* Cliente — somente leitura */}
@@ -511,7 +832,7 @@ export default function EditProcessPage() {
             Sigla Tribunal
           </Label>
           <Label className="edit-process-input edit-process-input--mono edit-process-input-cadeado" style={{ fontSize: "0.875rem", fontWeight: "normal", padding: "0.2rem" }}>
-            {tribunais.find(t => t.id === siglaTribunalId)?.siglaTribunal || "Tribunal não selecionado"}
+            {tribunais.find(t => t.id === siglaTribunalId)?.siglaTribunal || process.raw?.siglaTribunal?.nome || "Tribunal não selecionado"}
           </Label>
         </div>
 
@@ -551,16 +872,27 @@ export default function EditProcessPage() {
               <Input
                 type="date"
                 value={hearingDate}
-                onChange={(e) => setHearingDate(e.target.value)}
+                onChange={(e) => {
+                  setHearingDate(e.target.value);
+                  if (audienciaError) setAudienciaError("");
+                }}
                 className="edit-process-input edit-process-input--mono"
               />
               <Input
                 type="time"
                 value={hearingTime}
-                onChange={(e) => setHearingTime(e.target.value)}
+                onChange={(e) => {
+                  setHearingTime(e.target.value);
+                  if (audienciaError) setAudienciaError("");
+                }}
                 className="edit-process-input edit-process-input--mono"
               />
             </div>
+            {audienciaError && (
+              <p className="edit-process-field-error" style={{ color: "#ef4444", fontSize: "0.8125rem", marginTop: "4px" }}>
+                {audienciaError}
+              </p>
+            )}
           </div>
         </div>
 
@@ -592,41 +924,59 @@ export default function EditProcessPage() {
             </span>
           </div>
           <div className="edit-process-observation-list">
-            {observacoesArray.map((texto, index) => (
-              <div
-                key={index}
-                className="edit-process-observation-row"
-                style={{ display: "flex", flexDirection: "column", gap: "0.25rem", width: "100%" }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", width: "100%" }}>
-                  <Input
-                    value={texto}
-                    onChange={(e) => handleChangeObservacao(index, e.target.value)}
-                    placeholder="Digite a observação..."
-                    maxLength={MAX_CARACTERES_OBSERVACAO}
-                    className="edit-process-input edit-process-input--with-action"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleRemoverObservacaoLocal(index)}
-                    className="edit-process-remove-observation"
-                    title="Remover observação"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-                <div style={{ display: "flex", justifyContent: "flex-end", paddingRight: "2.5rem" }}>
-                  <span
+            {observacoesArray.map((texto, index) => {
+              const isObservacaoVazia = !texto.trim();
+              return (
+                <div
+                  key={index}
+                  className="edit-process-observation-row"
+                  style={{ display: "flex", flexDirection: "column", gap: "0.25rem", width: "100%" }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", width: "100%" }}>
+                    <Input
+                      value={texto}
+                      onChange={(e) => handleChangeObservacao(index, e.target.value)}
+                      placeholder="Digite a observação..."
+                      maxLength={MAX_CARACTERES_OBSERVACAO}
+                      className="edit-process-input edit-process-input--with-action"
+                      style={isObservacaoVazia ? { borderColor: "#f59e0b" } : undefined}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoverObservacaoLocal(index)}
+                      className="edit-process-remove-observation"
+                      title="Remover observação"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                  <div
                     style={{
-                      fontSize: "0.7rem",
-                      color: texto.length >= MAX_CARACTERES_OBSERVACAO ? "#ef4444" : "#94a3b8",
+                      display: "flex",
+                      justifyContent: isObservacaoVazia ? "space-between" : "flex-end",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                      paddingRight: "2.5rem",
                     }}
                   >
-                    {texto.length}/{MAX_CARACTERES_OBSERVACAO} caracteres
-                  </span>
+                    {isObservacaoVazia && (
+                      <span style={{ fontSize: "0.75rem", color: "#d97706" }}>
+                        Preencha com um texto válido ou remova o campo para permitir a atualização.
+                      </span>
+                    )}
+                    <span
+                      style={{
+                        fontSize: "0.7rem",
+                        color: texto.length >= MAX_CARACTERES_OBSERVACAO ? "#ef4444" : "#94a3b8",
+                        marginLeft: "auto",
+                      }}
+                    >
+                      {texto.length}/{MAX_CARACTERES_OBSERVACAO} caracteres
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <button
             type="button"
@@ -699,36 +1049,83 @@ export default function EditProcessPage() {
       {/* Actions */}
       <div className="edit-process-actions">
         <div className="edit-process-actions-row">
-          <Button onClick={() => setCloseDialogOpen(true)} className="edit-process-button edit-process-button--close" disabled={saving}>
-            <CheckCircle size={15} />
-            Encerrar Processo
-          </Button>
-          <Button onClick={() => {
-            if (!validarCnj()) return;
-            setSaveDialogOpen(true);
-          }} className="edit-process-button edit-process-button--primary" disabled={saving}>
+          <Button
+            onClick={handleClickSalvarAlteracoes}
+            className="edit-process-button edit-process-button--primary"
+            disabled={!hasChanges || hasEmptyObservacao || saving}
+          >
             <Save size={15} />
             Salvar Alterações
           </Button>
-        </div>
-
-        <div className="edit-process-actions-row">
-          <Button className="edit-process-button edit-process-button--warn" onClick={() => setDeactivateDialogOpen(true)} disabled={saving}>
-            <AlertTriangle size={15} className="edit-process-dialog__icon" />
-            Suspender Processo
-          </Button>
-          <Button onClick={() => setDeleteDialog(true)} className="edit-process-button edit-process-button--danger" disabled={saving}>
-            <Trash2 size={14} />
-            Excluir Processo
-          </Button>
-        </div>
-
-        <div className="edit-process-actions-row">
           <Button variant="outline" onClick={() => navigate(`/app/processos/${id}`)} className="edit-process-button edit-process-button--outline">
             Cancelar
           </Button>
         </div>
+
+        <div className="edit-process-actions-row">
+          <Button onClick={() => {
+            if (!validarCnj()) return;
+            if (!validarAudiencia()) return;
+            setCloseDialogOpen(true);
+          }} className="edit-process-button edit-process-button--close" disabled={saving}>
+            <CheckCircle size={15} />
+            Encerrar Processo
+          </Button>
+          <Button className="edit-process-button edit-process-button--warn" onClick={() => {
+            if (!validarCnj()) return;
+            if (!validarAudiencia()) return;
+            setDeactivateDialogOpen(true);
+          }} disabled={saving}>
+            <AlertTriangle size={15} className="edit-process-dialog__icon" />
+            Suspender Processo
+          </Button>
+        </div>
       </div>
+
+      {/* Modal: confirmar vinculação irreversível de CNJ */}
+      <Dialog open={cnjConfirmDialogOpen} onOpenChange={setCnjConfirmDialogOpen}>
+        <DialogContent className="edit-process-dialog">
+          <DialogHeader>
+            <div className="edit-process-dialog__header">
+              <div className="edit-process-dialog__icon-wrap">
+                <AlertTriangle size={24} className="edit-process-dialog__icon" />
+              </div>
+              <DialogTitle className="edit-process-dialog-title">Confirmar número do CNJ?</DialogTitle>
+            </div>
+          </DialogHeader>
+          <p className="edit-process-dialog-text">
+            Esta ação <strong>não pode ser revertida</strong>. Uma vez vinculado ao processo, o número CNJ não poderá ser alterado ou removido. Revise o número informado:
+          </p>
+          <p className="edit-process-dialog-text" style={{ paddingTop: 0 }}>
+            <strong className="edit-process-dialog__highlight" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.95rem" }}>
+              {cnj}
+            </strong>
+          </p>
+          <DialogFooter className="edit-process-dialog-footer">
+            <Button
+              variant="outline"
+              className="edit-process-dialog-button edit-process-dialog-button--outline"
+              onClick={() => {
+                setCnjConfirmDialogOpen(false);
+                cnjInputRef.current?.focus?.();
+              }}
+              disabled={saving}
+            >
+              Revisar
+            </Button>
+            <Button
+              className="edit-process-dialog-button edit-process-dialog-button--primary"
+              onClick={() => {
+                setCnjConfirmDialogOpen(false);
+                setSaveDialogOpen(true);
+              }}
+              disabled={saving}
+            >
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Modal: confirmar salvar alterações */}
       <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
@@ -745,6 +1142,43 @@ export default function EditProcessPage() {
             Deseja salvar as alterações realizadas no processo{" "}
             <strong className="edit-process-dialog__highlight">{cnj || process.cnj || id}</strong>?
           </p>
+          <div className="edit-process-field" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
+            <Label htmlFor="descricao-personalizada-checkbox" className="edit-process-label">
+              Deseja adicionar uma descrição personalizada?
+            </Label>
+            <Checkbox
+              id="descricao-personalizada-checkbox"
+              checked={descricaoPersonalizadaAtiva}
+              onCheckedChange={(checked) => {
+                const ativo = checked === true;
+                setDescricaoPersonalizadaAtiva(ativo);
+                if (!ativo) setDescricaoAlteracao("");
+              }}
+              disabled={saving}
+            />
+          </div>
+          {descricaoPersonalizadaAtiva && (
+            <div className="edit-process-field">
+              <Input
+                value={descricaoAlteracao}
+                onChange={(e) => setDescricaoAlteracao(e.target.value)}
+                maxLength={MAX_CARACTERES_DESCRICAO_ALTERACAO}
+                placeholder="Ex.: Altera fase do processo."
+                aria-label="Descrição personalizada da alteração"
+                disabled={saving}
+              />
+              <span
+                style={{
+                  display: "block",
+                  textAlign: "right",
+                  fontSize: "0.75rem",
+                  color: descricaoAlteracao.length >= MAX_CARACTERES_DESCRICAO_ALTERACAO ? "#ef4444" : "#94a3b8",
+                }}
+              >
+                {descricaoAlteracao.length}/{MAX_CARACTERES_DESCRICAO_ALTERACAO} caracteres
+              </span>
+            </div>
+          )}
           <DialogFooter className="edit-process-dialog-footer">
             <Button variant="outline" className="edit-process-dialog-button edit-process-dialog-button--outline" onClick={() => setSaveDialogOpen(false)} disabled={saving}>
               Cancelar
@@ -839,6 +1273,17 @@ export default function EditProcessPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de progresso (ao informar novo CNJ) */}
+      <ProcessCreationProgressModal
+        isOpen={progressModalOpen}
+        onMinimize={handleMinimize}
+        stepState={stepState}
+        isFinished={isFinished}
+        onFinish={handleFinish}
+        hasCnj={true}
+        mode="update"
+      />
 
       {/* Modal: excluir */}
       <Dialog open={deleteDialog} onOpenChange={setDeleteDialog}>

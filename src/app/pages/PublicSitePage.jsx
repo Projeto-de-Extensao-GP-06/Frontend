@@ -12,7 +12,6 @@ import { Checkbox } from "../components/ui/checkbox";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { maskPhone, maskCNJ, maskCNPJ } from "../utils/masks";
 import { isValidCNPJ, isValidEmail, isValidPhone, isValidCNJ } from "../utils/validators";
-import { brazilStates } from "../data/mockData";
 import { criarSolicitacao } from "../services/solicitacaoService";
 import siteLogoImage from "../../imports/nova_logo.png";
 import "../../styles/public-site-page.css";
@@ -87,7 +86,6 @@ export default function PublicSitePage() {
   const [profession, setProfession] = useState(savedData?.profession ?? "");
   const [email, setEmail] = useState(savedData?.email ?? "");
   const [phone, setPhone] = useState(savedData?.phone ?? "");
-  const [state, setState] = useState(savedData?.state ?? "");
   const [processNumber, setProcessNumber] = useState(savedData?.processNumber ?? "");
   const [comoConheceu, setComoConheceu] = useState(savedData?.comoConheceu ?? "");
   const [description, setDescription] = useState(savedData?.description ?? "");
@@ -144,7 +142,6 @@ export default function PublicSitePage() {
         profession,
         email,
         phone,
-        state,
         processNumber,
         comoConheceu,
         description,
@@ -154,7 +151,7 @@ export default function PublicSitePage() {
         sessionStorage.setItem(STORAGE_KEY_FORM, JSON.stringify(formData));
       } catch {}
     }
-  }, [clientType, name, companyName, cnpj, contactName, profession, email, phone, state, processNumber, comoConheceu, description, accepted, submitted]);
+  }, [clientType, name, companyName, cnpj, contactName, profession, email, phone, processNumber, comoConheceu, description, accepted, submitted]);
 
   const scrollTo = id => {
     document.getElementById(id)?.scrollIntoView({
@@ -309,7 +306,6 @@ export default function PublicSitePage() {
       numeroProcesso: processNumber?.trim() ? processNumber.replace(/\D/g, "") : null,
       razaoSocial: !isPF ? razaoSocialValor : null,
       cnpj: !isPF && cnpj ? cnpj.replace(/[^0-9A-Za-z]/g, "").toUpperCase() : null,
-      estado,
       turnstileToken,
     };
 
@@ -352,7 +348,6 @@ export default function PublicSitePage() {
     setProfession("");
     setEmail("");
     setPhone("");
-    setState("");
     setProcessNumber("");
     setComoConheceu("");
     setDescription("");
@@ -716,21 +711,6 @@ export default function PublicSitePage() {
                       </div>
                     </>
                   )}
-
-                  <div>
-                    <Label htmlFor="estado" className="site-contact-label">Estado (UF) *</Label>
-                    <select
-                      id="estado"
-                      name="estado"
-                      required
-                      value={state}
-                      onChange={(e) => setState(e.target.value)}
-                      className="site-contact-select"
-                    >
-                      <option value="" disabled>Selecione seu estado</option>
-                      {brazilStates.map((uf) => <option key={uf} value={uf}>{uf}</option>)}
-                    </select>
-                  </div>
 
                   <div>
                     <Label className="site-contact-label">N° do Processo (CNJ)</Label>

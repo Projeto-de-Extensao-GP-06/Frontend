@@ -97,6 +97,20 @@ export function mapearProcesso(p) {
       : null,
     closedAt: encerramento.data,
     closedBy: p.encerradoSuspensoPorUsuarioNome || "-",
+    motivoStatusId:
+      p.motivoStatusId ??
+      p.motivoStatusProcessoId ??
+      p.motivoStatus?.id ??
+      p.motivoStatusProcesso?.id ??
+      null,
+    motivoStatus:
+      p.motivoStatusNome ||
+      p.motivoStatusProcessoNome ||
+      p.motivoStatus?.nome ||
+      p.motivoStatusProcesso?.nome ||
+      (typeof p.motivoStatus === "string" ? p.motivoStatus : null) ||
+      null,
+    justificativa: p.justificativa || null,
     lastSyncDate: ultimaAtualizacao.hora ? `${ultimaAtualizacao.data} às ${ultimaAtualizacao.hora}` : ultimaAtualizacao.data,
     ultimaAtualizacaoIso: p.ultimaAtualizacao || null,
     history: mapearHistorico(p.historicoProcessoResponses),
@@ -121,7 +135,9 @@ export async function listarProcessos(filtros = {}) {
 }
 
 export async function listarClientesParaProcesso() {
-  const response = await api.get("/clientes");
+  const response = await api.get("/clientes", {
+    params: { excluirLead: true },
+  });
   const clientes = Array.isArray(response.data) ? response.data : [];
 
   return clientes.map((cliente) => {
@@ -246,7 +262,7 @@ function montarPayloadExistente(raw, observacao) {
     observacao,
     prioridadeId: raw.prioridade?.id,
     faseProcessoId: raw.faseProcesso?.id,
-    siglaTribunalId: raw.siglaTribunal?.id,
+
     dataAudiencia: raw.dataAudiencia || null,
     valorCausa: raw.valorCausa ?? null,
     status: raw.status,
@@ -330,7 +346,7 @@ export function juntarObservacoes(observacoes) {
     .join(SEPARADOR_OBSERVACAO);
 }
 
-export function conectarStatusSincronizacao(id, { onIniciado, onProcessando, onConcluido, onError } = {}) {
+export function conectarStatusSincronizacao(id, { onIniciado, onProcessando, onReprocessando, onConcluido, onError } = {}) {
   const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
   const url = `${baseUrl}/processos/${id}/sincronizacao-status`;
   const eventSource = new EventSource(url, { withCredentials: true });
@@ -353,6 +369,13 @@ export function conectarStatusSincronizacao(id, { onIniciado, onProcessando, onC
     try {
       const data = JSON.parse(e.data);
       onProcessando?.(data);
+    } catch (_) {}
+  });
+
+  eventSource.addEventListener("REPROCESSANDO", (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      onReprocessando?.(data);
     } catch (_) {}
   });
 
