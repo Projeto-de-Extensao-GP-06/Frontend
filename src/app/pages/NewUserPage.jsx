@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { ArrowLeft, User } from "lucide-react";
+import { toast } from "sonner";
+import { criarUsuario } from "../services/usuarioService";
+import { listarCargos } from "../services/cargoService";
 import "../../styles/new-user-page.css";
 
 export default function NewUserPage() {
@@ -11,7 +14,48 @@ export default function NewUserPage() {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState("Administrador");
+  const [role, setRole] = useState("");
+  const [cargos, setCargos] = useState([]);
+  const [creating, setCreating] = useState(false);
+
+  useEffect(() => {
+    const loadCargos = async () => {
+      try {
+        const data = await listarCargos({ size: 100 });
+        const cargosList = Array.isArray(data) ? data : (data?.content || []);
+        setCargos(cargosList);
+        if (cargosList.length > 0) {
+          setRole(cargosList[0].nome);
+        }
+      } catch (error) {
+        toast.error(error.message || "Não foi possível carregar cargos.");
+      }
+    };
+    loadCargos();
+  }, []);
+
+  const handleCreate = async () => {
+    const selectedCargo = cargos.find((c) => c.nome === role);
+    if (!name.trim() || !email.trim() || !selectedCargo) {
+      toast.error("Preencha todos os campos obrigatórios.");
+      return;
+    }
+
+    setCreating(true);
+    try {
+      await criarUsuario({
+        nome: name,
+        email,
+        cargoId: selectedCargo.cargoId,
+      });
+      toast.success("Usuário criado com sucesso.");
+      navigate("/app/usuarios");
+    } catch (error) {
+      toast.error(error.message || "Não foi possível criar o usuário.");
+    } finally {
+      setCreating(false);
+    }
+  };
 
   return (
     <div className="new-user-page">
@@ -57,10 +101,13 @@ export default function NewUserPage() {
             value={role}
             onChange={(e) => setRole(e.target.value)}
             className="new-user-select"
+            disabled={cargos.length === 0}
           >
-            <option>Administrador</option>
-            <option>Advogado</option>
-            <option>Assistente</option>
+            {cargos.map((cargo) => (
+              <option key={cargo.cargoId} value={cargo.nome}>
+                {cargo.nome}
+              </option>
+            ))}
           </select>
         </div>
       </div>
@@ -69,15 +116,17 @@ export default function NewUserPage() {
         <button
           onClick={() => navigate("/app/usuarios")}
           className="new-user-btn-cancel"
+          disabled={creating}
         >
           Cancelar
         </button>
         <button
-          onClick={() => navigate("/app/usuarios")}
+          onClick={handleCreate}
           className="new-user-btn-submit"
+          disabled={creating}
         >
           <User size={15} />
-          Criar usuário
+          {creating ? "Criando..." : "Criar usuário"}
         </button>
       </div>
     </div>

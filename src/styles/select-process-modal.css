@@ -1,4 +1,4 @@
-﻿/* ── Select Process Modal & Trigger Styles ── */
+/* ── Select Process Modal & Trigger Styles ── */
 
 /* Trigger / Placeholder Button in Form/Page */
 .process-picker-trigger {
@@ -405,6 +405,13 @@
   transition: all 0.2s ease;
 }
 
+.select-modal-filter-select--active {
+  border-color: #8ba8e8;
+  background: #e8efff;
+  color: #0f2357;
+  font-weight: 700;
+}
+
 .select-modal-filter-select:focus {
   border-color: #0f2357;
   box-shadow: 0 0 0 2px rgba(15, 35, 87, 0.08);
@@ -417,6 +424,10 @@
   transform: translateY(-50%);
   color: #94a3b8;
   pointer-events: none;
+}
+
+.select-modal-filter-select--active + .select-modal-filter-select-chevron {
+  color: #0f2357;
 }
 
 /* Results Count Row */

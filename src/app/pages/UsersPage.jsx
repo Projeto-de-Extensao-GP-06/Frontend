@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Plus, Shield, ChevronRight, UserCog, Search, X } from "lucide-react";
+import { toast } from "sonner";
 import { StatusBadge } from "../components/StatusBadge";
 import { UserAvatar } from "../components/UserAvatar";
 import { FilterSelect } from "../components/FilterSelect";
 import { PaginationBar } from "../components/PaginationBar";
-import { mockUsers } from "../data/mockData";
+import { listarUsuarios, listarUsuariosPorCargo, pesquisarUsuarios } from "../services/usuarioService";
+import { listarCargos } from "../services/cargoService";
 import { useAuth } from "../contexts/AuthContext";
 import { hasPermission } from "../utils/permissions";
 import "../../styles/users-page.css";
@@ -15,6 +17,14 @@ const STATUS_OPTS = [
   { value: "ativo", label: "Ativo" },
   { value: "inativo", label: "Inativo" },
 ];
+
+const normalizeUser = (user) => ({
+  id: String(user.id),
+  name: user.nome,
+  email: user.email,
+  role: user.cargoNome,
+  status: user.ativo ? "ativo" : "inativo",
+});
 
 export default function UsersPage() {
   useEffect(() => {
@@ -26,21 +36,66 @@ export default function UsersPage() {
   const [filterStatus, setFilterStatus] = useState("Todos");
   const [sortBy, setSortBy] = useState("az");
   const [page, setPage] = useState(1);
+  const [users, setUsers] = useState([]);
+  const [cargos, setCargos] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { user } = useAuth();
   const canCreateUser = hasPermission(user, "CRIAR USUÁRIO");
 
-  const roleOptions = ["Todos", ...Array.from(new Set(mockUsers.map((u) => u.role)))];
+  const loadUsers = async () => {
+    setLoading(true);
+    try {
+      let data;
+      if (filterRole !== "Todos") {
+        console.log("Filtering by cargo:", filterRole);
+        data = await listarUsuariosPorCargo(filterRole);
+      } else if (search.trim()) {
+        data = await pesquisarUsuarios(search);
+      } else {
+        data = await listarUsuarios();
+      }
+      console.log("Users data received:", data);
+      const usersList = Array.isArray(data) ? data : [];
+      setUsers(usersList.map(normalizeUser));
+    } catch (error) {
+      console.error("Error loading users:", error);
+      toast.error(error.message || "Não foi possível carregar usuários.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const filtered = mockUsers.filter((u) => {
+  const loadCargos = async () => {
+    try {
+      const data = await listarCargos({ size: 100 });
+      const cargosList = Array.isArray(data) ? data : (data?.content || []);
+      setCargos(cargosList);
+    } catch (error) {
+      toast.error(error.message || "Não foi possível carregar cargos.");
+    }
+  };
+
+  useEffect(() => {
+    loadUsers();
+    loadCargos();
+  }, [filterRole]);
+
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      if (search.trim() || filterRole === "Todos") {
+        loadUsers();
+      }
+    }, 500);
+    return () => clearTimeout(debounceTimer);
+  }, [search]);
+
+  const roleOptions = ["Todos", ...cargos.map((c) => c.nome)];
+
+  const filtered = users.filter((u) => {
     const q = search.toLowerCase().trim();
-    const matchQ =
-      !search ||
-      u.name.toLowerCase().includes(q) ||
-      u.email.toLowerCase().includes(q);
-    const matchRole = filterRole === "Todos" || u.role === filterRole;
     const matchStatus = filterStatus === "Todos" || u.status === filterStatus;
-    return matchQ && matchRole && matchStatus;
+    return matchStatus;
   });
 
   const sorted = [...filtered].sort((a, b) => {
@@ -57,6 +112,7 @@ export default function UsersPage() {
     setFilterRole("Todos");
     setFilterStatus("Todos");
     setPage(1);
+    loadUsers();
   };
 
   const PAGE_SIZE = 6;
@@ -90,7 +146,7 @@ export default function UsersPage() {
             <UserCog size={13} className="users-summary-icon users-summary-icon--primary" />
           </div>
           <div className="users-summary-copy">
-            <p className="users-summary-value users-summary-value--primary">{mockUsers.length}</p>
+            <p className="users-summary-value users-summary-value--primary">{users.length}</p>
             <p className="users-summary-label">Total no sistema</p>
           </div>
         </div>
@@ -100,7 +156,7 @@ export default function UsersPage() {
           </div>
           <div className="users-summary-copy">
             <p className="users-summary-value users-summary-value--success">
-              {mockUsers.filter((u) => u.status === "ativo").length}
+              {users.filter((u) => u.status === "ativo").length}
             </p>
             <p className="users-summary-label">Ativos</p>
           </div>
@@ -124,7 +180,7 @@ export default function UsersPage() {
               className="users-search-input"
             />
           </div>
-          <button className="users-search-button">Buscar</button>
+          <button onClick={loadUsers} className="users-search-button">Buscar</button>
         </div>
 
         {/* Divider */}
@@ -137,6 +193,7 @@ export default function UsersPage() {
 
             <FilterSelect
               prefix="users"
+              className={`users-filter-select${filterRole !== "Todos" ? " users-filter-select--active" : ""}`}
               label="Cargo"
               value={filterRole}
               onChange={(val) => {
@@ -153,6 +210,7 @@ export default function UsersPage() {
 
             <FilterSelect
               prefix="users"
+              className={`users-filter-select${filterStatus !== "Todos" ? " users-filter-select--active" : ""}`}
               label="Status"
               value={filterStatus}
               onChange={(val) => {
@@ -195,9 +253,9 @@ export default function UsersPage() {
       {/* ── Results count ── */}
       <div className="users-results-row">
         <p className="users-results-count">
-          {filtered.length === mockUsers.length
+          {filtered.length === users.length
             ? `${filtered.length} usuários`
-            : `${filtered.length} de ${mockUsers.length} usuários`}
+            : `${filtered.length} de ${users.length} usuários`}
         </p>
         {filtered.length > 0 && (
           <p className="users-results-tip">

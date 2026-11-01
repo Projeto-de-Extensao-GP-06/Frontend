@@ -356,7 +356,12 @@
   transition: all 0.2s ease;
 }
 
-.edit-process-remove-doc:hover {
+.edit-process-remove-doc:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.edit-process-remove-doc:hover:not(:disabled) {
   color: #ef4444;
   background: #fee2e2;
 }
@@ -504,17 +509,22 @@ a.edit-process-doc-name:hover {
   color: inherit;
 }
 
-.edit-process-doc-upload:hover {
+.edit-process-doc-upload--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.edit-process-doc-upload:not(.edit-process-doc-upload--disabled):hover {
   border-color: #0f2357;
   background: #f0f4ff;
 }
 
-.edit-process-doc-upload:hover .edit-process-doc-upload-icon {
+.edit-process-doc-upload:not(.edit-process-doc-upload--disabled):hover .edit-process-doc-upload-icon {
   color: #0f2357;
   transform: scale(1.1);
 }
 
-.edit-process-doc-upload:hover .edit-process-doc-upload-text {
+.edit-process-doc-upload:not(.edit-process-doc-upload--disabled):hover .edit-process-doc-upload-text {
   color: #0f2357;
   font-weight: 500;
 }

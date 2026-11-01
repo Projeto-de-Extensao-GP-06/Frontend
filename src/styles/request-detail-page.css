@@ -255,6 +255,11 @@
   transition: background-color 0.2s ease;
 }
 
+.req-detail-actions__btn:disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
 .req-detail-actions__btn--accept {
   border: 0;
   background: #0f2357;
@@ -262,7 +267,7 @@
   box-shadow: 0 4px 12px rgba(15, 35, 87, 0.2);
 }
 
-.req-detail-actions__btn--accept:hover {
+.req-detail-actions__btn--accept:hover:not(:disabled) {
   background: #1a3a7a;
 }
 
@@ -272,7 +277,7 @@
   color: #dc2626;
 }
 
-.req-detail-actions__btn--deny:hover {
+.req-detail-actions__btn--deny:hover:not(:disabled) {
   background: #fee2e2;
 }
 

@@ -9,6 +9,8 @@ import { listarProcessos } from "../services/processoService";
 import { buscarDadosGeraisDashboard } from "../services/dashboardService";
 import { api } from "../provider/api";
 import { maskCNJ } from "../utils/masks";
+import { useAuth } from "../contexts/AuthContext";
+import { hasPermission } from "../utils/permissions";
 import { toast } from "sonner";
 import "../../styles/home-page.css";
 
@@ -32,8 +34,8 @@ const SORT_MAP = {
   cliente_desc:     "cliente.nomeRazaoSocial,desc",
   audiencia_asc:    "dataAudiencia,asc",
   audiencia_desc:   "dataAudiencia,desc",
-  prioridade_desc:  "prioridade.id,desc",
-  prioridade_asc:   "prioridade.id,asc",
+  prioridade_desc:  "prioridade.id,asc",
+  prioridade_asc:   "prioridade.id,desc",
 };
 
 const PAGE_SIZE = 6;
@@ -57,7 +59,7 @@ function mapearProcesso(p) {
     id: p.id,
     cnj: p.numeroProcesso || p.processoApi?.numeroCnj || "-",
     clientName: p.clientNomeRazaoSocial || "Sem nome",
-    tribunal: p.siglaTribunal?.nome?.toUpperCase() || "-",
+    tribunal: (p.siglaTribunal?.siglaTribunal || p.siglaTribunal?.nome)?.toUpperCase() || "-",
     hearingDate: formatarData(p.dataAudiencia),
     status: p.status ? p.status.trim().toLowerCase() : "ativo",
     priority: p.prioridade?.nome ? p.prioridade.nome.trim().toLowerCase() : "baixa",
@@ -73,6 +75,8 @@ function mapearProcesso(p) {
 export default function HomePage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const canCreateProcess = hasPermission(user, "CRIAR PROCESSO");
 
   // Dados do servidor
   const [processes, setProcesses] = useState([]);
@@ -136,7 +140,10 @@ export default function HomePage() {
         ]);
 
         const fases = Array.isArray(fasesRes.data) ? fasesRes.data : [];
-        const tribunais = Array.isArray(tribunaisRes.data) ? tribunaisRes.data : [];
+        const tribunaisRaw = Array.isArray(tribunaisRes.data) ? tribunaisRes.data : (tribunaisRes.data?.content || []);
+        const tribunais = tribunaisRaw
+          .map(t => ({ id: t.id, nome: t.siglaTribunal ?? t.nome ?? t.sigla ?? t.descricao }))
+          .filter(t => t.id != null && t.nome);
         const prioridades = Array.isArray(prioridadesRes.data) ? prioridadesRes.data : [];
 
         setFaseOpts([
@@ -145,7 +152,10 @@ export default function HomePage() {
         ]);
         setTribunalOpts([
           { value: "Todos", label: "Todos" },
-          ...tribunais.map(t => ({ value: String(t.id), label: t.nome?.toUpperCase() || t.nome })),
+          ...tribunais.map(t => {
+            const label = t.siglaTribunal || t.nome || "";
+            return { value: String(t.id), label: label.toUpperCase() || label };
+          }),
         ]);
         setPrioridadeOpts([
           { value: "Todas", label: "Todas" },
@@ -259,7 +269,12 @@ export default function HomePage() {
             <Calendar size={16} />
             <span>Gerar evento de calendário</span>
           </button>
-          <button onClick={() => navigate("/app/processos/novo")} className="home-new-button">
+          <button
+            onClick={() => canCreateProcess && navigate("/app/processos/novo")}
+            className="home-new-button"
+            disabled={!canCreateProcess}
+            title={canCreateProcess ? "Novo Processo" : "Sem permissão para criar processo"}
+          >
             <Plus size={16} />
             <span className="home-new-button-label home-new-button-label--wide">Novo Processo</span>
             <span className="home-new-button-label home-new-button-label--compact">Novo</span>
@@ -322,7 +337,13 @@ export default function HomePage() {
           <div className="home-filter-group-left">
             <span className="home-filter-label">Filtros</span>
 
-            <FilterSelect prefix="home" label="Status" value={filterStatus} onChange={v => { setFilterStatus(v); setPage(1); }}>
+            <FilterSelect
+              prefix="home"
+              className={`home-filter-select${filterStatus !== "Todos" ? " home-filter-select--active" : ""}`}
+              label="Status"
+              value={filterStatus}
+              onChange={v => { setFilterStatus(v); setPage(1); }}
+            >
               {STATUS_OPTS.map(o => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
@@ -330,6 +351,7 @@ export default function HomePage() {
 
             <FilterSelect
               prefix="home"
+              className={`home-filter-select${faseId != null ? " home-filter-select--active" : ""}`}
               label="Fase"
               value={faseId != null ? String(faseId) : "Todas"}
               onChange={v => { setFaseId(v === "Todas" ? null : Number(v)); setPage(1); }}
@@ -341,6 +363,7 @@ export default function HomePage() {
 
             <FilterSelect
               prefix="home"
+              className={`home-filter-select${prioridadeId != null ? " home-filter-select--active" : ""}`}
               label="Prioridade"
               value={prioridadeId != null ? String(prioridadeId) : "Todas"}
               onChange={v => { setPrioridadeId(v === "Todas" ? null : Number(v)); setPage(1); }}
@@ -350,7 +373,13 @@ export default function HomePage() {
               ))}
             </FilterSelect>
 
-            <FilterSelect prefix="home" label="Audiência" value={filterHearing} onChange={v => { setFilterHearing(v); setPage(1); }}>
+            <FilterSelect
+              prefix="home"
+              className={`home-filter-select${filterHearing !== "Todos" ? " home-filter-select--active" : ""}`}
+              label="Audiência"
+              value={filterHearing}
+              onChange={v => { setFilterHearing(v); setPage(1); }}
+            >
               {HEARING_OPTS.map(o => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
@@ -358,6 +387,7 @@ export default function HomePage() {
 
             <FilterSelect
               prefix="home"
+              className={`home-filter-select${tribunalId != null ? " home-filter-select--active" : ""}`}
               label="Tribunal"
               value={tribunalId != null ? String(tribunalId) : "Todos"}
               onChange={v => { setTribunalId(v === "Todos" ? null : Number(v)); setPage(1); }}

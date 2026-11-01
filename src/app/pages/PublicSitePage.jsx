@@ -13,7 +13,7 @@ import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { maskPhone, maskCNJ, maskCNPJ } from "../utils/masks";
 import { isValidCNPJ, isValidEmail, isValidPhone, isValidCNJ } from "../utils/validators";
 import { criarSolicitacao } from "../services/solicitacaoService";
-import siteLogoImage from "../../imports/Captura_de_tela_2026-05-29_235111-1.png";
+import siteLogoImage from "../../imports/nova_logo.png";
 import "../../styles/public-site-page.css";
 const areas = [{
   icon: Briefcase,
@@ -53,6 +53,7 @@ const COMO_CONHECEU_OPTIONS = [
 ];
 
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || "1x00000000000000000000AA";
+const IS_SECURE = typeof window !== "undefined" && window.location.protocol === "https:";
 
 const STORAGE_KEY_FORM = "public_site_contact_form";
 const STORAGE_KEY_SCROLL = "public_site_scroll_pos";
@@ -290,7 +291,7 @@ export default function PublicSitePage() {
     }
 
     // 7. Verificação Cloudflare Turnstile
-    if (!turnstileToken) {
+    if (IS_SECURE && !turnstileToken) {
       toast.warning("Por favor, resolva a verificação anti-robô antes de enviar.");
       return;
     }
@@ -306,12 +307,12 @@ export default function PublicSitePage() {
       numeroProcesso: processNumber?.trim() ? processNumber.replace(/\D/g, "") : null,
       razaoSocial: !isPF ? razaoSocialValor : null,
       cnpj: !isPF && cnpj ? cnpj.replace(/[^0-9A-Za-z]/g, "").toUpperCase() : null,
-      turnstileToken,
+      turnstileToken: IS_SECURE ? turnstileToken : "http-bypass",
     };
 
     setIsSubmitting(true);
     try {
-      await criarSolicitacao(payload);
+      const resp = await criarSolicitacao(payload);
       setSubmitted(true);
       toast.success("Solicitação enviada com sucesso!");
       try {
@@ -803,6 +804,7 @@ export default function PublicSitePage() {
 
                 {/* Ações: Desafio Cloudflare Turnstile + Botão Enviar caso */}
                 <div className="site-contact-actions">
+                  {IS_SECURE && (
                   <div className="site-contact-turnstile">
                     <Turnstile
                       ref={turnstileRef}
@@ -817,10 +819,11 @@ export default function PublicSitePage() {
                       }}
                     />
                   </div>
+                  )}
 
                   <Button
                     type="submit"
-                    disabled={!accepted || !turnstileToken || isSubmitting}
+                    disabled={!accepted || (IS_SECURE && !turnstileToken) || isSubmitting}
                     className="site-contact-submit"
                   >
                     {isSubmitting ? (
@@ -844,7 +847,13 @@ export default function PublicSitePage() {
 
       <footer className="site-footer">
         <div className="site-footer__inner">
-          <div className="site-footer__logo"><ImageWithFallback src={siteLogoImage} alt="Thauany Bezerra Advocacia" style={{ width: '13rem', height: 'auto', marginTop: '1.2rem' }} className="site-logo" /></div>
+          <div className="site-footer__logo">
+            <ImageWithFallback
+              src={siteLogoImage}
+              alt="Thauany Bezerra Advocacia"
+              className="site-footer__logo-img"
+            />
+          </div>
           <div className="site-footer__contacts">
             <a href={whatsappUrl} target="_blank" rel="noreferrer" className="site-footer__contact"><Phone size={16} className="site-footer__contact-icon" /><span className="site-footer__contact-text">(11) 98766-4030</span></a>
             <a href="mailto:tthauany.bezerra@gmail.com" className="site-footer__contact"><Mail size={16} className="site-footer__contact-icon" /><span className="site-footer__contact-text">tthauany.bezerra@gmail.com</span></a>

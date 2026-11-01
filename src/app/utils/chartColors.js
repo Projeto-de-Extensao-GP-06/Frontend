@@ -85,17 +85,7 @@ export const chartColors = {
   channelsList: ["#0F2357", "#0F2357", "#0F2357"],
 
   // ---------------------------------------------------------------------------
-  // 7. Funil de Atendimento (Etapas de Conversão de Solicitações)
-  // Azul marinho institucional para entrada, ouro SGPJ para conversão.
-  // ---------------------------------------------------------------------------
-  funnel: {
-    recebidas: "#0F2357", // Topo do funil (volume recebido)
-    aceitas: "#C9A96E",   // Sucesso / conversão qualificada em processo
-  },
-  funnelList: ["#0F2357", "#C9A96E"],
-
-  // ---------------------------------------------------------------------------
-  // 8. Processos por Fase
+  // 7. Processos por Fase
   // ---------------------------------------------------------------------------
   phase: {
     default: "#0F2357",   // Azul institucional dos processos ativos
@@ -103,7 +93,7 @@ export const chartColors = {
   },
 
   // ---------------------------------------------------------------------------
-  // 9. Elementos Estruturais e UI dos Gráficos
+  // 8. Elementos Estruturais e UI dos Gráficos
   // ---------------------------------------------------------------------------
   ui: {
     grid: "#F0F4FA",

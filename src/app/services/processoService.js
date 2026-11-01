@@ -72,7 +72,7 @@ export function mapearProcesso(p) {
     id: p.id,
     cnj: formatarCnj(p.processoApi?.numeroCnj || p.numeroProcesso),
     clientName: p.clientNomeRazaoSocial || "Sem nome",
-    tribunal: p.siglaTribunal?.nome?.toUpperCase() || "-",
+    tribunal: (p.siglaTribunal?.siglaTribunal || p.siglaTribunal?.nome)?.toUpperCase() || "-",
     status: p.status ? p.status.trim().toLowerCase() : "ativo",
     priority: p.prioridade?.nome ? p.prioridade.nome.trim().toLowerCase() : "baixa",
     phase: normalizarTexto(p.faseProcesso?.nome),
@@ -97,7 +97,22 @@ export function mapearProcesso(p) {
       : null,
     closedAt: encerramento.data,
     closedBy: p.encerradoSuspensoPorUsuarioNome || "-",
+    motivoStatusId:
+      p.motivoStatusId ??
+      p.motivoStatusProcessoId ??
+      p.motivoStatus?.id ??
+      p.motivoStatusProcesso?.id ??
+      null,
+    motivoStatus:
+      p.motivoStatusNome ||
+      p.motivoStatusProcessoNome ||
+      p.motivoStatus?.nome ||
+      p.motivoStatusProcesso?.nome ||
+      (typeof p.motivoStatus === "string" ? p.motivoStatus : null) ||
+      null,
+    justificativa: p.justificativa || null,
     lastSyncDate: ultimaAtualizacao.hora ? `${ultimaAtualizacao.data} às ${ultimaAtualizacao.hora}` : ultimaAtualizacao.data,
+    ultimaAtualizacaoIso: p.ultimaAtualizacao || null,
     history: mapearHistorico(p.historicoProcessoResponses),
     raw: p
   };
@@ -120,7 +135,9 @@ export async function listarProcessos(filtros = {}) {
 }
 
 export async function listarClientesParaProcesso() {
-  const response = await api.get("/clientes");
+  const response = await api.get("/clientes", {
+    params: { excluirLead: true },
+  });
   const clientes = Array.isArray(response.data) ? response.data : [];
 
   return clientes.map((cliente) => {
@@ -245,7 +262,7 @@ function montarPayloadExistente(raw, observacao) {
     observacao,
     prioridadeId: raw.prioridade?.id,
     faseProcessoId: raw.faseProcesso?.id,
-    siglaTribunalId: raw.siglaTribunal?.id,
+
     dataAudiencia: raw.dataAudiencia || null,
     valorCausa: raw.valorCausa ?? null,
     status: raw.status,
@@ -260,7 +277,7 @@ export async function adicionarObservacaoAoProcesso({ processoId, processo, obse
 
 export async function atualizarDadosProcesso(id) {
   const response = await api.post(`/processos/${id}/atualizar-dados`);
-  return mapearProcesso(response.data);
+  return response.data;
 }
 
 export async function excluirProcesso(id) {
@@ -269,22 +286,26 @@ export async function excluirProcesso(id) {
 
 export async function listarPrioridades() {
   const response = await api.get("/prioridades");
-  return response.data; // [{ id, nome }]
+  const data = response.data;
+  return Array.isArray(data) ? data : (data?.content || []);
 }
 
 export async function listarFases() {
   const response = await api.get("/fasesProcesso");
-  return response.data; // [{ id, nome }]
+  const data = response.data;
+  return Array.isArray(data) ? data : (data?.content || []);
 }
 
 export async function listarTribunais() {
   const response = await api.get("/siglaTribunais");
-  return response.data; // [{ id, siglaTribunal }]  <- atenção, campo diferente de "nome"
+  const data = response.data;
+  return Array.isArray(data) ? data : (data?.content || []);
 }
 
 export async function listarMotivosStatus() {
   const response = await api.get("/motivosStatusProcesso");
-  return response.data; // [{ id, nome, aplicavelA }]
+  const data = response.data;
+  return Array.isArray(data) ? data : (data?.content || []);
 }
 
 export async function atualizarProcesso(id, payload) {
@@ -324,3 +345,58 @@ export function juntarObservacoes(observacoes) {
     .filter(Boolean)
     .join(SEPARADOR_OBSERVACAO);
 }
+
+export function conectarStatusSincronizacao(id, { onIniciado, onProcessando, onConcluido, onError } = {}) {
+  const baseUrl = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? "http://localhost:8080" : "");
+  const url = `${baseUrl}/processos/${id}/sincronizacao-status`;
+  const eventSource = new EventSource(url, { withCredentials: true });
+
+  eventSource.addEventListener("CONECTADO", (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      onIniciado?.(data);
+    } catch (_) {}
+  });
+
+  eventSource.addEventListener("ENFILEIRADO", (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      onIniciado?.(data);
+    } catch (_) {}
+  });
+
+  eventSource.addEventListener("PROCESSANDO", (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      onProcessando?.(data);
+    } catch (_) {}
+  });
+
+  eventSource.addEventListener("REPROCESSANDO", (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      onReprocessando?.(data);
+    } catch (_) {}
+  });
+
+  eventSource.addEventListener("CONCLUIDO", (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      onConcluido?.(data);
+    } catch (_) {
+      onConcluido?.({});
+    } finally {
+      eventSource.close();
+    }
+  });
+
+  eventSource.onerror = (err) => {
+    eventSource.close();
+    onError?.(err);
+  };
+
+  return () => {
+    eventSource.close();
+  };
+}
+

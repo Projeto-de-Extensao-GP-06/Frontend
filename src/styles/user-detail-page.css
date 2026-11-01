@@ -101,7 +101,7 @@
   display: grid;
   gap: 1rem;
   padding: 0 1rem;
-  margin-top: -0.5rem;
+  margin-top: 1rem;
 }
 
 .user-detail-card {
@@ -231,7 +231,14 @@
   transition: all 0.2s ease;
 }
 
-.user-detail-btn-save:hover {
+.user-detail-btn-save:disabled,
+.user-detail-btn-deactivate:disabled,
+.user-detail-btn-reactivate:disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.user-detail-btn-save:hover:not(:disabled) {
   background: #1a3a7a;
 }
 
@@ -257,7 +264,7 @@
   transition: background-color 0.2s ease;
 }
 
-.user-detail-btn-deactivate:hover {
+.user-detail-btn-deactivate:hover:not(:disabled) {
   background: #fef3c7;
 }
 
@@ -278,7 +285,7 @@
   transition: background-color 0.2s ease;
 }
 
-.user-detail-btn-reactivate:hover {
+.user-detail-btn-reactivate:hover:not(:disabled) {
   background: #dcfce7;
 }
 

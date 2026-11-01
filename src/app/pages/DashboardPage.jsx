@@ -287,19 +287,15 @@ export default function DashboardPage() {
   const kpis = {
     processosAtivos: {
       value: generalData?.processoAtivos != null ? String(generalData.processoAtivos) : "0",
-      sub: "carteira ativa",
     },
     solicitacoes: {
       value: generalData?.solicitacoesPendentes != null ? String(generalData.solicitacoesPendentes) : "0",
-      sub: "pendentes",
     },
     clientes: {
       value: generalData?.clientesExistentes != null ? String(generalData.clientesExistentes) : "0",
-      sub: "cadastrados",
     },
     comAudiencia: {
       value: generalData?.processosComAudiencia != null ? String(generalData.processosComAudiencia) : "0",
-      sub: "agendadas",
     },
   };
 
@@ -376,13 +372,7 @@ export default function DashboardPage() {
       (item) => item.ativos > 0 || item.encerrados > 0 || item.suspensos > 0 || item.novos > 0
     );
 
-  // 7. Funil de atendimento (GET /dashboard/filter -> funilAtendimento: { recebidas, aceitas })
-  const funil = filteredData?.funilAtendimento;
-  const funilRecebidas = funil?.recebidas ?? 0;
-  const funilAceitas = funil?.aceitas ?? 0;
-  const hasRequestFunnelData = funilRecebidas > 0 || funilAceitas > 0;
-
-  // 8. Agenda de risco (GET /dashboard -> audiencias: [{ idProcesso, dataAudiencia, nomeFaseProcesso, ... }])
+  // 7. Agenda de risco (GET /dashboard -> audiencias: [{ idProcesso, dataAudiencia, nomeFaseProcesso, ... }])
   const upcomingHearings = (generalData?.audiencias || []).map((item) => ({
     id: item.idProcesso,
     hearing: item.dataAudiencia,
@@ -408,8 +398,6 @@ export default function DashboardPage() {
           icon={<Scale size={15} className="kpi-card-icon kpi-card-icon--blue" />}
           iconVariant="kpi-card-badge--blue"
           sub={kpis.processosAtivos.sub}
-          subIcon={<TrendingUp size={10} />}
-          subVariant="kpi-card-sub--success"
           onClick={() => navigate("/app?status=ativo")}
         />
         <KpiCard
@@ -418,8 +406,6 @@ export default function DashboardPage() {
           icon={<Zap size={15} className="kpi-card-icon kpi-card-icon--amber" />}
           iconVariant="kpi-card-badge--amber"
           sub={kpis.solicitacoes.sub}
-          subIcon={<ArrowUpRight size={10} />}
-          subVariant="kpi-card-sub--amber"
           onClick={() => navigate("/app/solicitacoes?tab=pendente")}
         />
         <KpiCard
@@ -428,8 +414,6 @@ export default function DashboardPage() {
           icon={<Users size={15} className="kpi-card-icon kpi-card-icon--green" />}
           iconVariant="kpi-card-badge--green"
           sub={kpis.clientes.sub}
-          subIcon={<Users size={10} />}
-          subVariant="kpi-card-sub--muted"
           onClick={() => navigate("/app/clientes")}
         />
         <KpiCard
@@ -438,8 +422,6 @@ export default function DashboardPage() {
           icon={<Calendar size={15} className="kpi-card-icon kpi-card-icon--gold" />}
           iconVariant="kpi-card-badge--gold"
           sub={kpis.comAudiencia.sub}
-          subIcon={<Calendar size={10} />}
-          subVariant="kpi-card-sub--muted"
           onClick={() => navigate("/app?audiencia=com")}
         />
       </div>
@@ -732,7 +714,7 @@ export default function DashboardPage() {
         </ChartCard>
       </div>
 
-      {/* FORMA DE ENTRADA & FUNIL DE ATENDIMENTO*/}
+      {/* FORMA DE ENTRADA & EVOLUÇÃO DA CARTEIRA */}
       <div className="dashboard-charts-grid dashboard-charts-grid--split">
         <ChartCard
           title="Forma de entrada"
@@ -771,71 +753,6 @@ export default function DashboardPage() {
           )}
         </ChartCard>
 
-        {/* FUNIL DE ATENDIMENTO */}
-        <ChartCard
-          title="Funil de atendimento"
-          sub={`Solicitações até a abertura do processo - ${appliedPeriod}`}
-          info="Mostra a passagem das solicitações recebidas até serem aceitas no período selecionado."
-        >
-          {hasRequestFunnelData ? (
-            <div className="dashboard-funnel-metric-box">
-              <div
-                className="dashboard-funnel-ratio dashboard-funnel-ratio--clickable"
-                role="button"
-                tabIndex={0}
-                onClick={() => navigate("/app/solicitacoes?tab=aceita")}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") navigate("/app/solicitacoes?tab=aceita");
-                }}
-                title="Clique para ver solicitações aceitas"
-              >
-                <span className="dashboard-funnel-accepted">{funilAceitas}</span>
-                <span className="dashboard-funnel-divider">/</span>
-                <span className="dashboard-funnel-total">{funilRecebidas}</span>
-              </div>
-              <p className="dashboard-funnel-description">
-                <button
-                  type="button"
-                  className="dashboard-funnel-link"
-                  onClick={() => navigate("/app/solicitacoes?tab=aceita")}
-                >
-                  {funilAceitas} {funilAceitas === 1 ? "aceita" : "aceitas"}
-                </button>
-                {" de "}
-                <button
-                  type="button"
-                  className="dashboard-funnel-link"
-                  onClick={() => navigate("/app/solicitacoes?tab=todas")}
-                >
-                  {funilRecebidas} {funilRecebidas === 1 ? "recebida" : "recebidas"}
-                </button>
-              </p>
-              <div className="dashboard-funnel-progress-track">
-                <div
-                  className="dashboard-funnel-progress-bar"
-                  style={{
-                    width: `${funilRecebidas > 0 ? Math.min(100, Math.round((funilAceitas / funilRecebidas) * 100)) : 0}%`,
-                  }}
-                />
-              </div>
-              <span className="dashboard-funnel-percent">
-                {funilRecebidas > 0 ? Math.round((funilAceitas / funilRecebidas) * 100) : 0}% de conversão
-              </span>
-            </div>
-          ) : (
-            <div className="dashboard-chart-empty-state">
-              <p className="dashboard-empty">
-                {loadingFiltered
-                  ? "Carregando dados..."
-                  : "Não existem registros destes dados no período selecionado."}
-              </p>
-            </div>
-          )}
-        </ChartCard>
-      </div>
-
-      {/* EVOLUÇÃO DA CARTEIRA */}
-      <div className="dashboard-charts-grid">
         <ChartCard
           title="Evolução da carteira"
           sub={`Aberturas e encerramentos - ${appliedPeriod}`}

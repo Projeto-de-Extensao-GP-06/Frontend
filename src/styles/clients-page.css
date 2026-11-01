@@ -164,7 +164,8 @@
   letter-spacing: 0.06em;
 }
 
-.clients-clear-button {
+.clients-clear-button,
+.clients-clear-filters {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
@@ -186,6 +187,21 @@
   border-radius: 0.625rem;
   background: #f4f6fa;
   overflow: hidden;
+}
+
+.clients-filter-select--active {
+  border-color: #8ba8e8;
+  background: #e8efff;
+}
+
+.clients-filter-select--active .clients-filter-select-label {
+  color: #0f2357;
+}
+
+.clients-filter-select--active .clients-filter-select-input {
+  border-left-color: #c2d0f0;
+  color: #0f2357;
+  font-weight: 700;
 }
 
 .clients-filter-select-label {

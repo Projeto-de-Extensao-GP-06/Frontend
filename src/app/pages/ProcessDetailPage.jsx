@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useEffect, useState, useRef } from "react";
+import { useNavigate, useParams, useLocation } from "react-router";
 import {
   ArrowLeft,
   Pencil,
@@ -9,6 +9,7 @@ import {
   Plus,
   Scale,
   AlertTriangle,
+  CheckCircle,
   Flag,
   RotateCcw,
   RefreshCw,
@@ -43,6 +44,7 @@ import {
   excluirProcesso,
   listarHistoricoDoProcesso,
   listarTiposDocumento,
+  listarMotivosStatus,
   enviarDocumentosDoCliente,
   adicionarObservacaoAoProcesso,
   separarObservacoes,
@@ -53,6 +55,7 @@ import {
 } from "../services/processoService";
 import { maskCNJ } from "../utils/masks";
 import { toast } from "sonner";
+import { useSyncProcess } from "../contexts/SyncProcessContext";
 import { useAuth } from "../contexts/AuthContext";
 import { hasPermission } from "../utils/permissions";
 import "../../styles/process-detail-page.css";
@@ -115,12 +118,14 @@ function montarDefaultsCalendario(process) {
 export default function ProcessDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { iniciarSincronizacao, isSincronizando, ultimoProcessoSincronizadoId } = useSyncProcess();
+  const syncing = isSincronizando(id);
   const { user } = useAuth();
   const canEditProcess = hasPermission(user, "EDITAR PROCESSO");
   const canDeleteProcess = hasPermission(user, "EXCLUIR PROCESSO");
   const canCreateDocument = hasPermission(user, "CRIAR DOCUMENTO");
 
-  const [syncing, setSyncing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [reactivating, setReactivating] = useState(false);
   const [savingComment, setSavingComment] = useState(false);
@@ -139,9 +144,42 @@ export default function ProcessDetailPage() {
   const [observationsText, setObservationsText] = useState("");
   const [documents, setDocuments] = useState([]);
   const [tiposDocumento, setTiposDocumento] = useState([]);
+  const [motivosStatus, setMotivosStatus] = useState([]);
   const [isAddingComment, setIsAddingComment] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [historyVisible, setHistoryVisible] = useState(HISTORY_INITIAL);
+
+  // Quando o usuário navega pelo botão do Toast "Ver Processo" vindo de outra página
+  useEffect(() => {
+    if (!loading && process && location.state?.destacarCard) {
+      navigate(location.pathname, { replace: true, state: {} });
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          const card = document.getElementById("card-dados-processo");
+          if (card) {
+            card.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        }, 120);
+      });
+    }
+  }, [loading, process, location.state, location.pathname, navigate]);
+
+  // Quando o processo terminar de sincronizar em segundo plano, atualiza os dados na tela
+  useEffect(() => {
+    if (String(ultimoProcessoSincronizadoId) === String(id)) {
+      (async () => {
+        try {
+          const [dados, historico] = await Promise.all([
+            buscarProcessoPorId(id),
+            listarHistoricoDoProcesso(id),
+          ]);
+          setProcess({ ...dados, history: historico });
+          setStatus(dados.status);
+          setObservationsText(dados.observationsText);
+        } catch (_) {}
+      })();
+    }
+  }, [ultimoProcessoSincronizadoId, id]);
 
   useEffect(() => {
     async function carregar() {
@@ -189,29 +227,24 @@ export default function ProcessDetailPage() {
     carregarTiposDocumento();
   }, []);
 
-  const handleAtualizarDados = async () => {
-    try {
-      setSyncing(true);
-      const dadosAtualizados = await atualizarDadosProcesso(id);
-      const historico = await listarHistoricoDoProcesso(id);
-      setProcess({ ...dadosAtualizados, history: historico });
-      setStatus(dadosAtualizados.status);
-      setObservationsText(dadosAtualizados.observationsText);
-      toast.success("Dados do processo atualizados com sucesso.");
-    } catch (err) {
-      console.error("Erro ao atualizar dados do processo:", err);
-      if (err.response?.status === 401) {
-        toast.warning("Sessão inválida ou expirada.");
-      } else if (err.response?.status === 503 || err.response?.status === 502 || err.response?.status === 504) {
-        const mensagemErro = err.response?.data?.message || "Não foi possível obter dados oficiais do DataJud no momento. Por favor, tente novamente mais tarde.";
-        toast.warning(mensagemErro);
-      } else {
-        const mensagemErro = err.response?.data?.message || "Não foi possível atualizar os dados do processo.";
-        toast.error(mensagemErro);
+  useEffect(() => {
+    async function carregarMotivosStatus() {
+      try {
+        setMotivosStatus(await listarMotivosStatus());
+      } catch (err) {
+        console.error("Erro ao carregar motivos de status:", err);
       }
-    } finally {
-      setSyncing(false);
     }
+
+    carregarMotivosStatus();
+  }, []);
+
+  const handleAtualizarDados = () => {
+    if (!canEditProcess) return;
+    iniciarSincronizacao({
+      processoId: id,
+      clientName: process?.clientName,
+    });
   };
 
   const handleDelete = async () => {
@@ -434,6 +467,15 @@ export default function ProcessDetailPage() {
     process.encerradoPor ||
     process.responsible ||
     "Thauany Bezerra";
+  const statusReason =
+    process.motivoStatus ||
+    motivosStatus.find(
+      (m) =>
+        process.motivoStatusId != null &&
+        Number(m.id) === Number(process.motivoStatusId),
+    )?.nome ||
+    "—";
+  const statusJustification = process.justificativa?.trim() || "—";
 
   // Observações
   const observacoes = separarObservacoes(observationsText);
@@ -480,7 +522,7 @@ export default function ProcessDetailPage() {
       </div>
 
       <div className="proc-content">
-        <div className="proc-card">
+        <div className="proc-card" id="card-dados-processo">
           <div className="proc-sync-bar">
             <div className="proc-sync-bar__info">
               <span className="proc-sync-bar__label">
@@ -493,9 +535,13 @@ export default function ProcessDetailPage() {
             <button
               type="button"
               className="proc-sync-bar__btn"
-              title="Buscar e atualizar dados do processo"
+              title={
+                canEditProcess
+                  ? "Buscar e atualizar dados do processo"
+                  : "Sem permissão para editar processo"
+              }
               onClick={handleAtualizarDados}
-              disabled={syncing}
+              disabled={syncing || !canEditProcess}
             >
               <RefreshCw size={14} className={syncing ? "animate-spin" : ""} />
               <span>{syncing ? "Atualizando..." : "Atualizar dados"}</span>
@@ -575,18 +621,47 @@ export default function ProcessDetailPage() {
                 variant="proc"
               />
             </div>
-            {isClosed && (
-              <>
-                <InfoRow label="Encerrado em" value={closedAt} variant="proc" />
-                <InfoRow
-                  label="Encerrado por"
-                  value={closedBy}
-                  variant="proc"
-                />
-              </>
-            )}
           </div>
         </div>
+
+        {(isClosed || isSuspended) && (
+          <div
+            className={`proc-card proc-status-card ${isClosed ? "proc-status-card--closed" : "proc-status-card--suspended"}`}
+          >
+            <h3 className="proc-card__title proc-status-card__title">
+              {isClosed ? (
+                <CheckCircle size={15} className="proc-card__title-icon" />
+              ) : (
+                <AlertTriangle size={15} className="proc-card__title-icon" />
+              )}
+              {isClosed ? "Detalhes do Encerramento" : "Detalhes da Suspensão"}
+            </h3>
+            <div className="proc-grid">
+              <InfoRow
+                label={isClosed ? "Encerrado em" : "Suspenso em"}
+                value={closedAt}
+                variant="proc"
+              />
+              <InfoRow
+                label={isClosed ? "Encerrado por" : "Suspenso por"}
+                value={closedBy}
+                variant="proc"
+              />
+              <InfoRow
+                label={
+                  isClosed ? "Motivo do encerramento" : "Motivo da suspensão"
+                }
+                value={statusReason}
+                variant="proc"
+              />
+              <InfoRow
+                label="Justificativa"
+                value={statusJustification}
+                variant="proc"
+              />
+            </div>
+          </div>
+        )}
 
         <div className="proc-card">
           <h3 className="proc-card__title">
@@ -608,13 +683,15 @@ export default function ProcessDetailPage() {
             </h3>
             {!isClosed && !isAddingComment && (
               <button
-                onClick={() => setIsAddingComment(true)}
+                onClick={() => canEditProcess && setIsAddingComment(true)}
                 className="proc-card__action-btn"
-                disabled={limiteObservacoesAtingido}
+                disabled={limiteObservacoesAtingido || !canEditProcess}
                 title={
-                  limiteObservacoesAtingido
-                    ? `Limite de ${MAX_OBSERVACOES} observações atingido`
-                    : undefined
+                  !canEditProcess
+                    ? "Sem permissão para editar processo"
+                    : limiteObservacoesAtingido
+                      ? `Limite de ${MAX_OBSERVACOES} observações atingido`
+                      : "Adicionar comentário"
                 }
               >
                 <Plus size={12} />
@@ -868,10 +945,16 @@ export default function ProcessDetailPage() {
         </div>
 
         <div className="proc-actions">
-          {isSuspended && (
+          {(isSuspended || isClosed) && (
             <button
-              onClick={() => setReactivateDialog(true)}
+              onClick={() => canEditProcess && setReactivateDialog(true)}
               className="proc-actions__btn proc-actions__btn--reactivate"
+              disabled={!canEditProcess}
+              title={
+                canEditProcess
+                  ? "Reativar Processo"
+                  : "Sem permissão para editar processo"
+              }
             >
               <RotateCcw size={15} />
               Reativar Processo

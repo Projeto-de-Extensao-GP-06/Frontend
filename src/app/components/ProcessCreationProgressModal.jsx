@@ -15,16 +15,28 @@ export function ProcessCreationProgressModal({
   stepState = {
     criando: "pendente",
     upload: null,
+    datajud: null,
     concluido: "pendente",
   },
   uploadCount = { current: 0, total: 0 },
   isFinished = false,
   onFinish = null,
+  hasCnj = false,
+  mode = "create",
 }) {
+  const isUpdate = mode === "update";
+
+  const getPrimeiraEtapaTitulo = () => {
+    if (isUpdate) {
+      return "Atualizando processo no sistema";
+    }
+    return hasCnj ? "Registrando processo no sistema" : "Criando processo";
+  };
+
   const steps = [
     {
       id: "criando",
-      title: "Criando processo e consultando o DataJud",
+      title: getPrimeiraEtapaTitulo(),
       status: stepState.criando || "pendente",
     },
   ];
@@ -34,6 +46,14 @@ export function ProcessCreationProgressModal({
       id: "upload",
       title: `Enviando documentos (${uploadCount.current}/${uploadCount.total})`,
       status: stepState.upload || "pendente",
+    });
+  }
+
+  if (hasCnj && stepState.datajud !== null && stepState.datajud !== undefined) {
+    steps.push({
+      id: "datajud",
+      title: "Consultando dados oficiais no DataJud",
+      status: stepState.datajud || "pendente",
     });
   }
 
@@ -85,55 +105,92 @@ export function ProcessCreationProgressModal({
     }
   };
 
+  const getDescricao = () => {
+    if (isFinished) {
+      if (hasCnj && stepState.datajud === "falha") {
+        return isUpdate
+          ? "Processo atualizado! Os dados do DataJud poderão ser sincronizados posteriormente."
+          : "Processo criado! Os dados do DataJud poderão ser sincronizados posteriormente.";
+      }
+      return isUpdate
+        ? "O processo foi atualizado com sucesso no sistema."
+        : "O processo foi registrado com sucesso no sistema.";
+    }
+    if (hasCnj) {
+      return "A consulta no DataJud está em andamento. Você pode aguardar a conclusão ou continuar em segundo plano:";
+    }
+    return isUpdate
+      ? "Aguarde enquanto o processo é atualizado no sistema:"
+      : "Aguarde enquanto o processo é registrado no sistema:";
+  };
+
   return (
     <Dialog
       open={isOpen}
       onOpenChange={(open) => {
-        if (!open && onMinimize && !isFinished) {
-          onMinimize();
+        if (!open) {
+          if (isFinished && onFinish) {
+            onFinish();
+          } else if (onMinimize && hasCnj) {
+            onMinimize();
+          }
         }
       }}
     >
       <DialogContent
         className="creation-progress-dialog"
         onPointerDownOutside={(e) => {
-          if (onMinimize && !isFinished) {
-            e.preventDefault();
+          e.preventDefault();
+          if (isFinished && onFinish) {
+            onFinish();
+          } else if (onMinimize && hasCnj) {
             onMinimize();
-          } else {
-            e.preventDefault();
           }
         }}
         onEscapeKeyDown={(e) => {
-          if (onMinimize && !isFinished) {
-            e.preventDefault();
+          e.preventDefault();
+          if (isFinished && onFinish) {
+            onFinish();
+          } else if (onMinimize && hasCnj) {
             onMinimize();
-          } else {
-            e.preventDefault();
           }
         }}
       >
         <div className="creation-progress-header">
           <div>
             <DialogTitle className="creation-progress-dialog-title">
-              {isFinished ? "Processo Criado!" : "Criando Processo"}
+              {isFinished
+                ? (isUpdate ? "Processo Atualizado!" : "Processo Criado!")
+                : (isUpdate ? "Atualizando Processo" : "Criando Processo")}
             </DialogTitle>
             <DialogDescription className="creation-progress-dialog-desc">
-              {isFinished
-                ? "O processo foi registrado com sucesso no sistema."
-                : "A consulta no DataJud pode levar até 1 minuto. Acompanhe as etapas:"}
+              {getDescricao()}
             </DialogDescription>
           </div>
-          {onMinimize && !isFinished && (
-            <button
-              type="button"
-              className="creation-progress-close-btn"
-              onClick={onMinimize}
-              title="Continuar em segundo plano"
-              aria-label="Continuar em segundo plano"
-            >
-              <X size={20} />
-            </button>
+          {isFinished ? (
+            onFinish && (
+              <button
+                type="button"
+                className="creation-progress-close-btn"
+                onClick={onFinish}
+                title="Acessar processo"
+                aria-label="Acessar processo"
+              >
+                <X size={20} />
+              </button>
+            )
+          ) : (
+            hasCnj && onMinimize && (
+              <button
+                type="button"
+                className="creation-progress-close-btn"
+                onClick={onMinimize}
+                title="Continuar em segundo plano"
+                aria-label="Continuar em segundo plano"
+              >
+                <X size={20} />
+              </button>
+            )
           )}
         </div>
 
@@ -158,11 +215,11 @@ export function ProcessCreationProgressModal({
 
         <div className="creation-progress-footer">
           {!isFinished ? (
-            <>
-              <p className="creation-progress-hint">
-                Você pode continuar navegando na aplicação enquanto o processo é criado em segundo plano.
-              </p>
-              {onMinimize && (
+            hasCnj && onMinimize && (
+              <>
+                <p className="creation-progress-hint">
+                  Você pode continuar navegando na aplicação enquanto os dados são consultados em segundo plano.
+                </p>
                 <button
                   type="button"
                   className="creation-progress-minimize-btn"
@@ -171,8 +228,8 @@ export function ProcessCreationProgressModal({
                   <Minimize2 size={16} />
                   <span>Continuar em segundo plano</span>
                 </button>
-              )}
-            </>
+              </>
+            )
           ) : (
             onFinish && (
               <button

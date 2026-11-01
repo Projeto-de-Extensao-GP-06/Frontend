@@ -120,6 +120,10 @@ export function mapearSolicitacao(dto = {}) {
  * @returns {Promise<any>}
  */
 export const criarSolicitacao = async (dados) => {
-  const response = await api.post("/solicitacoes", dados);
-  return response.data;
+  try {
+    const response = await api.post("/solicitacoes", dados);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
