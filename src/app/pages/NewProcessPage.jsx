@@ -25,12 +25,16 @@ import { maskCNJ, maskCurrency } from "../utils/masks";
 import { getDocBadgeClass } from "../utils/document";
 import { toast } from "sonner";
 import { useSyncProcess } from "../contexts/SyncProcessContext";
+import { useAuth } from "../contexts/AuthContext";
+import { hasPermission } from "../utils/permissions";
 import "../../styles/edit-process-page.css";
 import "../../styles/select-client-modal.css";
 import "../../styles/process-creation-modal.css";
 
 export default function NewProcessPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const canCreateDocument = hasPermission(user, "CRIAR DOCUMENTO");
   const { acompanharSincronizacao } = useSyncProcess();
   const sseConnRef = useRef(null);
   const [loadingOptions, setLoadingOptions] = useState(true);
@@ -165,6 +169,7 @@ export default function NewProcessPage() {
   };
 
   const handleSelectFiles = (event) => {
+    if (!canCreateDocument) return;
     const arquivos = Array.from(event.target.files || []);
     event.target.value = "";
     if (!arquivos.length) return;
@@ -812,7 +817,8 @@ export default function NewProcessPage() {
               className="edit-process-select"
               value={tipoDocumentoId}
               onChange={(event) => setTipoDocumentoId(event.target.value)}
-              disabled={submitting}
+              disabled={submitting || !canCreateDocument}
+              title={!canCreateDocument ? "Sem permissão para criar documento" : undefined}
             >
               <option value="">Selecione o tipo</option>
               {tiposDocumento.map((tipo) => (
@@ -843,14 +849,18 @@ export default function NewProcessPage() {
                 </div>
               );
             })}
-            <label htmlFor="new-process-file-upload" className="edit-process-doc-upload">
+            <label
+              htmlFor="new-process-file-upload"
+              className={`edit-process-doc-upload ${!canCreateDocument ? "edit-process-doc-upload--disabled" : ""}`}
+              title={canCreateDocument ? "Adicionar arquivo" : "Sem permissão para criar documento"}
+            >
               <input
                 id="new-process-file-upload"
                 type="file"
                 multiple
                 onChange={handleSelectFiles}
                 className="edit-process-file-input-hidden"
-                disabled={submitting || !tiposDocumento.length}
+                disabled={submitting || !tiposDocumento.length || !canCreateDocument}
               />
               <CloudUpload size={18} className="edit-process-doc-upload-icon" />
               <p className="edit-process-doc-upload-text">Adicionar arquivo</p>

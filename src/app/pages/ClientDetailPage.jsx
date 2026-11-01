@@ -20,7 +20,6 @@ export default function ClientDetailPage() {
   } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const canCreateContact = hasPermission(user, "CRIAR CONTATO");
   const canEditClient = hasPermission(user, "EDITAR CLIENTE");
   const canDeleteClient = hasPermission(user, "EXCLUIR CLIENTE");
 
@@ -184,9 +183,9 @@ export default function ClientDetailPage() {
           </div>
           <Button
             type="button"
-            onClick={() => setAddContactDialog(true)}
-            disabled={!canCreateContact}
-            title={canCreateContact ? "Adicionar contato" : "Sem permissão para criar contato"}
+            onClick={() => canEditClient && setAddContactDialog(true)}
+            disabled={!canEditClient}
+            title={canEditClient ? "Adicionar contato" : "Sem permissão para editar cliente"}
             className="button button--default button--default-size"
           >
             <Plus size={13} />

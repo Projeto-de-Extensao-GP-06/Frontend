@@ -1,0 +1,101 @@
+.access-denied-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 8rem);
+  padding: 2rem 1rem;
+  font-family: "DM Sans", sans-serif;
+}
+
+.access-denied-card {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  max-width: 26rem;
+  padding: 2.25rem 1.75rem;
+  border: 1px solid #e8ecf4;
+  border-radius: 1.25rem;
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(15, 35, 87, 0.06);
+  text-align: center;
+}
+
+.access-denied-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0f2357 0%, #c9a96e 100%);
+}
+
+.access-denied-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  margin-bottom: 1.25rem;
+  border-radius: 1rem;
+  border: 1px solid #fde68a;
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.access-denied-kicker {
+  margin: 0 0 0.25rem;
+  color: #c9a96e;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.access-denied-title {
+  margin: 0 0 0.625rem;
+  color: #0f2357;
+  font-family: "Playfair Display", serif;
+  font-size: clamp(1.25rem, 1.1rem + 0.5vw, 1.5rem);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.access-denied-description {
+  margin: 0 0 1.5rem;
+  color: #4b5563;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.access-denied-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.access-denied-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 2.625rem;
+  padding: 0 1.25rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.access-denied-btn--primary {
+  width: 100%;
+  border: 0;
+  background: #0f2357;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(15, 35, 87, 0.2);
+}
+
+.access-denied-btn--primary:hover {
+  background: #162d6b;
+}

@@ -32,6 +32,8 @@ import {
 } from "../services/processoService";
 import { toast } from "sonner";
 import { useSyncProcess } from "../contexts/SyncProcessContext";
+import { useAuth } from "../contexts/AuthContext";
+import { hasPermission } from "../utils/permissions";
 import "../../styles/edit-process-page.css";
 import "../../styles/clients-page.css";
 import "../../styles/process-creation-modal.css";
@@ -58,6 +60,9 @@ function montarDataHoraIso(dataInput, horaInput) {
 export default function EditProcessPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const canCreateDocument = hasPermission(user, "CRIAR DOCUMENTO");
+  const canDeleteDocument = hasPermission(user, "EXCLUIR DOCUMENTO");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -702,6 +707,7 @@ export default function EditProcessPage() {
   };
 
   const handleRemoverDocumentoLocal = (document) => {
+    if (!canDeleteDocument) return;
     setDocuments((prev) => prev.filter((item) => item.id !== document.id));
     setDocumentsToDelete((prev) => prev.some((item) => item.id === document.id) ? prev : [...prev, document]);
   };
@@ -709,6 +715,8 @@ export default function EditProcessPage() {
   const handleUploadDocumento = async (event) => {
     const arquivos = Array.from(event.target.files || []);
     event.target.value = "";
+
+    if (!canCreateDocument) return;
 
     if (!arquivos.length) return;
     if (!tipoDocumentoId) {
@@ -1004,7 +1012,8 @@ export default function EditProcessPage() {
               className="edit-process-select"
               value={tipoDocumentoId}
               onChange={(event) => setTipoDocumentoId(event.target.value)}
-              disabled={uploadingDocument}
+              disabled={uploadingDocument || !canCreateDocument}
+              title={!canCreateDocument ? "Sem permissão para criar documento" : undefined}
             >
               <option value="">Selecione o tipo</option>
               {tiposDocumento.map((tipo) => (
@@ -1015,7 +1024,14 @@ export default function EditProcessPage() {
           <div className="edit-process-doc-grid">
             {documents.map((doc) => (
               <div key={doc.id} className="edit-process-doc-card">
-                <button type="button" className="edit-process-remove-doc" onClick={() => handleRemoverDocumentoLocal(doc)} title="Excluir documento ao salvar" aria-label={`Excluir ${doc.name} ao salvar`}>
+                <button
+                  type="button"
+                  className="edit-process-remove-doc"
+                  onClick={() => canDeleteDocument && handleRemoverDocumentoLocal(doc)}
+                  disabled={!canDeleteDocument}
+                  title={canDeleteDocument ? "Excluir documento ao salvar" : "Sem permissão para excluir documento"}
+                  aria-label={`Excluir ${doc.name} ao salvar`}
+                >
                   <X size={14} />
                 </button>
                 <div className={`edit-process-doc-badge ${getDocBadgeClass(doc.type)}`}>
@@ -1027,14 +1043,18 @@ export default function EditProcessPage() {
                 )}
               </div>
             ))}
-            <label htmlFor="edit-process-file-upload" className="edit-process-doc-upload">
+            <label
+              htmlFor="edit-process-file-upload"
+              className={`edit-process-doc-upload ${!canCreateDocument ? "edit-process-doc-upload--disabled" : ""}`}
+              title={canCreateDocument ? "Adicionar arquivo" : "Sem permissão para criar documento"}
+            >
               <input
                 id="edit-process-file-upload"
                 type="file"
                 multiple
                 onChange={handleUploadDocumento}
                 className="edit-process-file-input-hidden"
-                disabled={uploadingDocument || !tiposDocumento.length}
+                disabled={uploadingDocument || !tiposDocumento.length || !canCreateDocument}
               />
               {uploadingDocument ? <Loader2 size={18} className="edit-process-doc-upload-icon animate-spin" /> : <CloudUpload size={18} className="edit-process-doc-upload-icon" />}
               <p className="edit-process-doc-upload-text">
