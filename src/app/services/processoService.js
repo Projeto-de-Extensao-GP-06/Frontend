@@ -346,8 +346,8 @@ export function juntarObservacoes(observacoes) {
     .join(SEPARADOR_OBSERVACAO);
 }
 
-export function conectarStatusSincronizacao(id, { onIniciado, onProcessando, onReprocessando, onConcluido, onError } = {}) {
-  const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
+export function conectarStatusSincronizacao(id, { onIniciado, onProcessando, onConcluido, onError } = {}) {
+  const baseUrl = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? "http://localhost:8080" : "");
   const url = `${baseUrl}/processos/${id}/sincronizacao-status`;
   const eventSource = new EventSource(url, { withCredentials: true });
 

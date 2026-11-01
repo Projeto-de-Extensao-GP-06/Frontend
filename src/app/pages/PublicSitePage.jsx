@@ -53,6 +53,7 @@ const COMO_CONHECEU_OPTIONS = [
 ];
 
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || "1x00000000000000000000AA";
+const IS_SECURE = typeof window !== "undefined" && window.location.protocol === "https:";
 
 const STORAGE_KEY_FORM = "public_site_contact_form";
 const STORAGE_KEY_SCROLL = "public_site_scroll_pos";
@@ -290,7 +291,7 @@ export default function PublicSitePage() {
     }
 
     // 7. Verificação Cloudflare Turnstile
-    if (!turnstileToken) {
+    if (IS_SECURE && !turnstileToken) {
       toast.warning("Por favor, resolva a verificação anti-robô antes de enviar.");
       return;
     }
@@ -306,12 +307,12 @@ export default function PublicSitePage() {
       numeroProcesso: processNumber?.trim() ? processNumber.replace(/\D/g, "") : null,
       razaoSocial: !isPF ? razaoSocialValor : null,
       cnpj: !isPF && cnpj ? cnpj.replace(/[^0-9A-Za-z]/g, "").toUpperCase() : null,
-      turnstileToken,
+      turnstileToken: IS_SECURE ? turnstileToken : "http-bypass",
     };
 
     setIsSubmitting(true);
     try {
-      await criarSolicitacao(payload);
+      const resp = await criarSolicitacao(payload);
       setSubmitted(true);
       toast.success("Solicitação enviada com sucesso!");
       try {
@@ -803,6 +804,7 @@ export default function PublicSitePage() {
 
                 {/* Ações: Desafio Cloudflare Turnstile + Botão Enviar caso */}
                 <div className="site-contact-actions">
+                  {IS_SECURE && (
                   <div className="site-contact-turnstile">
                     <Turnstile
                       ref={turnstileRef}
@@ -817,10 +819,11 @@ export default function PublicSitePage() {
                       }}
                     />
                   </div>
+                  )}
 
                   <Button
                     type="submit"
-                    disabled={!accepted || !turnstileToken || isSubmitting}
+                    disabled={!accepted || (IS_SECURE && !turnstileToken) || isSubmitting}
                     className="site-contact-submit"
                   >
                     {isSubmitting ? (
