@@ -11,7 +11,7 @@ import "../../styles/roles-page.css";
 
 const SPECIAL_PERMISSIONS = new Set(["TODAS AS PERMISSÕES", "SEM PERMISSÕES"]);
 const SYSTEM_CARGOS = new Set(["ADMIN", "Sem Cargo"]);
-const MODULE_ORDER = ["PROCESSO", "SOLICITAÇÃO", "CLIENTE", "CARGO", "USUÁRIO", "CONTATO", "DOCUMENTO"];
+const MODULE_ORDER = ["PROCESSO", "SOLICITAÇÃO", "CLIENTE", "CARGO", "USUÁRIO", "DOCUMENTO"];
 const ACTION_ORDER = ["CRIAR", "EDITAR", "EXCLUIR", "ACEITAR", "NEGAR"];
 
 const stripAccents = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");

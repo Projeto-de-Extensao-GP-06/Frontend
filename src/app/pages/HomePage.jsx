@@ -9,6 +9,8 @@ import { listarProcessos } from "../services/processoService";
 import { buscarDadosGeraisDashboard } from "../services/dashboardService";
 import { api } from "../provider/api";
 import { maskCNJ } from "../utils/masks";
+import { useAuth } from "../contexts/AuthContext";
+import { hasPermission } from "../utils/permissions";
 import { toast } from "sonner";
 import "../../styles/home-page.css";
 
@@ -73,6 +75,8 @@ function mapearProcesso(p) {
 export default function HomePage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const canCreateProcess = hasPermission(user, "CRIAR PROCESSO");
 
   // Dados do servidor
   const [processes, setProcesses] = useState([]);
@@ -265,7 +269,12 @@ export default function HomePage() {
             <Calendar size={16} />
             <span>Gerar evento de calendário</span>
           </button>
-          <button onClick={() => navigate("/app/processos/novo")} className="home-new-button">
+          <button
+            onClick={() => canCreateProcess && navigate("/app/processos/novo")}
+            className="home-new-button"
+            disabled={!canCreateProcess}
+            title={canCreateProcess ? "Novo Processo" : "Sem permissão para criar processo"}
+          >
             <Plus size={16} />
             <span className="home-new-button-label home-new-button-label--wide">Novo Processo</span>
             <span className="home-new-button-label home-new-button-label--compact">Novo</span>

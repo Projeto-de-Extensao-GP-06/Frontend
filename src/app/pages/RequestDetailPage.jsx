@@ -7,11 +7,16 @@ import { aceitarSolicitacao, buscarSolicitacaoPorId, mapearSolicitacao, negarSol
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { AcceptRequestModal } from "../components/AcceptRequestModal";
 import { maskPhone, maskCNJ } from "../utils/masks";
+import { useAuth } from "../contexts/AuthContext";
+import { hasPermission } from "../utils/permissions";
 import "../../styles/request-detail-page.css";
 
 export default function RequestDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const canAcceptRequest = hasPermission(user, "ACEITAR SOLICITAÇÃO");
+  const canDenyRequest = hasPermission(user, "NEGAR SOLICITAÇÃO");
   const [request, setRequest] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -150,8 +155,26 @@ export default function RequestDetailPage() {
       {!handled
         ? <div className="req-detail-actions">
             <p className="req-detail-actions__label">Análise desta solicitação:</p>
-            <Button onClick={() => setAcceptModalOpen(true)} className="req-detail-actions__btn req-detail-actions__btn--accept"><Check size={16} />Aceitar Solicitação</Button>
-            <Button onClick={() => { setDenyError(""); setDenyDialog(true); }} className="req-detail-actions__btn req-detail-actions__btn--deny"><X size={16} />Negar Solicitação</Button>
+            <Button
+              onClick={() => canAcceptRequest && setAcceptModalOpen(true)}
+              disabled={!canAcceptRequest}
+              title={canAcceptRequest ? "Aceitar Solicitação" : "Sem permissão para aceitar solicitação"}
+              className="req-detail-actions__btn req-detail-actions__btn--accept"
+            >
+              <Check size={16} />Aceitar Solicitação
+            </Button>
+            <Button
+              onClick={() => {
+                if (!canDenyRequest) return;
+                setDenyError("");
+                setDenyDialog(true);
+              }}
+              disabled={!canDenyRequest}
+              title={canDenyRequest ? "Negar Solicitação" : "Sem permissão para negar solicitação"}
+              className="req-detail-actions__btn req-detail-actions__btn--deny"
+            >
+              <X size={16} />Negar Solicitação
+            </Button>
           </div>
         : <div className={`req-detail-result ${status === "accepted" || request.status === "aceita" ? "req-detail-result--accepted" : "req-detail-result--denied"}`}>
             {status === "accepted" || request.status === "aceita"

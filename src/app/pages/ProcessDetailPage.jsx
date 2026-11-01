@@ -240,6 +240,7 @@ export default function ProcessDetailPage() {
   }, []);
 
   const handleAtualizarDados = () => {
+    if (!canEditProcess) return;
     iniciarSincronizacao({
       processoId: id,
       clientName: process?.clientName,
@@ -534,9 +535,13 @@ export default function ProcessDetailPage() {
             <button
               type="button"
               className="proc-sync-bar__btn"
-              title="Buscar e atualizar dados do processo"
+              title={
+                canEditProcess
+                  ? "Buscar e atualizar dados do processo"
+                  : "Sem permissão para editar processo"
+              }
               onClick={handleAtualizarDados}
-              disabled={syncing}
+              disabled={syncing || !canEditProcess}
             >
               <RefreshCw size={14} className={syncing ? "animate-spin" : ""} />
               <span>{syncing ? "Atualizando..." : "Atualizar dados"}</span>
@@ -678,13 +683,15 @@ export default function ProcessDetailPage() {
             </h3>
             {!isClosed && !isAddingComment && (
               <button
-                onClick={() => setIsAddingComment(true)}
+                onClick={() => canEditProcess && setIsAddingComment(true)}
                 className="proc-card__action-btn"
-                disabled={limiteObservacoesAtingido}
+                disabled={limiteObservacoesAtingido || !canEditProcess}
                 title={
-                  limiteObservacoesAtingido
-                    ? `Limite de ${MAX_OBSERVACOES} observações atingido`
-                    : undefined
+                  !canEditProcess
+                    ? "Sem permissão para editar processo"
+                    : limiteObservacoesAtingido
+                      ? `Limite de ${MAX_OBSERVACOES} observações atingido`
+                      : "Adicionar comentário"
                 }
               >
                 <Plus size={12} />
@@ -940,8 +947,14 @@ export default function ProcessDetailPage() {
         <div className="proc-actions">
           {(isSuspended || isClosed) && (
             <button
-              onClick={() => setReactivateDialog(true)}
+              onClick={() => canEditProcess && setReactivateDialog(true)}
               className="proc-actions__btn proc-actions__btn--reactivate"
+              disabled={!canEditProcess}
+              title={
+                canEditProcess
+                  ? "Reativar Processo"
+                  : "Sem permissão para editar processo"
+              }
             >
               <RotateCcw size={15} />
               Reativar Processo

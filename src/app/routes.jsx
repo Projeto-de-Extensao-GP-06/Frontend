@@ -22,6 +22,13 @@ import RolesPage from "./pages/RolesPage";
 import ProfilePage from "./pages/ProfilePage";
 import LegalPage from "./pages/LegalPage";
 import ProtectedRoute from "./components/ProtectedRoute";
+import PermissionRoute from "./components/PermissionRoute";
+import {
+  PERMISSIONS,
+  USER_MODULE_PERMISSIONS,
+  ROLE_MODULE_PERMISSIONS,
+} from "./utils/permissions";
+
 export const router = createBrowserRouter([{
   path: "/login",
   Component: LoginPage
@@ -59,22 +66,50 @@ export const router = createBrowserRouter([{
       Component: ClientsPage
     }, {
       path: "clientes/novo",
-      Component: NewClientWizardPage
+      element: (
+        <PermissionRoute
+          permissions={[PERMISSIONS.CRIAR_CLIENTE]}
+          resourceName="a página de Novo Cliente"
+        >
+          <NewClientWizardPage />
+        </PermissionRoute>
+      ),
     }, {
       path: "clientes/:id",
       Component: ClientDetailPage
     }, {
       path: "clientes/:id/editar",
-      Component: EditClientPage
+      element: (
+        <PermissionRoute
+          permissions={[PERMISSIONS.EDITAR_CLIENTE]}
+          resourceName="a página de Edição de Cliente"
+        >
+          <EditClientPage />
+        </PermissionRoute>
+      ),
     }, {
       path: "processos/novo",
-      Component: NewProcessPage
+      element: (
+        <PermissionRoute
+          permissions={[PERMISSIONS.CRIAR_PROCESSO]}
+          resourceName="a página de Novo Processo"
+        >
+          <NewProcessPage />
+        </PermissionRoute>
+      ),
     }, {
       path: "processos/:id",
       Component: ProcessDetailPage
     }, {
       path: "processos/:id/editar",
-      Component: EditProcessPage
+      element: (
+        <PermissionRoute
+          permissions={[PERMISSIONS.EDITAR_PROCESSO]}
+          resourceName="a página de Edição de Processo"
+        >
+          <EditProcessPage />
+        </PermissionRoute>
+      ),
     }, {
       path: "solicitacoes",
       Component: RequestsPage
@@ -83,16 +118,44 @@ export const router = createBrowserRouter([{
       Component: RequestDetailPage
     }, {
       path: "usuarios",
-      Component: UsersPage
+      element: (
+        <PermissionRoute
+          permissions={USER_MODULE_PERMISSIONS}
+          resourceName="a página de Usuários"
+        >
+          <UsersPage />
+        </PermissionRoute>
+      ),
     }, {
       path: "usuarios/novo",
-      Component: NewUserPage,
+      element: (
+        <PermissionRoute
+          permissions={[PERMISSIONS.CRIAR_USUARIO]}
+          resourceName="a página de Novo Usuário"
+        >
+          <NewUserPage />
+        </PermissionRoute>
+      ),
     }, {
       path: "usuarios/:id",
-      Component: UserDetailPage,
+      element: (
+        <PermissionRoute
+          permissions={USER_MODULE_PERMISSIONS}
+          resourceName="os detalhes do Usuário"
+        >
+          <UserDetailPage />
+        </PermissionRoute>
+      ),
     }, {
       path: "cargos",
-      Component: RolesPage
+      element: (
+        <PermissionRoute
+          permissions={ROLE_MODULE_PERMISSIONS}
+          resourceName="a página de Cargos e Permissões"
+        >
+          <RolesPage />
+        </PermissionRoute>
+      ),
     }, {
       path: "perfil",
       Component: ProfilePage

@@ -7,6 +7,8 @@ import { getInitials } from "../components/UserAvatar";
 import { listarUsuarios, atualizarUsuario, reativarUsuario } from "../services/usuarioService";
 import { listarCargos } from "../services/cargoService";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
+import { useAuth } from "../contexts/AuthContext";
+import { hasPermission } from "../utils/permissions";
 import "../../styles/user-detail-page.css";
 
 const normalizeUser = (user) => ({
@@ -50,6 +52,9 @@ export default function UserDetailPage() {
 
 function UserDetail({ user }) {
   const navigate = useNavigate();
+  const { user: loggedUser } = useAuth();
+  const canEditUser = hasPermission(loggedUser, "EDITAR USUÁRIO");
+  const canDeleteUser = hasPermission(loggedUser, "EXCLUIR USUÁRIO");
   const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
   const [reactivateDialogOpen, setReactivateDialogOpen] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
@@ -77,6 +82,7 @@ function UserDetail({ user }) {
   }, []);
 
   const handleSave = async () => {
+    if (!canEditUser) return;
     const selectedCargo = cargos.find((c) => c.nome === role);
     if (!selectedCargo) {
       toast.error("Selecione um cargo válido.");
@@ -102,6 +108,7 @@ function UserDetail({ user }) {
   };
 
   const handleDeactivate = async () => {
+    if (!canDeleteUser) return;
     const selectedCargo = cargos.find((c) => c.nome === role);
     setSaving(true);
     try {
@@ -123,6 +130,7 @@ function UserDetail({ user }) {
   };
 
   const handleReactivate = async () => {
+    if (!canDeleteUser) return;
     setSaving(true);
     try {
       await reativarUsuario(user.id);
@@ -190,6 +198,7 @@ function UserDetail({ user }) {
               onChange={(e) => setName(e.target.value)}
               className="user-detail-input"
               placeholder="Nome do usuário"
+              disabled={!canEditUser}
             />
           </div>
 
@@ -201,6 +210,7 @@ function UserDetail({ user }) {
               onChange={(e) => setEmail(e.target.value)}
               className="user-detail-input"
               placeholder="email@exemplo.com"
+              disabled={!canEditUser}
             />
           </div>
 
@@ -210,7 +220,7 @@ function UserDetail({ user }) {
               value={role}
               onChange={(e) => setRole(e.target.value)}
               className="user-detail-select"
-              disabled={isInactive}
+              disabled={isInactive || !canEditUser}
             >
               {cargos.map((cargo) => (
                 <option key={cargo.cargoId} value={cargo.nome}>
@@ -221,8 +231,9 @@ function UserDetail({ user }) {
           </div>
 
           <button
-            onClick={() => setSaveDialogOpen(true)}
-            disabled={saving}
+            onClick={() => canEditUser && setSaveDialogOpen(true)}
+            disabled={saving || !canEditUser}
+            title={canEditUser ? "Salvar alterações" : "Sem permissão para editar usuário"}
             className={`user-detail-btn-save ${
               saved ? "is-saved" : ""
             }`}
@@ -241,7 +252,9 @@ function UserDetail({ user }) {
         {/* Desativar ou Reativar */}
         {!isInactive ? (
           <button
-            onClick={() => setDeactivateDialogOpen(true)}
+            onClick={() => canDeleteUser && setDeactivateDialogOpen(true)}
+            disabled={!canDeleteUser}
+            title={canDeleteUser ? "Desativar Usuário" : "Sem permissão para excluir/desativar usuário"}
             className="user-detail-btn-deactivate"
           >
             <AlertTriangle size={15} className="user-detail-dialog__icon" />
@@ -249,7 +262,9 @@ function UserDetail({ user }) {
           </button>
         ) : (
           <button
-            onClick={() => setReactivateDialogOpen(true)}
+            onClick={() => canDeleteUser && setReactivateDialogOpen(true)}
+            disabled={!canDeleteUser}
+            title={canDeleteUser ? "Reativar Usuário" : "Sem permissão para excluir/reativar usuário"}
             className="user-detail-btn-reactivate"
           >
             <RefreshCw size={15} />
