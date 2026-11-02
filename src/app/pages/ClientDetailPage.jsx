@@ -9,6 +9,7 @@ import { InfoRow } from "../components/InfoRow";
 import { PaginationBar } from "../components/PaginationBar";
 import { maskPhone } from "../utils/masks";
 import { clienteService, getClienteError } from "../services/clienteService";
+import { listarProcessosDoCliente } from "../services/processoService";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { useAuth } from "../contexts/AuthContext";
 import { hasPermission } from "../utils/permissions";
@@ -25,6 +26,10 @@ export default function ClientDetailPage() {
 
   const [client, setClient] = useState(null);
   const [loadError, setLoadError] = useState("");
+  const [clientProcesses, setClientProcesses] = useState([]);
+  const [processesLoading, setProcessesLoading] = useState(true);
+  const [processesError, setProcessesError] = useState("");
+  const [processesReload, setProcessesReload] = useState(0);
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [addContactDialog, setAddContactDialog] = useState(false);
   const [newContact, setNewContact] = useState({
@@ -41,14 +46,49 @@ export default function ClientDetailPage() {
   const CONTACTS_PAGE_SIZE = 3;
 
   useEffect(() => {
+    let active = true;
+    setClient(null);
+    setLoadError("");
+
     clienteService.getById(id)
       .then((loadedClient) => {
+        if (!active) return;
         setClient(loadedClient);
         setContacts(loadedClient.contacts || []);
         document.title = `SGPJ | Cliente - ${loadedClient.name}`;
       })
-      .catch((requestError) => setLoadError(getClienteError(requestError)));
+      .catch((requestError) => {
+        if (active) setLoadError(getClienteError(requestError));
+      });
+
+    return () => {
+      active = false;
+    };
   }, [id]);
+
+  useEffect(() => {
+    let active = true;
+    setClientProcesses([]);
+    setProcessesLoading(true);
+    setProcessesError("");
+
+    listarProcessosDoCliente(id)
+      .then((processes) => {
+        if (active) setClientProcesses(processes);
+      })
+      .catch((requestError) => {
+        if (active) {
+          setProcessesError(requestError.message || "Não foi possível carregar os processos.");
+        }
+      })
+      .finally(() => {
+        if (active) setProcessesLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [id, processesReload]);
 
   if (!client) {
     if (!loadError) return <div className="client-detail-page client-detail-page--empty"><p className="client-detail-empty-text">Carregando cliente...</p></div>;
@@ -62,7 +102,6 @@ export default function ClientDetailPage() {
   const isPF = client.type === "PF";
   const pf = client;
   const pj = client;
-  const clientProcesses = [];
 
   const handleSearchSubmit = (e) => {
     e?.preventDefault();
@@ -271,7 +310,17 @@ export default function ClientDetailPage() {
         <h2 className="client-detail-processes-title">
           Processos do cliente
         </h2>
-        {clientProcesses.length === 0 ? <div className="client-detail-empty-card">
+        {processesLoading ? <div className="client-detail-empty-card">
+            <p className="client-detail-empty-inline">Carregando processos...</p>
+          </div> : processesError ? <div className="client-detail-empty-card">
+            <Scale size={28} className="client-detail-empty-icon" />
+            <p className="client-detail-empty-inline" role="alert">
+              Não foi possível carregar os processos: {processesError}
+            </p>
+            <Button type="button" onClick={() => setProcessesReload((reload) => reload + 1)}>
+              Tentar novamente
+            </Button>
+          </div> : clientProcesses.length === 0 ? <div className="client-detail-empty-card">
             <Scale size={28} className="client-detail-empty-icon" />
             <p className="client-detail-empty-inline">Nenhum processo vinculado</p>
           </div> : <div className="client-detail-process-list">
