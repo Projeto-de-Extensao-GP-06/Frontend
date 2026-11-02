@@ -1,5 +1,6 @@
 import { User, Building2, ChevronRight, Check } from "lucide-react";
 import { StatusBadge } from "./StatusBadge";
+import { maskCPF, maskCNPJ } from "../utils/masks";
 import "../../styles/clients-page.css";
 
 export function ClientCard({
@@ -13,7 +14,7 @@ export function ClientCard({
   if (!client) return null;
 
   const isPF = client.type === "PF";
-  const doc = isPF ? client.cpf : client.cnpj;
+  const doc = isPF ? maskCPF(client.cpf) : maskCNPJ(client.cnpj);
   const primaryContact = client.contacts?.find((c) => c.isPrimary) || client.contacts?.[0];
   const primaryEmail = (isPF ? (client.email || primaryContact?.email) : primaryContact?.email) || "—";
 

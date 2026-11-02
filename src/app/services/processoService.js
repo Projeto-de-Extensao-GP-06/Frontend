@@ -134,6 +134,22 @@ export async function listarProcessos(filtros = {}) {
   return response.data;
 }
 
+export async function listarProcessosDoCliente(clienteId) {
+  const response = await api.get(`/clientes/${clienteId}/processos`);
+  if (!Array.isArray(response.data)) {
+    throw new Error("A resposta de processos do cliente é inválida.");
+  }
+
+  return response.data.map((processo) => ({
+    id: processo.id,
+    cnj: formatarCnj(processo.numeroProcesso),
+    status: normalizarTexto(processo.status),
+    priority: normalizarTexto(processo.prioridade?.nome),
+    phase: normalizarTexto(processo.faseProcesso?.nome),
+    hearingDate: formatarDataHora(processo.dataAudiencia).data,
+  }));
+}
+
 export async function listarClientesParaProcesso() {
   const response = await api.get("/clientes", {
     params: { excluirLead: true },
@@ -399,4 +415,3 @@ export function conectarStatusSincronizacao(id, { onIniciado, onProcessando, onC
     eventSource.close();
   };
 }
-
