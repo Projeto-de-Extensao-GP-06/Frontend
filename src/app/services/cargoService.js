@@ -12,6 +12,11 @@ export async function criarCargo(nome) {
   return response.data;
 }
 
+export async function renomearCargo(cargoId, nome) {
+  const response = await api.put(`/cargos/${cargoId}`, { nome });
+  return response.data;
+}
+
 export async function atualizarPermissoesCargo(cargoId, permissaoIds) {
   const response = await api.put(`/cargos/${cargoId}/permissoes`, { permissaoIds });
   return response.data;

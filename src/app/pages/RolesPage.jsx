@@ -4,13 +4,14 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { PaginationBar } from "../components/PaginationBar";
 import { useAuth } from "../contexts/AuthContext";
-import { listarCargos, criarCargo, atualizarPermissoesCargo, excluirCargo } from "../services/cargoService";
+import { listarCargos, criarCargo, renomearCargo, atualizarPermissoesCargo, excluirCargo } from "../services/cargoService";
 import { listarPermissoes } from "../services/permissaoService";
 import { hasPermission, normalizePermission } from "../utils/permissions";
 import "../../styles/roles-page.css";
 
 const SPECIAL_PERMISSIONS = new Set(["TODAS AS PERMISSÕES", "SEM PERMISSÕES"]);
-const SYSTEM_CARGOS = new Set(["ADMIN", "Sem Cargo"]);
+const SYSTEM_CARGO_IDS = new Set(["1", "2"]);
+const SYSTEM_CARGOS = new Set(["ADMIN", "SEM CARGO"]);
 const MODULE_ORDER = ["PROCESSO", "SOLICITAÇÃO", "CLIENTE", "CARGO", "USUÁRIO", "DOCUMENTO"];
 const ACTION_ORDER = ["CRIAR", "EDITAR", "EXCLUIR", "ACEITAR", "NEGAR"];
 
@@ -25,9 +26,10 @@ const getPermissionModule = (name) => normalizePermission(name).split(" ").slice
 const getRoleId = (role) => role?.cargoId ?? role?.id;
 const roleVariant = (index) => ["admin", "advogado", "assistente"][index % 3];
 const isSystemCargo = (role) => {
+  if (!role) return false;
   const roleName = role?.nome || role?.name || role;
-  const normalized = roleName === "Admin" ? "ADMIN" : roleName;
-  return SYSTEM_CARGOS.has(normalized);
+  return SYSTEM_CARGO_IDS.has(String(getRoleId(role)))
+    || SYSTEM_CARGOS.has(normalizePermission(roleName));
 };
 
 const normalizeRole = (role) => ({
@@ -96,6 +98,7 @@ export default function RolesPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [renaming, setRenaming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [expandedModules, setExpandedModules] = useState([]);
   const [allExpanded, setAllExpanded] = useState(false);
@@ -106,6 +109,9 @@ export default function RolesPage() {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [addRoleOpen, setAddRoleOpen] = useState(false);
   const [addRoleName, setAddRoleName] = useState("");
+  const [renameRoleOpen, setRenameRoleOpen] = useState(false);
+  const [roleToRename, setRoleToRename] = useState(null);
+  const [renameRoleName, setRenameRoleName] = useState("");
   const [deleteRoleDialog, setDeleteRoleDialog] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState(null);
   const [roleSearch, setRoleSearch] = useState("");
@@ -230,6 +236,34 @@ export default function RolesPage() {
     setDeleteRoleDialog(true);
   };
 
+  const handleRenameRole = role => {
+    if (!canEditRole || isSystemCargo(role)) return;
+    setRoleToRename(role);
+    setRenameRoleName(role.nome);
+    setRenameRoleOpen(true);
+  };
+
+  const confirmRenameRole = async () => {
+    const name = renameRoleName.trim();
+    if (!roleToRename || !canEditRole || !name || name.length > 90) return;
+
+    setRenaming(true);
+    try {
+      const updatedRole = normalizeRole(await renomearCargo(roleToRename.cargoId, name));
+      setRoles((current) => current
+        .map((role) => role.id === updatedRole.id ? updatedRole : role)
+        .sort((a, b) => a.name.localeCompare(b.name, "pt-BR")));
+      setRenameRoleOpen(false);
+      setRoleToRename(null);
+      setRenameRoleName("");
+      toast.success("Cargo renomeado com sucesso.");
+    } catch (error) {
+      toast.error(error.message || "Não foi possível renomear o cargo.");
+    } finally {
+      setRenaming(false);
+    }
+  };
+
   const confirmDeleteRole = async () => {
     if (!roleToDelete || !canDeleteRole) return;
     setDeleting(true);
@@ -308,7 +342,7 @@ export default function RolesPage() {
                   {selectedRole === role.id && <Check size={14} className="roles-row__check" />}
                 </button>
                 <div className="roles-row__actions">
-                  <button disabled className="roles-icon-btn" title="Renomear cargo ainda não está disponível no backend">
+                  <button onClick={e => { e.stopPropagation(); handleRenameRole(role); }} disabled={!canEditRole || renaming || isSystemCargo(role)} className="roles-icon-btn" title={isSystemCargo(role) ? "Cargo do sistema não pode ser renomeado" : canEditRole ? "Renomear cargo" : "Sem permissão para renomear cargo"}>
                     <Edit2 size={13} className="roles-icon-btn__icon" />
                   </button>
                   <button onClick={e => { e.stopPropagation(); handleDeleteRole(role); }} disabled={!canDeleteRole || deleting || isSystemCargo(role)} className="roles-icon-btn roles-icon-btn--danger" title={isSystemCargo(role) ? "Cargo do sistema não pode ser excluído" : canDeleteRole ? "Excluir cargo" : "Sem permissão para excluir cargo"}>
@@ -391,10 +425,25 @@ export default function RolesPage() {
             <h3 className="roles-add-modal__title">Novo Cargo</h3>
             <p className="roles-add-modal__subtitle">Informe o nome do cargo a ser criado.</p>
             <label className="roles-add-modal__label">Nome do cargo</label>
-            <input type="text" autoFocus value={addRoleName} onChange={e => setAddRoleName(e.target.value)} onKeyDown={e => { if (e.key === "Enter") handleAddRole(); }} className="roles-add-modal__input" placeholder="Ex.: Estagiário, Sócio..." disabled={creating} />
+            <input type="text" autoFocus maxLength={90} value={addRoleName} onChange={e => setAddRoleName(e.target.value)} onKeyDown={e => { if (e.key === "Enter") handleAddRole(); }} className="roles-add-modal__input" placeholder="Ex.: Estagiário, Sócio..." disabled={creating} />
             <div className="roles-add-modal__actions">
               <button onClick={() => { setAddRoleOpen(false); setAddRoleName(""); }} className="roles-add-modal__btn roles-add-modal__btn--cancel" disabled={creating}>Cancelar</button>
               <button onClick={handleAddRole} disabled={!addRoleName.trim() || creating} className="roles-add-modal__btn roles-add-modal__btn--confirm">{creating ? "Criando..." : "Criar cargo"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {renameRoleOpen && (
+        <div className="roles-add-modal-overlay">
+          <div className="roles-add-modal">
+            <h3 className="roles-add-modal__title">Renomear cargo</h3>
+            <p className="roles-add-modal__subtitle">Informe o novo nome para “{roleToRename?.name}”.</p>
+            <label htmlFor="rename-role-name" className="roles-add-modal__label">Nome do cargo</label>
+            <input id="rename-role-name" type="text" autoFocus maxLength={90} value={renameRoleName} onChange={e => setRenameRoleName(e.target.value)} onKeyDown={e => { if (e.key === "Enter") confirmRenameRole(); }} className="roles-add-modal__input" disabled={renaming} />
+            <div className="roles-add-modal__actions">
+              <button onClick={() => { setRenameRoleOpen(false); setRoleToRename(null); setRenameRoleName(""); }} className="roles-add-modal__btn roles-add-modal__btn--cancel" disabled={renaming}>Cancelar</button>
+              <button onClick={confirmRenameRole} disabled={!renameRoleName.trim() || renaming} className="roles-add-modal__btn roles-add-modal__btn--confirm">{renaming ? "Salvando..." : "Salvar nome"}</button>
             </div>
           </div>
         </div>
