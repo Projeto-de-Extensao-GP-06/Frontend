@@ -810,7 +810,7 @@ export default function DashboardPage() {
         <div className="dashboard-fab-icon-wrap">
           <MessageSquare size={14} className="dashboard-fab-icon" />
         </div>
-        <span className="dashboard-fab-label">Assistente Jurídico</span>
+        <span className="dashboard-fab-label">MarIA</span>
       </button>
     </div>
   );
