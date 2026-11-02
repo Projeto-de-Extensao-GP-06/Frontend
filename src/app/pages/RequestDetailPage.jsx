@@ -237,7 +237,7 @@ export default function RequestDetailPage() {
           </div>
         : <div className={`req-detail-result ${status === "accepted" || request.status === "aceita" ? "req-detail-result--accepted" : "req-detail-result--denied"}`}>
             {status === "accepted" || request.status === "aceita"
-              ? <><Check size={18} className="req-detail-result__icon req-detail-result__icon--accepted" /><div><p className="req-detail-result__title req-detail-result__title--accepted">Solicitação aceita</p><p className="req-detail-result__sub req-detail-result__sub--accepted">{acceptRedirectError || "A solicitação foi processada. Você será redirecionado para o processo em instantes."}</p></div></>
+              ? <><Check size={18} className="req-detail-result__icon req-detail-result__icon--accepted" /><div><p className="req-detail-result__title req-detail-result__title--accepted">Solicitação aceita</p><p className="req-detail-result__sub req-detail-result__sub--accepted">{acceptRedirectError || "A busca dos dados do processo na API do DataJud será feita em segundo plano, como ao atualizar os dados de um processo. Você será redirecionado para o processo em instantes."}</p></div></>
               : <><X size={18} className="req-detail-result__icon req-detail-result__icon--denied" /><div><p className="req-detail-result__title req-detail-result__title--denied">Solicitação negada</p><p className="req-detail-result__sub req-detail-result__sub--denied">A solicitação foi recusada.</p></div></>}
           </div>}
 
