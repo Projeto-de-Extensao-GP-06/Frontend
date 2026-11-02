@@ -32,7 +32,7 @@ export async function listarSolicitacoes({ page = 0, size = 20, sort, signal } =
 }
 
 export async function filtrarSolicitacoes({
-  estado,
+  tipo,
   pesquisa,
   dataInicio,
   dataFim,
@@ -42,7 +42,7 @@ export async function filtrarSolicitacoes({
   signal,
 } = {}) {
   const query = montarQuery({
-    estado: estado?.trim(),
+    tipo: tipo?.trim(),
     pesquisa: pesquisa?.trim(),
     dataInicio,
     dataFim,

@@ -8,11 +8,15 @@ import {
   listarSolicitacoes,
   mapearSolicitacao,
 } from "../services/solicitacaoService";
-import { brazilStates } from "../data/mockData";
 import "../../styles/requests-page.css";
 
 const PAGE_SIZE = 6;
 const API_PAGE_SIZE = 20;
+const TYPE_OPTIONS = [
+  { value: "", label: "Todos" },
+  { value: "PF", label: "Pessoa Física (PF)" },
+  { value: "PJ", label: "Pessoa Jurídica (PJ)" },
+];
 
 function sortParams(sortBy, filtered) {
   if (sortBy === "antigo") {
@@ -32,7 +36,7 @@ export default function RequestsPage() {
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [filterState, setFilterState] = useState("");
+  const [filterType, setFilterType] = useState("");
   const [sortBy, setSortBy] = useState("recente");
   const [page, setPage] = useState(1);
   const [result, setResult] = useState({ content: [], totalElements: 0, totalPages: 0 });
@@ -42,7 +46,7 @@ export default function RequestsPage() {
   const requestSequence = useRef(0);
   const activeController = useRef(null);
   const navigate = useNavigate();
-  const activeFilters = useMemo(() => ({ search: debouncedSearch, state: filterState }), [debouncedSearch, filterState]);
+  const activeFilters = useMemo(() => ({ search: debouncedSearch, type: filterType }), [debouncedSearch, filterType]);
 
   useEffect(() => {
     const normalizedSearch = search.trim();
@@ -62,7 +66,7 @@ export default function RequestsPage() {
     const controller = new AbortController();
     activeController.current = controller;
     const sequence = ++requestSequence.current;
-    const filtered = Boolean(activeFilters.search || activeFilters.state);
+    const filtered = Boolean(activeFilters.search || activeFilters.type);
     const firstItemIndex = (page - 1) * PAGE_SIZE;
     const apiPage = Math.floor(firstItemIndex / API_PAGE_SIZE);
     const itemOffset = firstItemIndex % API_PAGE_SIZE;
@@ -79,7 +83,7 @@ export default function RequestsPage() {
       ? filtrarSolicitacoes({
         ...params,
         pesquisa: activeFilters.search,
-        estado: activeFilters.state,
+        tipo: activeFilters.type,
       })
       : listarSolicitacoes(params);
 
@@ -95,7 +99,7 @@ export default function RequestsPage() {
           ? await filtrarSolicitacoes({
             ...nextParams,
             pesquisa: activeFilters.search,
-            estado: activeFilters.state,
+            tipo: activeFilters.type,
           })
           : await listarSolicitacoes(nextParams);
         if (sequence !== requestSequence.current) return;
@@ -122,13 +126,12 @@ export default function RequestsPage() {
     };
   }, [activeFilters, page, sortBy, retryIndex]);
 
-  const hasActiveFilters = Boolean(activeFilters.search || activeFilters.state);
-  const stateOptions = useMemo(() => ["", ...brazilStates], []);
+  const hasActiveFilters = Boolean(activeFilters.search || activeFilters.type);
   const totalPages = Math.ceil(result.totalElements / PAGE_SIZE);
   const safePage = totalPages ? Math.min(page, totalPages) : 1;
   const clearFilters = () => {
     setSearch("");
-    setFilterState("");
+    setFilterType("");
     setPage(1);
   };
 
@@ -162,13 +165,13 @@ export default function RequestsPage() {
             <span className="requests-filter-label">Filtros</span>
             <FilterSelect
               prefix="requests"
-              className={`requests-filter-select${filterState ? " requests-filter-select--active" : ""}`}
-              label="Estado"
-              value={filterState}
-              onChange={(value) => { setFilterState(value); setPage(1); }}
+              className={`requests-filter-select${filterType ? " requests-filter-select--active" : ""}`}
+              label="Tipo"
+              value={filterType}
+              onChange={(value) => { setFilterType(value); setPage(1); }}
             >
-              {stateOptions.map((state) => (
-                <option key={state || "todos"} value={state}>{state || "Todos"}</option>
+              {TYPE_OPTIONS.map((option) => (
+                <option key={option.value || "todos"} value={option.value}>{option.label}</option>
               ))}
             </FilterSelect>
             {hasActiveFilters && (
