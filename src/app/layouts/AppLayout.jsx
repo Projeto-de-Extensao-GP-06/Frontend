@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "../components/ui/button";
 import { useAuth } from "../contexts/AuthContext";
 import { SyncProcessProvider } from "../contexts/SyncProcessContext";
+import { listarSolicitacoes } from "../services/solicitacaoService";
 import "../../styles/app-layout.css";
 const navItems = [{
   path: "/app/inicio",
@@ -55,6 +56,28 @@ export default function AppLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [pendingRequests, setPendingRequests] = useState(0);
+
+  /* indicador de solicitações pendentes: atualiza ao navegar e a cada 60s */
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const data = await listarSolicitacoes({ size: 100 });
+        const list = Array.isArray(data) ? data : data?.content || [];
+        const count = list.filter(s => String(s.status || "PENDENTE").toUpperCase() === "PENDENTE").length;
+        if (active) setPendingRequests(count);
+      } catch (error) {
+        console.warn("Não foi possível verificar solicitações pendentes:", error);
+      }
+    };
+    load();
+    const timer = setInterval(load, 60000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [location.pathname]);
 
   /* lock body scroll while drawer is open */
   useEffect(() => {
@@ -97,6 +120,7 @@ export default function AppLayout() {
               >
                 <Icon size={16} className="app-desktop-nav-icon" />
                 <span>{item.label}</span>
+                {item.path === "/app/solicitacoes" && pendingRequests > 0 && <span className="app-nav-badge" title={`${pendingRequests} solicitação(ões) pendente(s)`} aria-label="Há solicitações pendentes" />}
               </button>
             );
           })}
@@ -188,6 +212,7 @@ export default function AppLayout() {
             return <button key={item.path} onClick={() => go(item.path)} className={`app-drawer-link ${active ? "is-active" : ""}`}>
               <Icon size={18} className={`app-drawer-link-icon ${active ? "is-active" : ""}`} />
               <span className="app-drawer-link-label">{item.label}</span>
+              {item.path === "/app/solicitacoes" && pendingRequests > 0 && <span className="app-nav-badge" aria-label="Há solicitações pendentes" />}
               {active && <ChevronRight size={13} className="app-drawer-link-chevron" />}
             </button>;
           })}
