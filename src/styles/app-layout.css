@@ -596,3 +596,14 @@
     width: min(300px, 88vw);
   }
 }
+
+/* Indicador de solicitacoes pendentes */
+.app-nav-badge {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25);
+  flex-shrink: 0;
+}

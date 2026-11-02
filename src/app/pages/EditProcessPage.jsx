@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router";
-import { ArrowLeft, X, Trash2, Save, CheckCircle, AlertTriangle, Loader2, Plus, CloudUpload } from "lucide-react";
+import { ArrowLeft, X, Trash2, Save, CheckCircle, AlertTriangle, Loader2, Plus, CloudUpload, Users, Search } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -8,6 +8,7 @@ import { Textarea } from "../components/ui/textarea";
 import { Checkbox } from "../components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { ClientCard } from "../components/ClientCard";
+import { SelectUserModal } from "../components/SelectUserModal";
 import { ProcessCreationProgressModal } from "../components/ProcessCreationProgressModal";
 import { maskCNJ, maskCPF, maskCNPJ, maskCurrency } from "../utils/masks";
 import { getDocBadgeClass } from "../utils/document";
@@ -69,6 +70,8 @@ export default function EditProcessPage() {
   const [deleting, setDeleting] = useState(false);
   const [process, setProcess] = useState(null);
   const [selectedClient, setSelectedClient] = useState(null);
+  const [responsavel, setResponsavel] = useState(null);
+  const [isSelectUserModalOpen, setIsSelectUserModalOpen] = useState(false);
   const [cnj, setCnj] = useState("");
   const [hasExistingCnj, setHasExistingCnj] = useState(false);
   const [documents, setDocuments] = useState([]);
@@ -184,7 +187,14 @@ export default function EditProcessPage() {
         const observacoesIniciais = separarObservacoes(raw.obervacao || "");
         setObservacoesArray(observacoesIniciais);
 
+        const responsavelId = raw.usuarioResponsavelId ?? raw.usuarioResponsavel?.id ?? null;
+        const responsavelNome = raw.usuarioResponsavelNome || raw.usuarioResponsavel?.nome || null;
+        if (responsavelId != null || responsavelNome) {
+          setResponsavel({ id: responsavelId, name: responsavelNome || dadosProcesso.responsible });
+        }
+
         setInitialValues({
+          responsavelId: responsavelId != null ? String(responsavelId) : "",
           cnj: cnjFormatado,
           descricaoCaso: descricaoInicial,
           prioridadeId: String(prioridadeInicial),
@@ -318,6 +328,9 @@ export default function EditProcessPage() {
       valorCausa: valorCausa ? Number(valorCausa.replace(/\D/g, "")) / 100 : null,
       numeroCnj: cnj ? cnj.replace(/\D/g, "") : null,
     };
+    if (responsavel?.id != null) {
+      payload.usuarioResponsavelId = Number(responsavel.id);
+    }
     return payload;
   }
 
@@ -365,6 +378,7 @@ export default function EditProcessPage() {
 
   const hasProcessChanges = Boolean(
     initialValues && (
+      String(responsavel?.id ?? "") !== initialValues.responsavelId ||
       cnj.replace(/\D/g, "") !== initialValues.cnj.replace(/\D/g, "") ||
       descricaoCaso.trim() !== initialValues.descricaoCaso.trim() ||
       String(prioridadeId) !== initialValues.prioridadeId ||
@@ -803,6 +817,37 @@ export default function EditProcessPage() {
             </div>
           )}
         </div>
+
+        {/* Usuário responsável */}
+        <div className="edit-process-field">
+          <Label className="edit-process-label">Usuário Responsável</Label>
+          <button
+            type="button"
+            onClick={() => setIsSelectUserModalOpen(true)}
+            className="client-picker-trigger"
+          >
+            <div className="client-picker-trigger-content">
+              <div className="client-picker-trigger-icon-wrap"><Users size={18} /></div>
+              <div>
+                <p className="client-picker-trigger-title">
+                  {responsavel?.name || "Selecionar Responsável"}
+                </p>
+                <p className="client-picker-trigger-sub">
+                  {responsavel ? "Clique para alterar o responsável" : "Busque entre os usuários da aplicação"}
+                </p>
+              </div>
+            </div>
+            <div className="client-picker-trigger-btn">
+              <Search size={14} /> {responsavel ? "Alterar" : "Buscar"}
+            </div>
+          </button>
+        </div>
+        <SelectUserModal
+          open={isSelectUserModalOpen}
+          onOpenChange={setIsSelectUserModalOpen}
+          selectedUserId={responsavel?.id}
+          onSelect={(u) => setResponsavel({ id: u.id, name: u.name })}
+        />
 
         {/* Prioridade + Fase */}
         <div className="edit-process-grid edit-process-grid--2">
