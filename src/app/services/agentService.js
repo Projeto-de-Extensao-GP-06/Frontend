@@ -7,7 +7,44 @@ export const agentApi = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true, // Required for HttpOnly cookie authentication
 });
+
+// Interceptor to handle authentication errors from Agent Backend
+agentApi.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error.response?.status;
+
+    // If we get a 401 from Agent Backend, the session is invalid
+    // The user needs to re-authenticate with the Backend Java
+    if (status === 401) {
+      // Create a custom error with clear message
+      const customError = new Error("Sessão expirada. Faça login novamente.");
+      customError.status = 401;
+      customError.originalError = error;
+      return Promise.reject(customError);
+    }
+
+    // Handle rate limiting
+    if (status === 429) {
+      const customError = new Error("Muitas tentativas. Aguarde alguns instantes.");
+      customError.status = 429;
+      customError.originalError = error;
+      return Promise.reject(customError);
+    }
+
+    // Handle other errors
+    const serverMessage = error.response?.data?.detail || error.response?.data?.message;
+    const friendlyMessage = serverMessage || "Não foi possível conectar ao assistente. Tente novamente mais tarde.";
+
+    const customError = new Error(friendlyMessage);
+    customError.status = status;
+    customError.originalError = error;
+
+    return Promise.reject(customError);
+  }
+);
 
 export async function enviarMensagemAoAgente({ message, sessionId, dadosProcesso }) {
   const payload = {

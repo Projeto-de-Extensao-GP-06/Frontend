@@ -71,11 +71,19 @@ export function AuthProvider({ children }) {
     // Função de Logout
     const logout = async () => {
         try {
+            // Logout do Backend Java
             await authService.logout();
         } catch (err) {
             console.warn("Erro ao deslogar no backend:", err);
+        }
+
+        try {
+            // Logout do Agent Backend (revoga token e remove cookies)
+            await authService.logoutAgent();
+        } catch (err) {
+            console.warn("Erro ao deslogar no Agent Backend:", err);
         } finally {
-            // Sempre limpa os dados locais, mesmo se o backend falhar
+            // Sempre limpa os dados locais, mesmo se os backends falharem
             setUser(null);
             localStorage.removeItem(STORAGE_USER_KEY);
         }

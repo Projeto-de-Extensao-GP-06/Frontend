@@ -1,4 +1,5 @@
 import { api } from "@/app/provider/api";
+import { agentApi } from "./agentService";
 
 export const authService = {
     /**
@@ -69,5 +70,22 @@ export const authService = {
     async definirNovaSenha(senha) {
         const response = await api.post("/auth/definir-nova-senha", { senha });
         return response.data;
+    },
+
+    /**
+     * Valida o token JWT com o Agent Backend.
+     * Útil para verificar se o token é válido antes de fazer requisições ao agente.
+     */
+    async validateAgentToken() {
+        const response = await agentApi.get("/auth/validate");
+        return response.data; // Returns { valid: bool, email: string, scope: string }
+    },
+
+    /**
+     * Faz logout do Agent Backend.
+     * Revoga o token e remove os cookies do Agent Backend.
+     */
+    async logoutAgent() {
+        await agentApi.post("/auth/logout");
     },
 };

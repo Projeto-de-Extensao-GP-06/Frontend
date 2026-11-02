@@ -6,6 +6,7 @@ import remarkBreaks from "remark-breaks";
 import { SelectProcessModal } from "../components/SelectProcessModal";
 import { enviarMensagemAoAgente, limparSessaoAgente } from "../services/agentService";
 import { toast } from "sonner";
+import { useNavigate } from "react-router";
 import "../../styles/ai-assistant-page.css";
 import "../../styles/select-process-modal.css";
 
@@ -77,6 +78,8 @@ function removeStoredSession() {
 }
 
 export default function AIAssistantPage() {
+  const navigate = useNavigate();
+
   useEffect(() => {
     document.title = "SGPJ | MarIA";
   }, []);
@@ -287,6 +290,16 @@ export default function AIAssistantPage() {
       setMessages((p) => [...p, assistantMsg]);
     } catch (error) {
       console.error("Erro ao comunicar com MarIA:", error);
+
+      // Handle authentication errors from Agent Backend
+      if (error?.response?.status === 401 || error?.status === 401) {
+        toast.error("Sessão expirada. Faça login novamente.");
+        setTimeout(() => {
+          navigate("/login");
+        }, 1500);
+        return;
+      }
+
       const errorMsg = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
