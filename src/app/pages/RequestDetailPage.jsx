@@ -33,6 +33,8 @@ export default function RequestDetailPage() {
   const [denying, setDenying] = useState(false);
   const [denyError, setDenyError] = useState("");
   const [acceptModalOpen, setAcceptModalOpen] = useState(false);
+  const [acceptedProcessId, setAcceptedProcessId] = useState(null);
+  const [acceptRedirectError, setAcceptRedirectError] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -40,6 +42,9 @@ export default function RequestDetailPage() {
     setLoading(true);
     setError(null);
     setRequest(null);
+    setStatus("pending");
+    setAcceptedProcessId(null);
+    setAcceptRedirectError("");
 
     buscarSolicitacaoPorId(id, { signal: controller.signal })
       .then((dto) => {
@@ -61,6 +66,16 @@ export default function RequestDetailPage() {
 
     return () => { current = false; controller.abort(); };
   }, [id, retryIndex]);
+
+  useEffect(() => {
+    if (acceptedProcessId == null || acceptedProcessId === "") return undefined;
+
+    const timeoutId = setTimeout(() => {
+      navigate(`/app/processos/${encodeURIComponent(acceptedProcessId)}`);
+    }, 2000);
+
+    return () => clearTimeout(timeoutId);
+  }, [acceptedProcessId, navigate]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -222,7 +237,7 @@ export default function RequestDetailPage() {
           </div>
         : <div className={`req-detail-result ${status === "accepted" || request.status === "aceita" ? "req-detail-result--accepted" : "req-detail-result--denied"}`}>
             {status === "accepted" || request.status === "aceita"
-              ? <><Check size={18} className="req-detail-result__icon req-detail-result__icon--accepted" /><div><p className="req-detail-result__title req-detail-result__title--accepted">Solicitação aceita</p><p className="req-detail-result__sub req-detail-result__sub--accepted">A solicitação foi processada.</p></div></>
+              ? <><Check size={18} className="req-detail-result__icon req-detail-result__icon--accepted" /><div><p className="req-detail-result__title req-detail-result__title--accepted">Solicitação aceita</p><p className="req-detail-result__sub req-detail-result__sub--accepted">{acceptRedirectError || "A solicitação foi processada. Você será redirecionado para o processo em instantes."}</p></div></>
               : <><X size={18} className="req-detail-result__icon req-detail-result__icon--denied" /><div><p className="req-detail-result__title req-detail-result__title--denied">Solicitação negada</p><p className="req-detail-result__sub req-detail-result__sub--denied">A solicitação foi recusada.</p></div></>}
           </div>}
 
@@ -231,8 +246,14 @@ export default function RequestDetailPage() {
         onOpenChange={setAcceptModalOpen}
         request={request}
         onConfirmAccept={async (dados) => {
-          await aceitarSolicitacao(id, dados);
+          const response = await aceitarSolicitacao(id, dados);
           setStatus("accepted");
+          if (response?.processoId == null || response.processoId === "") {
+            setAcceptRedirectError("A solicitação foi aceita, mas não foi possível identificar o processo para redirecionamento.");
+            return;
+          }
+          setAcceptRedirectError("");
+          setAcceptedProcessId(response.processoId);
         }}
       />
       <Dialog open={denyDialog} onOpenChange={setDenyDialog}>
