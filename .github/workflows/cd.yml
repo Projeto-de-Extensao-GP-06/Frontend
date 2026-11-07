@@ -1,4 +1,4 @@
-name: CD - Frontend (Build e Deploy)
+name: CD - Frontend (Build, ECR e Deploy)
 
 on:
   push:
@@ -7,10 +7,11 @@ on:
 
 env:
   AWS_REGION: us-east-1
+  ECR_REPOSITORY: sgpj-frontend
 
 jobs:
   build-and-deploy:
-    name: Build React + Deploy no EFS via SSM
+    name: Build React + Push ECR + Deploy no EFS via SSM
     runs-on: ubuntu-latest
 
     steps:
@@ -37,6 +38,19 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Login no Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build e Push da imagem Docker para o Amazon ECR
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          IMAGE_URI="$REGISTRY/${{ env.ECR_REPOSITORY }}:latest"
+          docker build -t $IMAGE_URI .
+          docker push $IMAGE_URI
+          echo "✅ Imagem do Frontend enviada para o ECR: $IMAGE_URI"
+
       - name: Obter bucket bronze e instância app-a dinamicamente
         id: discovery
         run: |
@@ -57,7 +71,7 @@ jobs:
 
           if [ -z "$INSTANCE_ID" ] || [ "$INSTANCE_ID" = "None" ] || [ -z "$BUCKET_NAME" ] || [ "$BUCKET_NAME" = "None" ]; then
             echo "⚠️ Nenhuma EC2 de frontend ou bucket ativos encontrados no momento (ambiente desligado/destroy)."
-            echo "✅ Build validado com sucesso! Quando a infraestrutura for recriada, ela subirá com a versão atualizada."
+            echo "✅ Imagem Docker já está salva no Amazon ECR com sucesso! Quando a infraestrutura for recriada, ela subirá com a versão atualizada."
             exit 0
           fi
 
