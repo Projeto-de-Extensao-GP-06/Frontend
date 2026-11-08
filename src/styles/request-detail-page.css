@@ -376,3 +376,77 @@
 }
 
 .req-dialog__btn--danger:hover { background: #b91c1c; }
+
+/* Sync / Fetch Bar */
+.proc-sync-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  background: #f8fafc;
+  border: 1px solid #e8ecf4;
+  border-radius: 0.75rem;
+}
+
+.proc-sync-bar__info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+}
+
+.proc-sync-bar__label {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.proc-sync-bar__value {
+  color: #0f2357;
+  font-weight: 600;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.8125rem;
+}
+
+.proc-sync-bar__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.4375rem 0.875rem;
+  border: 1px solid #0f2357;
+  border-radius: 0.5rem;
+  background: #0f2357;
+  color: #ffffff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.proc-sync-bar__btn:disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.proc-sync-bar__btn:hover:not(:disabled) {
+  background: #1a3a7a;
+  border-color: #1a3a7a;
+}
+
+@media (max-width: 480px) {
+  .proc-sync-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.625rem;
+  }
+
+  .proc-sync-bar__btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
