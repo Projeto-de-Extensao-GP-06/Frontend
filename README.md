@@ -247,3 +247,32 @@ GET /usuarios
 * Sempre validar CORS no backend para a URL do frontend em desenvolvimento.
 * Preferir uso de cookie HttpOnly para token, evitando armazenamento sensível em `localStorage`.
 * Padronizar tratamento de erro de API (401, 403, 500) em um cliente HTTP centralizado.
+
+
+---
+
+## 🚀 Fluxo de Integração e Entrega Contínua (CI/CD)
+
+O Frontend conta com integração e entrega contínua automatizadas via **GitHub Actions**:
+
+```mermaid
+flowchart LR
+    Dev[Desenvolvedor] -->|git push branch| PR[Abre Pull Request]
+    PR -->|Gatilho CI| BuildTest[CI: npm ci + npm run build]
+    BuildTest -->|Aprovado| Merge[Merge na branch main]
+    Merge -->|Gatilho CD| Deploy[CD: Docker ECR + Sync S3/EFS Nginx]
+```
+
+### 1. Integração Contínua (CI) — `.github/workflows/ci.yml`
+* **Gatilho:** Todo **Pull Request** para `main` ou `develop`.
+* **Ações:**
+  * Instala dependências limpas com `npm ci` no Node.js 20.
+  * Valida o processo de compilação do Vite (`npm run build`).
+  * Garante que nenhum código com erro de JSX/TypeScript ou dependência quebrada entre na branch principal.
+
+### 2. Entrega Contínua (CD) — `.github/workflows/cd.yml`
+* **Gatilho:** Todo **Push / Merge** na branch `main`.
+* **Ações:**
+  * Gera a compilação de produção com Vite (`npm run build`).
+  * Constrói a imagem Docker baseada no Nginx Alpine e faz o push para o **Amazon ECR (`sgpj-frontend:latest`)**.
+  * Sincroniza a pasta de assets `dist/` com o bucket S3 e atualiza o sistema de arquivos **EFS compartilhado** das EC2s públicas (`ec2-app-a` e `ec2-app-b`) via **AWS SSM**.
