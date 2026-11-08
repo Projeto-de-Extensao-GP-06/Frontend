@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useRef, useEffect, useCallback } f
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { atualizarDadosProcesso, conectarStatusSincronizacao } from "../services/processoService";
+import { atualizarDadosSolicitacao, conectarStatusSincronizacaoSolicitacao } from "../services/solicitacaoService";
 
 const SyncProcessContext = createContext({
   processosSincronizando: new Set(),
@@ -36,7 +37,7 @@ export function SyncProcessProvider({ children }) {
   );
 
   const acompanharSincronizacao = useCallback(
-    ({ processoId, clientName }) => {
+    ({ processoId, clientName, tipo = "processo" }) => {
       const idStr = String(processoId);
 
       if (sincronizandoIds.has(idStr)) {
@@ -51,8 +52,13 @@ export function SyncProcessProvider({ children }) {
         conexoesSseRef.current.delete(idStr);
       }
 
+      const conectar =
+        tipo === "solicitacao"
+          ? conectarStatusSincronizacaoSolicitacao
+          : conectarStatusSincronizacao;
+
       // Conecta ao SSE global mantido no layout da aplicação
-      const desconectarSse = conectarStatusSincronizacao(processoId, {
+      const desconectarSse = conectar(processoId, {
         onIniciado: () => {},
         onProcessando: () => {},
         onReprocessando: () => {},
@@ -76,24 +82,30 @@ export function SyncProcessProvider({ children }) {
 
           setUltimoProcessoSincronizadoId(processoId);
 
-          // Dispara notificação de sucesso com ação para ver o processo
+          const isSolicitacao = tipo === "solicitacao";
+          const labelVer = isSolicitacao ? "Ver Solicitação" : "Ver Processo";
+          const caminhoDestino = isSolicitacao
+            ? `/app/solicitacoes/${processoId}`
+            : `/app/processos/${processoId}`;
+          const mensagemSucesso = clientName
+            ? `Dados ${isSolicitacao ? "da solicitação" : "do processo"} de ${clientName} sincronizados com sucesso!`
+            : `Dados ${isSolicitacao ? "da solicitação" : "do processo"} sincronizados com sucesso!`;
+
+          // Dispara notificação de sucesso com ação para ver o processo/solicitação
           toast.success(
-            clientName
-              ? `Dados do processo de ${clientName} sincronizados com sucesso!`
-              : "Dados do processo sincronizados com sucesso!",
+            mensagemSucesso,
             {
               duration: 10000,
               action: {
-                label: "Ver Processo",
+                label: labelVer,
                 onClick: () => {
-                  const caminhoProcesso = `/app/processos/${processoId}`;
-                  if (window.location.pathname === caminhoProcesso) {
+                  if (window.location.pathname === caminhoDestino) {
                     const card = document.getElementById("card-dados-processo");
                     if (card) {
                       card.scrollIntoView({ behavior: "smooth", block: "center" });
                     }
                   } else {
-                    navigate(caminhoProcesso, { state: { destacarCard: true } });
+                    navigate(caminhoDestino, { state: { destacarCard: true } });
                   }
                 },
               },
@@ -116,18 +128,29 @@ export function SyncProcessProvider({ children }) {
   );
 
   const iniciarSincronizacao = useCallback(
-    async ({ processoId, clientName }) => {
+    async ({ processoId, clientName, tipo = "processo" }) => {
       const idStr = String(processoId);
 
       if (sincronizandoIds.has(idStr)) {
-        toast.info("A sincronização deste processo já está em andamento.", { duration: 4000 });
+        toast.info(
+          tipo === "solicitacao"
+            ? "A sincronização desta solicitação já está em andamento."
+            : "A sincronização deste processo já está em andamento.",
+          { duration: 4000 }
+        );
         return;
       }
 
-      acompanharSincronizacao({ processoId, clientName });
+      setUltimoProcessoSincronizadoId(null);
+
+      acompanharSincronizacao({ processoId, clientName, tipo });
 
       try {
-        const resposta = await atualizarDadosProcesso(processoId);
+        const funcaoAtualizar =
+          tipo === "solicitacao"
+            ? atualizarDadosSolicitacao
+            : atualizarDadosProcesso;
+        const resposta = await funcaoAtualizar(processoId);
         toast.info(
           resposta?.mensagem ||
             "Solicitação de sincronização enviada para a fila de processamento.",
@@ -145,7 +168,11 @@ export function SyncProcessProvider({ children }) {
           conexoesSseRef.current.delete(idStr);
         }
 
-        const msg = err.response?.data?.message || "Não foi possível iniciar a sincronização do processo.";
+        const msg =
+          err.response?.data?.message ||
+          (tipo === "solicitacao"
+            ? "Não foi possível iniciar a sincronização da solicitação."
+            : "Não foi possível iniciar a sincronização do processo.");
         toast.error(msg, { duration: 5000 });
       }
     },

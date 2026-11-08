@@ -25,6 +25,20 @@ function formatarData(dataIso) {
   return ano && mes && dia ? `${dia}/${mes}/${ano}` : dataIso;
 }
 
+function formatarDataHora(dataIso) {
+  if (!dataIso) return { data: "-", hora: null };
+  const [data, horaCompleta] = String(dataIso).split("T");
+  const [ano, mes, dia] = (data || "").split("-");
+  const hora = horaCompleta ? horaCompleta.slice(0, 5) : null;
+  const dataFormatada = ano && mes && dia ? `${dia}/${mes}/${ano}` : data || "-";
+  return { data: dataFormatada, hora };
+}
+
+function formatarDataHoraCompleta(dataIso) {
+  const { data, hora } = formatarDataHora(dataIso);
+  return hora ? `${data} às ${hora}` : data;
+}
+
 export async function listarSolicitacoes({ page = 0, size = 20, sort, signal } = {}) {
   const query = montarQuery({ page, size, sort });
   const response = await api.get(`/solicitacoes?${query}`, { signal });
@@ -74,6 +88,67 @@ export async function negarSolicitacao(id) {
   return response.data;
 }
 
+export async function atualizarDadosSolicitacao(id) {
+  const response = await api.post(`/solicitacoes/${encodeURIComponent(id)}/atualizar-dados`);
+  return response.data;
+}
+
+export function conectarStatusSincronizacaoSolicitacao(id, { onIniciado, onProcessando, onReprocessando, onConcluido, onError } = {}) {
+  const baseUrl = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? "http://localhost:8080" : "");
+  const url = `${baseUrl}/solicitacoes/${encodeURIComponent(id)}/sincronizacao-status`;
+  const eventSource = new EventSource(url, { withCredentials: true });
+
+  eventSource.addEventListener("CONECTADO", (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      onIniciado?.(data);
+    } catch (_) {}
+  });
+
+  eventSource.addEventListener("ENFILEIRADO", (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      onIniciado?.(data);
+    } catch (_) {}
+  });
+
+  eventSource.addEventListener("PROCESSANDO", (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      onProcessando?.(data);
+    } catch (_) {}
+  });
+
+  eventSource.addEventListener("REPROCESSANDO", (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      onReprocessando?.(data);
+    } catch (_) {}
+  });
+
+  eventSource.addEventListener("CONCLUIDO", (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      onConcluido?.(data);
+    } catch (_) {
+      onConcluido?.(null);
+    } finally {
+      eventSource.close();
+    }
+  });
+
+  eventSource.onerror = (e) => {
+    try {
+      eventSource.close();
+    } catch (_) {}
+    onError?.(e);
+  };
+
+  return () => {
+    eventSource.close();
+  };
+}
+
 export function mapearSolicitacao(dto = {}) {
   const processo = dto.processo || null;
   const data = dto.dataSolicitacao || dto.dataHoraInicio || dto.ultimaAtualizacao;
@@ -86,6 +161,9 @@ export function mapearSolicitacao(dto = {}) {
   const status = (dto.status || "PENDENTE").toLocaleLowerCase("pt-BR");
   const nome = dto.nomeCompleto || dto.nomeRazaoSocial || dto.nome || "Nome não informado";
   const isPF = dto.isPF ?? dto.pessoaFisica ?? !dto.nomeRazaoSocial;
+  const ultimaAtualizacaoIso = processo?.ultimaAtualizacao || dto.ultimaAtualizacao || null;
+  const lastSyncDate = ultimaAtualizacaoIso ? formatarDataHoraCompleta(ultimaAtualizacaoIso) : "-";
+  const processoId = dto.id;
 
   return {
     id: dto.id,
@@ -104,6 +182,8 @@ export function mapearSolicitacao(dto = {}) {
     aceitouTermos: dto.aceitouTermos,
     dataResposta,
     processo,
+    processoId,
+    lastSyncDate,
     filingDate: formatarData(processo?.dataAjuizamento || processo?.dataDistribuicao),
     instance: processo?.instancia || null,
     secrecyLevel: processo?.nivelSigilo || null,
