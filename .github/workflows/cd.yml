@@ -1,6 +1,7 @@
-name: CD - Frontend (Build, ECR e Deploy)
+﻿name: CD - Frontend (Build, ECR e Deploy)
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -15,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout do código
+      - name: Checkout do cÃ³digo
         uses: actions/checkout@v4
 
       - name: Configurar Node.js 20
@@ -24,10 +25,10 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Instalar dependências
+      - name: Instalar dependÃªncias
         run: npm ci
 
-      - name: Build de produção (Vite)
+      - name: Build de produÃ§Ã£o (Vite)
         run: npm run build
 
       - name: Configurar credenciais AWS
@@ -49,9 +50,9 @@ jobs:
           IMAGE_URI="$REGISTRY/${{ env.ECR_REPOSITORY }}:latest"
           docker build -t $IMAGE_URI .
           docker push $IMAGE_URI
-          echo "✅ Imagem do Frontend enviada para o ECR: $IMAGE_URI"
+          echo "âœ… Imagem do Frontend enviada para o ECR: $IMAGE_URI"
 
-      - name: Obter bucket bronze e instância app-a dinamicamente
+      - name: Obter bucket bronze e instÃ¢ncia app-a dinamicamente
         id: discovery
         run: |
           INSTANCE_ID=$(aws ec2 describe-instances \
@@ -70,8 +71,8 @@ jobs:
           BUCKET_NAME="${{ steps.discovery.outputs.bucket_name }}"
 
           if [ -z "$INSTANCE_ID" ] || [ "$INSTANCE_ID" = "None" ] || [ -z "$BUCKET_NAME" ] || [ "$BUCKET_NAME" = "None" ]; then
-            echo "⚠️ Nenhuma EC2 de frontend ou bucket ativos encontrados no momento (ambiente desligado/destroy)."
-            echo "✅ Imagem Docker já está salva no Amazon ECR com sucesso! Quando a infraestrutura for recriada, ela subirá com a versão atualizada."
+            echo "âš ï¸ Nenhuma EC2 de frontend ou bucket ativos encontrados no momento (ambiente desligado/destroy)."
+            echo "âœ… Imagem Docker jÃ¡ estÃ¡ salva no Amazon ECR com sucesso! Quando a infraestrutura for recriada, ela subirÃ¡ com a versÃ£o atualizada."
             exit 0
           fi
 
@@ -95,8 +96,9 @@ jobs:
           echo "Status: $STATUS"
 
           if [ "$STATUS" != "Success" ]; then
-            echo "❌ Deploy do Frontend falhou!"
+            echo "âŒ Deploy do Frontend falhou!"
             exit 1
           fi
 
-          echo "✅ Frontend atualizado com sucesso no EFS!"
+          echo "âœ… Frontend atualizado com sucesso no EFS!"
+
