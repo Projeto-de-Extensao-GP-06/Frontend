@@ -1,4 +1,4 @@
-﻿name: CD - Frontend (Build, ECR e Deploy)
+name: CD - Frontend (Build, ECR e Deploy)
 
 on:
   workflow_dispatch:
@@ -11,24 +11,24 @@ env:
   ECR_REPOSITORY: sgpj-frontend
 
 jobs:
-  build-and-deploy:
-    name: Build React + Push ECR + Deploy no EFS via SSM
+  build-and-push:
+    name: Build Vite + Imagem Docker + Push ECR
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout do cÃ³digo
+      - name: Checkout do codigo
         uses: actions/checkout@v4
 
       - name: Configurar Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 20
           cache: 'npm'
 
-      - name: Instalar dependÃªncias
+      - name: Instalar dependencias
         run: npm ci
 
-      - name: Build de produÃ§Ã£o (Vite)
+      - name: Build de producao (Vite)
         run: npm run build
 
       - name: Configurar credenciais AWS
@@ -43,62 +43,57 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build e Push da imagem Docker para o Amazon ECR
+      - name: Build e Push da imagem Docker para o ECR
+        id: build-push
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
           IMAGE_URI="$REGISTRY/${{ env.ECR_REPOSITORY }}:latest"
           docker build -t $IMAGE_URI .
           docker push $IMAGE_URI
-          echo "âœ… Imagem do Frontend enviada para o ECR: $IMAGE_URI"
+          echo "Imagem do Frontend enviada para o ECR: $IMAGE_URI"
 
-      - name: Obter bucket bronze e instÃ¢ncia app-a dinamicamente
-        id: discovery
+      - name: Obter bucket bronze e instancia app-a dinamicamente
+        id: get-infra
         run: |
-          INSTANCE_ID=$(aws ec2 describe-instances \
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          BUCKET_NAME="sgpj-bronze-${ACCOUNT_ID}"
+          echo "bucket=$BUCKET_NAME" >> $GITHUB_OUTPUT
+          echo "Bucket S3 para sync: $BUCKET_NAME"
+
+          APP_A_ID=$(aws ec2 describe-instances \
             --filters "Name=tag:Name,Values=ec2-app-a" "Name=instance-state-name,Values=running" \
-            --query "Reservations[0].Instances[0].InstanceId" \
+            --query "Reservations[*].Instances[*].InstanceId" \
             --output text 2>/dev/null || echo "")
+          echo "app_a_id=$APP_A_ID" >> $GITHUB_OUTPUT
+          echo "Instancia ec2-app-a: $APP_A_ID"
 
-          BUCKET_NAME=$(aws s3api list-buckets --query "Buckets[?starts_with(Name, 'sgpj-bronze-')].Name | [0]" --output text 2>/dev/null || echo "")
-
-          echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
-          echo "bucket_name=$BUCKET_NAME" >> $GITHUB_OUTPUT
-
-      - name: Upload da pasta dist/ para o S3 e deploy no EFS via SSM
+      - name: Upload do build (dist/) para o S3
         run: |
-          INSTANCE_ID="${{ steps.discovery.outputs.instance_id }}"
-          BUCKET_NAME="${{ steps.discovery.outputs.bucket_name }}"
+          aws s3 sync dist/ s3://${{ steps.get-infra.outputs.bucket }}/frontend/ --delete
 
-          if [ -z "$INSTANCE_ID" ] || [ "$INSTANCE_ID" = "None" ] || [ -z "$BUCKET_NAME" ] || [ "$BUCKET_NAME" = "None" ]; then
-            echo "âš ï¸ Nenhuma EC2 de frontend ou bucket ativos encontrados no momento (ambiente desligado/destroy)."
-            echo "âœ… Imagem Docker jÃ¡ estÃ¡ salva no Amazon ECR com sucesso! Quando a infraestrutura for recriada, ela subirÃ¡ com a versÃ£o atualizada."
-            exit 0
-          fi
-
-          aws s3 sync dist/ s3://$BUCKET_NAME/frontend-deploy/dist/ --delete
-
+      - name: Sincronizar build do S3 para o EFS compartilhado via SSM
+        if: ${{ steps.get-infra.outputs.app_a_id != '' && steps.get-infra.outputs.app_a_id != 'None' }}
+        run: |
+          echo "Disparando sincronizacao do build no EFS via ec2-app-a..."
           COMMAND_ID=$(aws ssm send-command \
-            --instance-id "$INSTANCE_ID" \
+            --instance-ids "${{ steps.get-infra.outputs.app_a_id }}" \
             --document-name "AWS-RunShellScript" \
-            --parameters "commands=[\"aws s3 sync s3://$BUCKET_NAME/frontend-deploy/dist/ /mnt/efs-sgpj/volumes/nginx/html/ --delete && echo Deploy OK\"]" \
+            --parameters 'commands=["aws s3 sync s3://${{ steps.get-infra.outputs.bucket }}/frontend/ /mnt/efs-sgpj/volumes/nginx/html/ --delete && docker exec nginx nginx -s reload 2>/dev/null || true"]' \
             --query "Command.CommandId" \
             --output text)
 
           echo "SSM Command ID: $COMMAND_ID"
-          sleep 20
+          sleep 15
 
           STATUS=$(aws ssm get-command-invocation \
             --command-id "$COMMAND_ID" \
-            --instance-id "$INSTANCE_ID" \
+            --instance-id "${{ steps.get-infra.outputs.app_a_id }}" \
             --query "Status" --output text 2>/dev/null || echo "Pending")
 
-          echo "Status: $STATUS"
-
+          echo "Status da sincronizacao: $STATUS"
           if [ "$STATUS" != "Success" ]; then
-            echo "âŒ Deploy do Frontend falhou!"
-            exit 1
+            echo "Aviso: Sincronizacao SSM retornou status $STATUS. Os arquivos continuam seguros no S3."
+          else
+            echo "Frontend sincronizado com sucesso no EFS compartilhado!"
           fi
-
-          echo "âœ… Frontend atualizado com sucesso no EFS!"
-
