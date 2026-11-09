@@ -24,5 +24,5 @@ jobs:
       - name: Instalar dependências
         run: npm ci
 
-      - name: Validar build de produção
+      - name: Validar build de producao
         run: npm run build
