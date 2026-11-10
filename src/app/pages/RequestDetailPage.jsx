@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { ArrowLeft, Mail, Phone, Calendar, FileText, Check, X, User, Building2 } from "lucide-react";
+import { ArrowLeft, Mail, Phone, Calendar, FileText, Check, X, User, Building2, RefreshCw } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { StatusBadge } from "../components/StatusBadge";
 import {
@@ -15,6 +15,7 @@ import { AcceptRequestModal } from "../components/AcceptRequestModal";
 import { maskPhone, maskCNJ } from "../utils/masks";
 import { useAuth } from "../contexts/AuthContext";
 import { hasPermission } from "../utils/permissions";
+import { useSyncProcess } from "../contexts/SyncProcessContext";
 import "../../styles/request-detail-page.css";
 
 export default function RequestDetailPage() {
@@ -22,7 +23,9 @@ export default function RequestDetailPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const canAcceptRequest = hasPermission(user, "ACEITAR SOLICITAÇÃO");
-  const canDenyRequest = hasPermission(user, "NEGAR SOLICITAÇÃO");
+  const canDenyRequest = hasPermission(user, "NEGAR SOLICITAÇÃO") || hasPermission(user, "EXCLUIR SOLICITAÇÃO");
+  const canSyncRequest = canAcceptRequest || canDenyRequest;
+  const { iniciarSincronizacao, isSincronizando, ultimoProcessoSincronizadoId } = useSyncProcess();
   const [request, setRequest] = useState(null);
   const [duplicateStatus, setDuplicateStatus] = useState("checking");
   const [loading, setLoading] = useState(true);
@@ -106,6 +109,36 @@ export default function RequestDetailPage() {
   useEffect(() => {
     document.title = request ? `SGPJ | Solicitação - ${request.companyName || request.name}` : "SGPJ | Solicitação";
   }, [request]);
+
+  const processoId = request?.id || id || null;
+  const syncing = Boolean(processoId && isSincronizando(processoId));
+
+  // Quando o processo terminar de sincronizar em segundo plano, atualiza os dados na tela
+  useEffect(() => {
+    if (processoId && String(ultimoProcessoSincronizadoId) === String(processoId)) {
+      (async () => {
+        try {
+          const dto = await buscarSolicitacaoPorId(id);
+          setRequest(mapearSolicitacao(dto));
+        } catch (_) {}
+      })();
+    }
+  }, [ultimoProcessoSincronizadoId, processoId, id]);
+
+  const handleAtualizarDados = () => {
+    if (!canSyncRequest || !processoId) return;
+    iniciarSincronizacao({
+      processoId,
+      clientName: request?.companyName || request?.name,
+      tipo: "solicitacao",
+    });
+  };
+
+  const syncButtonTitle = !canSyncRequest
+    ? "Sem permissão para atualizar dados"
+    : !processoId
+    ? "Identificador da solicitação não encontrado"
+    : "Buscar e atualizar dados do processo";
 
   if (loading) {
     return <div className="req-detail-empty" role="status"><p className="req-detail-empty__text">Carregando solicitação...</p></div>;
@@ -193,18 +226,45 @@ export default function RequestDetailPage() {
         </div>
       </div>
 
-      {request.processNumber && <div className="req-detail-card">
-        <div className="req-detail-process-header"><FileText size={16} className="req-detail-process-header__icon" /><h3 className="req-detail-process-header__title">Informações do Processo</h3></div>
-        <div className="req-detail-proc-grid">
-          <div><p className="req-detail-proc-label">Número CNJ</p><p className="req-detail-proc-value">{maskCNJ(request.processNumber)}</p></div>
-          {request.filingDate && <div><p className="req-detail-proc-label">Data ajuizamento</p><p className="req-detail-proc-value">{request.filingDate}</p></div>}
-          {request.instance && <div><p className="req-detail-proc-label">Instância</p><p className="req-detail-proc-value">{request.instance}</p></div>}
-          {request.secrecyLevel && <div><p className="req-detail-proc-label">Nível de Sigilo</p><p className="req-detail-proc-value">{request.secrecyLevel}</p></div>}
-          {request.tribunalSystem && <div><p className="req-detail-proc-label">Sistema do Tribunal</p><p className="req-detail-proc-value">{request.tribunalSystem}</p></div>}
+      {request.processNumber && (
+        <div className="req-detail-card" id="card-dados-processo">
+          <div className="req-detail-process-header">
+            <FileText size={16} className="req-detail-process-header__icon" />
+            <h3 className="req-detail-process-header__title">Informações do Processo</h3>
+          </div>
+
+          <div className="proc-sync-bar">
+            <div className="proc-sync-bar__info">
+              <span className="proc-sync-bar__label">
+                Última busca de dados:
+              </span>
+              <span className="proc-sync-bar__value">
+                {request.lastSyncDate || "-"}
+              </span>
+            </div>
+            <button
+              type="button"
+              className="proc-sync-bar__btn"
+              title={syncButtonTitle}
+              onClick={handleAtualizarDados}
+              disabled={syncing || !canSyncRequest || !processoId}
+            >
+              <RefreshCw size={14} className={syncing ? "animate-spin" : ""} />
+              <span>{syncing ? "Atualizando..." : "Atualizar dados"}</span>
+            </button>
+          </div>
+
+          <div className="req-detail-proc-grid">
+            <div><p className="req-detail-proc-label">Número CNJ</p><p className="req-detail-proc-value">{maskCNJ(request.processNumber)}</p></div>
+            {request.filingDate && <div><p className="req-detail-proc-label">Data ajuizamento</p><p className="req-detail-proc-value">{request.filingDate}</p></div>}
+            {request.instance && <div><p className="req-detail-proc-label">Instância</p><p className="req-detail-proc-value">{request.instance}</p></div>}
+            {request.secrecyLevel && <div><p className="req-detail-proc-label">Nível de Sigilo</p><p className="req-detail-proc-value">{request.secrecyLevel}</p></div>}
+            {request.tribunalSystem && <div><p className="req-detail-proc-label">Sistema do Tribunal</p><p className="req-detail-proc-value">{request.tribunalSystem}</p></div>}
+          </div>
+          {request.judgingBody && <div className="req-detail-proc-extra"><p className="req-detail-proc-label">Órgão Julgador</p><p className="req-detail-proc-value">{request.judgingBody}</p></div>}
+          {request.processualClass && <div className="req-detail-proc-extra"><p className="req-detail-proc-label">Classe processual</p><p className="req-detail-proc-value">{request.processualClass}</p></div>}
         </div>
-        {request.judgingBody && <div className="req-detail-proc-extra"><p className="req-detail-proc-label">Órgão Julgador</p><p className="req-detail-proc-value">{request.judgingBody}</p></div>}
-        {request.processualClass && <div className="req-detail-proc-extra"><p className="req-detail-proc-label">Classe processual</p><p className="req-detail-proc-value">{request.processualClass}</p></div>}
-      </div>}
+      )}
 
       <div className="req-detail-card req-detail-card--desc">
         <h3 className="req-detail-desc__title">Descrição da situação</h3>
