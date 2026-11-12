@@ -5,6 +5,7 @@ import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
 import { SelectProcessModal } from "../components/SelectProcessModal";
 import { enviarMensagemAoAgente, limparSessaoAgente } from "../services/agentService";
+import { buscarProcessoCompletoPorId } from "../services/processoService";
 import { toast } from "sonner";
 import { useNavigate } from "react-router";
 import "../../styles/ai-assistant-page.css";
@@ -99,6 +100,7 @@ export default function AIAssistantPage() {
   const [typing, setTyping] = useState(() => !hasSavedChat);
   const [clearing, setClearing] = useState(false);
   const bottomRef = useRef(null);
+  const fullProcessRef = useRef(null);
   const welcomeTimeoutRef = useRef(null);
 
   // Exibe a animação de digitação antes da mensagem de boas-vindas ao carregar
@@ -244,32 +246,18 @@ export default function AIAssistantPage() {
     setTyping(true);
 
     try {
-      const dadosProcesso = selectedProcess
-        ? {
-            cnj: selectedProcess.cnj,
-            cliente: {
-              nome: selectedProcess.clientName,
-            },
-            siglaTribunal: {
-              sigla: selectedProcess.tribunal,
-              nome: selectedProcess.tribunal,
-            },
-            status: selectedProcess.status,
-            prioridade: {
-              nome: selectedProcess.priority,
-            },
-            faseProcesso: {
-              nome: selectedProcess.phase,
-            },
-            dataAudiencia: selectedProcess.hearingDate,
-            descricaoCaso: selectedProcess.description,
-            observacao: selectedProcess.observationsText,
-            valorCausa: selectedProcess.value,
-            responsavel: selectedProcess.responsible,
-            ...(selectedProcess.raw || {}),
-          }
-        : null;
-
+      let dadosProcesso = null;
+      if (selectedProcess) {
+        const cached = fullProcessRef.current;
+        if (cached && String(cached.id) === String(selectedProcess.id)) {
+          dadosProcesso = cached.data;
+        } else {
+          // Busca o processo inteiro no mesmo endpoint da tela de detalhes
+          const { id: _omitId, ...semId } = await buscarProcessoCompletoPorId(selectedProcess.id);
+          dadosProcesso = semId;
+          fullProcessRef.current = { id: selectedProcess.id, data: semId };
+        }
+      }
       const data = await enviarMensagemAoAgente({
         message: text,
         sessionId,
