@@ -546,12 +546,24 @@
 }
 
 @media (min-width: 1024px) {
+  .app-header-inner {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+  }
+
+  .app-brand-wrap {
+    justify-self: start;
+  }
+
   .app-desktop-nav {
     display: flex;
+    justify-self: center;
   }
 
   .app-desktop-user-actions {
     display: flex;
+    justify-self: end;
   }
 
   .app-menu-button {
