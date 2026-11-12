@@ -182,6 +182,12 @@ export async function buscarProcessoPorId(id) {
   return mapearProcesso(response.data);
 }
 
+// Retorna o processo completo, sem mapeamento, exatamente como a API devolve (usado para enviar à IA).
+export async function buscarProcessoCompletoPorId(id) {
+  const response = await api.get(`/processos/${id}`);
+  return response.data;
+}
+
 export async function listarDocumentosDoProcesso(id) {
   const response = await api.get(`/processos/${id}/documentos`);
   return mapearDocumentos(response.data || []);
