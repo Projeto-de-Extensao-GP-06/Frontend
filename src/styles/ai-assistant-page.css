@@ -671,7 +671,7 @@
 .ai-input {
   display: block;
   width: 100%;
-  max-height: 6rem;
+  max-height: calc(6 * 1.45em);
   background: transparent;
   border: 0;
   color: #374151;
@@ -680,6 +680,22 @@
   line-height: 1.45;
   outline: none;
   resize: none;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.ai-input::-webkit-scrollbar {
+  width: 4px;
+}
+
+.ai-input::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ai-input::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 999px;
 }
 
 .ai-input:disabled {

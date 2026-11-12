@@ -100,8 +100,31 @@ export default function AIAssistantPage() {
   const [typing, setTyping] = useState(() => !hasSavedChat);
   const [clearing, setClearing] = useState(false);
   const bottomRef = useRef(null);
+  const textareaRef = useRef(null);
   const fullProcessRef = useRef(null);
   const welcomeTimeoutRef = useRef(null);
+
+  const MAX_TEXTAREA_LINES = 6;
+
+  const adjustTextareaHeight = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+
+    el.style.height = "auto";
+    const computed = window.getComputedStyle(el);
+    const lineHeight = parseFloat(computed.lineHeight) || parseFloat(computed.fontSize) * 1.45 || 20;
+    const paddingTop = parseFloat(computed.paddingTop) || 0;
+    const paddingBottom = parseFloat(computed.paddingBottom) || 0;
+    const maxHeight = lineHeight * MAX_TEXTAREA_LINES + paddingTop + paddingBottom;
+
+    const newHeight = Math.min(el.scrollHeight, maxHeight);
+    el.style.height = `${newHeight}px`;
+    el.style.overflowY = el.scrollHeight > maxHeight ? "auto" : "hidden";
+  }, []);
+
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [input, adjustTextareaHeight]);
 
   // Exibe a animação de digitação antes da mensagem de boas-vindas ao carregar
   useEffect(() => {
@@ -461,6 +484,7 @@ export default function AIAssistantPage() {
       <div className="ai-input-bar">
         <div className={`ai-input-wrap ${typing ? "ai-input-wrap--disabled" : ""}`}>
           <textarea
+            ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={typing ? "MarIA está digitando..." : "Digite sua mensagem..."}
