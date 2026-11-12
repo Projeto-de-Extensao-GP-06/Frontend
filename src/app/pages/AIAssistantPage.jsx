@@ -4,7 +4,11 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
 import { SelectProcessModal } from "../components/SelectProcessModal";
-import { enviarMensagemAoAgente, limparSessaoAgente } from "../services/agentService";
+import {
+  enviarMensagemAoAgente,
+  limparSessaoAgente,
+  removerIdsProcesso,
+} from "../services/agentService";
 import { buscarProcessoCompletoPorId } from "../services/processoService";
 import { toast } from "sonner";
 import { useNavigate } from "react-router";
@@ -275,10 +279,11 @@ export default function AIAssistantPage() {
         if (cached && String(cached.id) === String(selectedProcess.id)) {
           dadosProcesso = cached.data;
         } else {
-          // Busca o processo inteiro no mesmo endpoint da tela de detalhes
-          const { id: _omitId, ...semId } = await buscarProcessoCompletoPorId(selectedProcess.id);
-          dadosProcesso = semId;
-          fullProcessRef.current = { id: selectedProcess.id, data: semId };
+          // Busca o processo inteiro no mesmo endpoint da tela de detalhes e remove todos os IDs
+          const processoCompleto = await buscarProcessoCompletoPorId(selectedProcess.id);
+          const semIds = removerIdsProcesso(processoCompleto);
+          dadosProcesso = semIds;
+          fullProcessRef.current = { id: selectedProcess.id, data: semIds };
         }
       }
       const data = await enviarMensagemAoAgente({

@@ -46,11 +46,36 @@ agentApi.interceptors.response.use(
   }
 );
 
+function isIdKey(key) {
+  if (typeof key !== "string") return false;
+  return (
+    /^(id|ids)$/i.test(key) ||
+    /(^|_)(id|ids)(_|$)/i.test(key) ||
+    /[a-z0-9](Id|ID|Ids|IDs)(?=[A-Z_]|$)/.test(key) ||
+    /^(id|ID)[A-Z]/.test(key)
+  );
+}
+
+export function removerIdsProcesso(valor) {
+  if (Array.isArray(valor)) {
+    return valor.map(removerIdsProcesso);
+  }
+  if (valor !== null && typeof valor === "object" && !(valor instanceof Date)) {
+    return Object.entries(valor).reduce((acc, [chave, val]) => {
+      if (!isIdKey(chave)) {
+        acc[chave] = removerIdsProcesso(val);
+      }
+      return acc;
+    }, {});
+  }
+  return valor;
+}
+
 export async function enviarMensagemAoAgente({ message, sessionId, dadosProcesso }) {
   const payload = {
     message,
     session_id: sessionId || null,
-    dados_processo: dadosProcesso || null,
+    dados_processo: dadosProcesso ? removerIdsProcesso(dadosProcesso) : null,
   };
 
   const response = await agentApi.post("/api/v1/chat", payload);
