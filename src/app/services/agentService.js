@@ -71,11 +71,20 @@ export function removerIdsProcesso(valor) {
   return valor;
 }
 
+function obterTimezoneNavegador() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Sao_Paulo";
+  } catch {
+    return "America/Sao_Paulo";
+  }
+}
+
 export async function enviarMensagemAoAgente({ message, sessionId, dadosProcesso }) {
   const payload = {
     message,
     session_id: sessionId || null,
     dados_processo: dadosProcesso ? removerIdsProcesso(dadosProcesso) : null,
+    timezone: obterTimezoneNavegador(),
   };
 
   const response = await agentApi.post("/api/v1/chat", payload);
@@ -84,6 +93,9 @@ export async function enviarMensagemAoAgente({ message, sessionId, dadosProcesso
   return {
     response: data?.resumo_response?.response || "",
     sessionId: data?.resumo_response?.session_id || sessionId,
+    attachments: Array.isArray(data?.resumo_response?.attachments)
+      ? data.resumo_response.attachments
+      : [],
     rawResponse: data?.raw_response || null,
   };
 }

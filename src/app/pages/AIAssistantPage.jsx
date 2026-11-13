@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
 import { SelectProcessModal } from "../components/SelectProcessModal";
+import { IcsAttachmentCard } from "../components/IcsAttachmentCard";
 import {
   enviarMensagemAoAgente,
   limparSessaoAgente,
@@ -300,6 +301,7 @@ export default function AIAssistantPage() {
         id: (Date.now() + 1).toString(),
         role: "assistant",
         content: data.response || "Não foi possível obter uma resposta no momento.",
+        attachments: data.attachments || [],
         time: now(),
       };
 
@@ -387,6 +389,16 @@ export default function AIAssistantPage() {
                   {msg.content}
                 </ReactMarkdown>
               </div>
+              {msg.role === "assistant" && Array.isArray(msg.attachments) && msg.attachments.length > 0 && (
+                <div className="ai-ics-attachments">
+                  {msg.attachments.map((attachment, idx) => (
+                    <IcsAttachmentCard
+                      key={`${msg.id}-ics-${idx}-${attachment.filename}`}
+                      attachment={attachment}
+                    />
+                  ))}
+                </div>
+              )}
               <p className={`ai-msg__time ${msg.role === "user" ? "ai-msg__time--right" : ""}`}>
                 {msg.time}
               </p>
