@@ -47,20 +47,19 @@ const handleSessionExpired = () => {
     }
 };
 
-// Controle de fila de requisições concorrentes durante o refresh token
-let isRefreshing = false;
-let failedQueue = [];
+// Promise única de refresh compartilhada: evita vários refreshes simultâneos (Backend Java e Agent)
+let refreshPromise = null;
 
-const processQueue = (error) => {
-    failedQueue.forEach((prom) => {
-        if (error) {
-            prom.reject(error);
-        } else {
-            prom.resolve();
-        }
-    });
-    failedQueue = [];
+export const refreshSessionOnce = () => {
+    if (!refreshPromise) {
+        refreshPromise = api.post("/auth/refresh-token").finally(() => {
+            refreshPromise = null;
+        });
+    }
+    return refreshPromise;
 };
+
+export const handleSessionExpiredRedirect = handleSessionExpired;
 
 // Interceptor de resposta: renova o token automaticamente via /auth/refresh-token em 401
 api.interceptors.response.use(
@@ -84,33 +83,13 @@ api.interceptors.response.use(
 
         // Se a resposta for 401 em uma rota protegida e a requisição ainda não foi retentada
         if (status === 401 && !originalRequest?._retry && !isNoRefreshEndpoint) {
-            if (isRefreshing) {
-                // Se já há um refresh em andamento, enfileira a requisição para evitar chamadas simultâneas
-                return new Promise((resolve, reject) => {
-                    failedQueue.push({ resolve, reject });
-                })
-                    .then(() => {
-                        originalRequest._retry = true;
-                        return api(originalRequest);
-                    })
-                    .catch((err) => Promise.reject(err));
-            }
-
             originalRequest._retry = true;
-            isRefreshing = true;
 
             try {
-                // Chama o endpoint de renovação de token (envia o cookie HttpOnly refreshToken)
-                await api.post("/auth/refresh-token");
-
-                // Libera todas as requisições que aguardavam a conclusão do refresh
-                processQueue(null);
-
-                // Retenta a requisição original com os novos cookies aplicados pelo navegador
-                return api(originalRequest);
+                // Refresh compartilhado (envia o cookie HttpOnly refreshToken)
+                await refreshSessionOnce();
             } catch (refreshError) {
-                // Se o refresh falhar (token expirado/revogado), cancela a fila e limpa a sessão
-                processQueue(refreshError);
+                // Se o refresh falhar (token expirado/revogado), limpa a sessão
                 handleSessionExpired();
 
                 const friendlyMessage = "Sessão expirada. Faça login novamente.";
@@ -118,9 +97,10 @@ api.interceptors.response.use(
                 customError.status = 401;
                 customError.originalError = refreshError;
                 return Promise.reject(customError);
-            } finally {
-                isRefreshing = false;
             }
+
+            // Retenta a requisição original com os novos cookies aplicados pelo navegador
+            return api(originalRequest);
         }
 
         // Se o próprio refresh token retornou 401 ou uma requisição já retentada continuou em 401
