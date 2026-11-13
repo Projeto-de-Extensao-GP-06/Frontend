@@ -299,6 +299,7 @@ export default function PublicSitePage() {
     const payload = {
       isPF,
       nomeCompleto: nomeCompletoValor,
+      profissao: profissaoValor,
       email: emailValor,
       telefone: telefoneValor.replace(/\D/g, ""),
       descricao: descricaoValor,
