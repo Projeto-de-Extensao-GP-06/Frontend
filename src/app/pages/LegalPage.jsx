@@ -1,6 +1,7 @@
 import { useEffect } from "react";
-import { ArrowLeft, Scale } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router";
+import siteLogoImage from "../../imports/nova_logo.png";
 import "../../styles/legal-page.css";
 
 const privacySections = [
@@ -57,7 +58,7 @@ export default function LegalPage() {
     <header className="legal-page__header">
       <div className="legal-page__header-inner">
         <Link to="/" onClick={handleBack} className="legal-page__back"><ArrowLeft size={17} /> Voltar ao site</Link>
-        <div className="legal-page__brand"><Scale size={22} /> Thauany Bezerra Advocacia</div>
+        <img className="legal-page__brand" src={siteLogoImage} alt="Thauany Bezerra Advocacia" />
       </div>
     </header>
     <article className="legal-page__article">
