@@ -1,4 +1,5 @@
 import axios from "axios";
+import { refreshSessionOnce, handleSessionExpiredRedirect } from "@/app/provider/api";
 
 const AGENT_API_URL = import.meta.env.VITE_AGENT_API_URL || "http://localhost:8000";
 
@@ -13,13 +14,28 @@ export const agentApi = axios.create({
 // Interceptor to handle authentication errors from Agent Backend
 agentApi.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     const status = error.response?.status;
+    const originalRequest = error.config;
 
-    // If we get a 401 from Agent Backend, the session is invalid
-    // The user needs to re-authenticate with the Backend Java
+    // 401 no Agent Backend: tenta renovar o token no Backend Java (promise compartilhada)
+    // e repete a requisição original uma única vez. Só expira a sessão se o refresh falhar.
+    if (status === 401 && originalRequest && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        await refreshSessionOnce();
+      } catch (refreshError) {
+        handleSessionExpiredRedirect();
+        const customError = new Error("Sessão expirada. Faça login novamente.");
+        customError.status = 401;
+        customError.originalError = refreshError;
+        return Promise.reject(customError);
+      }
+      return agentApi(originalRequest);
+    }
+
     if (status === 401) {
-      // Create a custom error with clear message
+      handleSessionExpiredRedirect();
       const customError = new Error("Sessão expirada. Faça login novamente.");
       customError.status = 401;
       customError.originalError = error;
