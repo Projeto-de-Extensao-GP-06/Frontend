@@ -213,3 +213,19 @@ input, textarea, select, button {
 .animate-spin {
   animation: spin 1s linear infinite;
 }
+
+.app-navigation-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  display: grid;
+  place-items: center;
+  color: #0f2357;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-navigation-loading .animate-spin {
+    animation: none;
+  }
+}

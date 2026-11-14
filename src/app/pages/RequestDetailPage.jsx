@@ -209,6 +209,14 @@ export default function RequestDetailPage() {
               </span>
             </div>
           )}
+          {!request.companyName && request.profession && (
+            <div className="req-detail-info-row">
+              <User size={14} className="req-detail-info-row__icon" />
+              <span className="req-detail-info-row__value">
+                Profissão: <strong>{request.profession}</strong>
+              </span>
+            </div>
+          )}
           <div className="req-detail-info-row">
             <Mail size={14} className="req-detail-info-row__icon" />
             <span className="req-detail-info-row__value">{request.email}</span>

@@ -1,24 +1,25 @@
 .login-page {
   min-height: 100vh;
-  height: 100dvh;
+  min-height: 100dvh;
+  height: auto;
   display: flex;
   flex-direction: column;
   background: #0f2357;
   color: #fff;
   font-family: "DM Sans", sans-serif;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   box-sizing: border-box;
 }
 
 .login-page__content {
-  flex: 1;
+  flex: 1 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 1.25rem 1.5rem;
   box-sizing: border-box;
-  max-height: 100%;
 }
 
 .login-page__brand {
