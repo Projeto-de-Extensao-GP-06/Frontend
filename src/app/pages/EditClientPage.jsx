@@ -29,7 +29,6 @@ export default function EditClientPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [profession, setProfession] = useState("");
-  const [statusClienteId, setStatusClienteId] = useState(1);
   const [logradouro, setLogradouro] = useState("");
   const [numero, setNumero] = useState("");
   const [complemento, setComplemento] = useState("");
@@ -58,7 +57,6 @@ export default function EditClientPage() {
         setName(data.name || "");
         setEmail(data.email || "");
         setProfession(data.profession || "");
-        setStatusClienteId(data.status?.id || 1);
         setComoConheceu(typeof data.comoConheceu === 'string' ? data.comoConheceu : data.comoConheceu?.name() || "INDICACAO");
         
         // For PF clients, load email and profession from primary contact if not at top level
@@ -161,7 +159,6 @@ export default function EditClientPage() {
         document: isPF ? cpf : cnpj,
         rg,
         comoConheceu,
-        statusClienteId,
         address: {
           cep,
           logradouro,

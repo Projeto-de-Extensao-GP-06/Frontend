@@ -12,7 +12,6 @@ const empty = {
   document: "",
   rg: "",
   comoConheceu: "INDICACAO",
-  statusClienteId: 1,
   address: {
     cep: "",
     logradouro: "",
@@ -31,7 +30,6 @@ const fromClient = (client) => ({
   document: client.cpf || client.cnpj || "",
   rg: client.rg || "",
   comoConheceu: typeof client.comoConheceu === 'string' ? client.comoConheceu : client.comoConheceu?.name() || "INDICACAO",
-  statusClienteId: client.status?.id || 1,
   address: { ...empty.address, ...(client.address || {}) },
   contacts: client.contacts?.length
     ? client.contacts.map((c) => ({
@@ -144,15 +142,6 @@ export default function ClienteFormPage({ editing = false }) {
             <option value="OUTROS">Outros</option>
           </Field>
         </div>
-        <Field
-          label="Status"
-          as="select"
-          value={form.statusClienteId}
-          onChange={(e) => setField("statusClienteId", e.target.value)}
-        >
-          <option value="1">Ativo</option>
-          <option value="2">Inativo</option>
-        </Field>
         <h2>Endereço</h2>
         <div className="edit-client-grid edit-client-grid--2">
           <Field

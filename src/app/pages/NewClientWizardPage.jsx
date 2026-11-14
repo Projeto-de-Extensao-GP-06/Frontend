@@ -30,7 +30,6 @@ const createEmptyForm = (type) => ({
   document: "",
   rg: "",
   comoConheceu: "INDICACAO",
-  statusClienteId: 1,
   address: { ...EMPTY_ADDRESS },
   contacts: [{ ...EMPTY_CONTACT }]
 });
