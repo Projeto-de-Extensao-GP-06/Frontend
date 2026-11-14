@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RouterProvider } from "react-router";
+import { LoaderCircle } from "lucide-react";
 import { router } from "./routes";
 import { AuthProvider } from "./contexts/AuthContext";
 import { Toaster } from "./components/ui/sonner";
@@ -36,6 +37,41 @@ const VLIBRAS_MOBILE_STYLES = `
 `;
 
 export default function App() {
+  const [isNavigating, setIsNavigating] = useState(
+    () => router.state.navigation.state !== "idle",
+  );
+  const currentLocationKey = useRef(router.state.location.key);
+
+  useEffect(() => {
+    let hideIndicatorTimeout;
+    const unsubscribe = router.subscribe((state) => {
+      if (state.navigation.state !== "idle") {
+        window.clearTimeout(hideIndicatorTimeout);
+        setIsNavigating(true);
+        return;
+      }
+
+      const locationChanged = state.location.key !== currentLocationKey.current;
+      currentLocationKey.current = state.location.key;
+      if (locationChanged) {
+        window.clearTimeout(hideIndicatorTimeout);
+        setIsNavigating(true);
+        hideIndicatorTimeout = window.setTimeout(
+          () => setIsNavigating(false),
+          250,
+        );
+      } else {
+        window.clearTimeout(hideIndicatorTimeout);
+        setIsNavigating(false);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      window.clearTimeout(hideIndicatorTimeout);
+    };
+  }, []);
+
   useEffect(() => {
     // O botão real do VLibras (v7.8.0+) vive dentro de uma shadow DOM própria
     // (#vlibras-access-wrapper), isolada de CSS externo, e se posiciona sozinho
@@ -115,18 +151,30 @@ export default function App() {
       window.removeEventListener("resize", updateAccessButtonPosition);
   }, []);
 
-  return <>
-    {/* Estrutura oficial exigida pelo script do VLibras */}
-    <div vw="" className="enabled">
-      <div vw-access-button="" className="active" />
-      <div vw-plugin-wrapper="">
-        <div className="vw-plugin-top-wrapper" />
+  return (
+    <>
+      {/* Estrutura oficial exigida pelo script do VLibras */}
+      <div vw="" className="enabled">
+        <div vw-access-button="" className="active" />
+        <div vw-plugin-wrapper="">
+          <div className="vw-plugin-top-wrapper" />
+        </div>
       </div>
-    </div>
 
-    <AuthProvider>
-      <RouterProvider router={router} />
-      <Toaster position="top-right" richColors closeButton />
-    </AuthProvider>
-  </>;
+      <AuthProvider>
+        <RouterProvider router={router} />
+        {isNavigating && (
+          <div
+            className="app-navigation-loading"
+            role="status"
+            aria-live="polite"
+            aria-label="Carregando tela..."
+          >
+            <LoaderCircle size={32} className="animate-spin" aria-hidden="true" />
+          </div>
+        )}
+        <Toaster position="top-right" richColors closeButton />
+      </AuthProvider>
+    </>
+  );
 }
