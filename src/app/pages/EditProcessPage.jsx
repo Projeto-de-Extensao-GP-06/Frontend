@@ -690,10 +690,11 @@ export default function EditProcessPage() {
       navigate("/app/inicio");
     } catch (err) {
       console.error("Erro ao excluir processo:", err);
-      if (err.response?.status === 401) {
+      const status = err.status || err.response?.status || err.originalError?.response?.status;
+      if (status === 401) {
         toast.warning("Sessão inválida ou expirada.");
       } else {
-        const mensagemErro = err.response?.data?.message || "Não foi possível excluir o processo.";
+        const mensagemErro = err.message || "Não foi possível excluir o processo.";
         toast.error(mensagemErro);
       }
     } finally {
@@ -754,7 +755,7 @@ export default function EditProcessPage() {
       toast.success(arquivos.length === 1 ? "Documento enviado com sucesso." : "Documentos enviados com sucesso.");
     } catch (err) {
       console.error("Erro ao enviar documento:", err);
-      toast.error(err.response?.data?.message || "Não foi possível enviar o documento.");
+      toast.error(err.message || "Não foi possível enviar o documento.");
     } finally {
       setUploadingDocument(false);
     }

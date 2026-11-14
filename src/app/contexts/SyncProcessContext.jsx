@@ -169,7 +169,7 @@ export function SyncProcessProvider({ children }) {
         }
 
         const msg =
-          err.response?.data?.message ||
+          err.message ||
           (tipo === "solicitacao"
             ? "Não foi possível iniciar a sincronização da solicitação."
             : "Não foi possível iniciar a sincronização do processo.");

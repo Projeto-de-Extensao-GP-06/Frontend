@@ -255,10 +255,11 @@ export default function ProcessDetailPage() {
       navigate("/app/inicio");
     } catch (err) {
       console.error("Erro ao excluir processo:", err);
-      if (err.response?.status === 401) {
+      const status = err.status || err.response?.status || err.originalError?.response?.status;
+      if (status === 401) {
         toast.warning("Sessão inválida ou expirada.");
       } else {
-        const mensagemErro = err.response?.data?.message || "Não foi possível excluir o processo.";
+        const mensagemErro = err.message || "Não foi possível excluir o processo.";
         toast.error(mensagemErro);
       }
     } finally {
@@ -373,7 +374,7 @@ export default function ProcessDetailPage() {
     } catch (err) {
       console.error("Erro ao reativar processo:", err);
       toast.error(
-        err.response?.data?.message || "Não foi possível reativar o processo.",
+        err.message || "Não foi possível reativar o processo.",
       );
     } finally {
       setReactivating(false);
@@ -417,6 +418,7 @@ export default function ProcessDetailPage() {
     } catch (err) {
       console.error("Erro ao adicionar observação:", err);
       const mensagemErro =
+        err.message ||
         err.response?.data?.message ||
         (err.response?.data?.errors && Object.values(err.response.data.errors)[0]) ||
         "Não foi possível adicionar a observação.";
