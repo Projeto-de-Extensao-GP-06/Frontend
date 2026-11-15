@@ -31,7 +31,6 @@ const toRequest = (data) => ({
   isPF: data.type === "PF",
   rg: data.rg || null,
   comoConheceu: data.comoConheceu || "INDICACAO",
-  statusClienteId: Number(data.statusClienteId || 1),
   endereco: data.address,
   contatos: data.contacts.map((contact, index) => ({
     nome: contact.name,
