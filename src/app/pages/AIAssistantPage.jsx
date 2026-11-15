@@ -1,16 +1,33 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Scale, Sparkles, Send, RefreshCw, Trash2, Search, FileText, Plus } from "lucide-react";
+import {
+  Scale,
+  Sparkles,
+  Send,
+  RefreshCw,
+  Trash2,
+  Search,
+  FileText,
+  Plus,
+  BarChart3,
+  CalendarRange,
+} from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
 import { SelectProcessModal } from "../components/SelectProcessModal";
+import { SelectDashboardModal, formatDateBr } from "../components/SelectDashboardModal";
 import { IcsAttachmentCard } from "../components/IcsAttachmentCard";
+import { ChatChartCard } from "../components/ChatChartCard";
 import {
   enviarMensagemAoAgente,
   limparSessaoAgente,
   removerIdsProcesso,
 } from "../services/agentService";
 import { buscarProcessoCompletoPorId } from "../services/processoService";
+import {
+  buscarDadosGeraisDashboard,
+  buscarDadosFiltradosDashboard,
+} from "../services/dashboardService";
 import { toast } from "sonner";
 import { useNavigate } from "react-router";
 import "../../styles/ai-assistant-page.css";
@@ -99,14 +116,19 @@ export default function AIAssistantPage() {
   const [messages, setMessages] = useState(() => (hasSavedChat ? initialData.messages : []));
   const [sessionId, setSessionId] = useState(() => initialData?.sessionId || null);
   const [selectedProcess, setSelectedProcess] = useState(() => initialData?.selectedProcess || null);
+  const [selectedDashboard, setSelectedDashboard] = useState(
+    () => initialData?.selectedDashboard || null
+  );
 
   const [input, setInput] = useState("");
   const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
+  const [isDashboardModalOpen, setIsDashboardModalOpen] = useState(false);
   const [typing, setTyping] = useState(() => !hasSavedChat);
   const [clearing, setClearing] = useState(false);
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
   const fullProcessRef = useRef(null);
+  const dashboardCacheRef = useRef({});
   const welcomeTimeoutRef = useRef(null);
 
   const MAX_TEXTAREA_LINES = 6;
@@ -180,16 +202,17 @@ export default function AIAssistantPage() {
     });
   }, [messages, typing]);
 
-  // Persiste a sessão no sessionStorage sempre que messages, sessionId ou selectedProcess mudarem
+  // Persiste a sessão no sessionStorage sempre que messages, sessionId, selectedProcess ou selectedDashboard mudarem
   useEffect(() => {
-    if (sessionId || messages.length > 1 || selectedProcess) {
+    if (sessionId || messages.length > 1 || selectedProcess || selectedDashboard) {
       persistSession({
         sessionId,
         messages,
         selectedProcess,
+        selectedDashboard,
       });
     }
-  }, [messages, sessionId, selectedProcess]);
+  }, [messages, sessionId, selectedProcess, selectedDashboard]);
 
   // Monitora a inatividade: reseta se o tempo limite for atingido
   const handleInactivityExpiry = useCallback(() => {
@@ -199,6 +222,8 @@ export default function AIAssistantPage() {
     removeStoredSession();
     setSessionId(null);
     setSelectedProcess(null);
+    setSelectedDashboard(null);
+    dashboardCacheRef.current = {};
     triggerWelcomeWithTyping();
     toast.info("A sessão expirou por inatividade. Uma nova conversa foi iniciada.");
   }, [sessionId, triggerWelcomeWithTyping]);
@@ -207,7 +232,7 @@ export default function AIAssistantPage() {
     const checkExpiry = () => {
       const stored = readStoredSession();
       // Se havia sessão ativa no estado mas o storage expirou
-      if (!stored && (sessionId || messages.length > 1 || selectedProcess)) {
+      if (!stored && (sessionId || messages.length > 1 || selectedProcess || selectedDashboard)) {
         handleInactivityExpiry();
       }
     };
@@ -230,7 +255,7 @@ export default function AIAssistantPage() {
       window.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("focus", checkExpiry);
     };
-  }, [sessionId, messages.length, selectedProcess, handleInactivityExpiry]);
+  }, [sessionId, messages.length, selectedProcess, selectedDashboard, handleInactivityExpiry]);
 
   // "+ Nova conversa"
   const handleNewChat = async () => {
@@ -244,6 +269,8 @@ export default function AIAssistantPage() {
       removeStoredSession();
       setSessionId(null);
       setSelectedProcess(null);
+      setSelectedDashboard(null);
+      dashboardCacheRef.current = {};
       triggerWelcomeWithTyping();
       toast.success("Nova conversa iniciada.");
     } catch (err) {
@@ -251,6 +278,8 @@ export default function AIAssistantPage() {
       removeStoredSession();
       setSessionId(null);
       setSelectedProcess(null);
+      setSelectedDashboard(null);
+      dashboardCacheRef.current = {};
       triggerWelcomeWithTyping();
       toast.info("Nova conversa iniciada localmente.");
     } finally {
@@ -287,10 +316,44 @@ export default function AIAssistantPage() {
           fullProcessRef.current = { id: selectedProcess.id, data: semIds };
         }
       }
+
+      let dadosDashboard = null;
+      if (selectedDashboard) {
+        const rangeKey = `${selectedDashboard.dateFrom}_${selectedDashboard.dateTo}`;
+        let generalData = dashboardCacheRef.current.generalData;
+        if (!generalData) {
+          generalData = await buscarDadosGeraisDashboard();
+          dashboardCacheRef.current.generalData = generalData;
+        }
+        let filteredData = dashboardCacheRef.current.filteredByRange?.[rangeKey];
+        if (!filteredData && selectedDashboard.dateFrom && selectedDashboard.dateTo) {
+          filteredData = await buscarDadosFiltradosDashboard(
+            selectedDashboard.dateFrom,
+            selectedDashboard.dateTo
+          );
+          dashboardCacheRef.current.filteredByRange = {
+            ...(dashboardCacheRef.current.filteredByRange || {}),
+            [rangeKey]: filteredData,
+          };
+        }
+        dadosDashboard = removerIdsProcesso({
+          periodo: {
+            periodMode: selectedDashboard.periodMode,
+            preset: selectedDashboard.preset,
+            appliedPeriod: selectedDashboard.appliedPeriod,
+            dateFrom: selectedDashboard.dateFrom,
+            dateTo: selectedDashboard.dateTo,
+          },
+          dadosGerais: generalData,
+          dadosFiltrados: filteredData,
+        });
+      }
+
       const data = await enviarMensagemAoAgente({
         message: text,
         sessionId,
         dadosProcesso,
+        dadosDashboard,
       });
 
       if (data.sessionId) {
@@ -302,6 +365,7 @@ export default function AIAssistantPage() {
         role: "assistant",
         content: data.response || "Não foi possível obter uma resposta no momento.",
         attachments: data.attachments || [],
+        charts: data.charts || [],
         time: now(),
       };
 
@@ -389,6 +453,16 @@ export default function AIAssistantPage() {
                   {msg.content}
                 </ReactMarkdown>
               </div>
+              {msg.role === "assistant" && Array.isArray(msg.charts) && msg.charts.length > 0 && (
+                <div className="ai-charts-attachments">
+                  {msg.charts.map((chart, idx) => (
+                    <ChatChartCard
+                      key={`${msg.id}-chart-${idx}-${chart.title || idx}`}
+                      chart={chart}
+                    />
+                  ))}
+                </div>
+              )}
               {msg.role === "assistant" && Array.isArray(msg.attachments) && msg.attachments.length > 0 && (
                 <div className="ai-ics-attachments">
                   {msg.attachments.map((attachment, idx) => (
@@ -469,32 +543,113 @@ export default function AIAssistantPage() {
               </button>
             </div>
           </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setIsSelectModalOpen(true)}
-            className="ai-picker-trigger-compact"
-          >
-            <div className="ai-picker-trigger-compact-left">
-              <div className="ai-picker-trigger-compact-icon-wrap">
-                <Scale size={14} />
+        ) : selectedDashboard ? (
+          <div className="ai-selected-process-bar">
+            <div className="ai-selected-process-info">
+              <div className="ai-selected-process-icon-wrap">
+                <BarChart3 size={16} />
               </div>
-              <span className="ai-picker-trigger-compact-label">
-                + Vincular processo para análise personalizada
-              </span>
+              <div className="ai-selected-process-text">
+                <div className="ai-selected-process-meta">
+                  <span className="ai-selected-process-name" title="Dados da Dashboard">
+                    Dados da Dashboard
+                  </span>
+                  <span className="ai-selected-process-badge">
+                    {selectedDashboard.periodMode === "custom"
+                      ? "Personalizado"
+                      : selectedDashboard.appliedPeriod}
+                  </span>
+                  {selectedDashboard.dateFrom && selectedDashboard.dateTo && (
+                    <span className="ai-selected-process-cnj">
+                      {formatDateBr(selectedDashboard.dateFrom)} até{" "}
+                      {formatDateBr(selectedDashboard.dateTo)}
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="ai-picker-trigger-compact-btn">
-              <Search size={13} />
-              <span>Buscar</span>
+
+            <div className="ai-selected-process-actions">
+              <button
+                type="button"
+                onClick={() => setIsDashboardModalOpen(true)}
+                className="ai-selected-process-btn"
+                title="Alterar período da Dashboard"
+              >
+                <CalendarRange size={12} />
+                <span>Período</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedDashboard(null)}
+                className="ai-selected-process-btn ai-selected-process-btn--remove"
+                title="Desvincular Dashboard"
+              >
+                <Trash2 size={12} />
+                <span>Remover</span>
+              </button>
             </div>
-          </button>
+          </div>
+        ) : (
+          <div className="ai-picker-triggers-row">
+            <button
+              type="button"
+              onClick={() => setIsSelectModalOpen(true)}
+              className="ai-picker-trigger-compact"
+            >
+              <div className="ai-picker-trigger-compact-left">
+                <div className="ai-picker-trigger-compact-icon-wrap">
+                  <Scale size={14} />
+                </div>
+                <span className="ai-picker-trigger-compact-label">
+                  + Vincular processo
+                </span>
+              </div>
+              <div className="ai-picker-trigger-compact-btn">
+                <Search size={13} />
+                <span>Buscar</span>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsDashboardModalOpen(true)}
+              className="ai-picker-trigger-compact"
+            >
+              <div className="ai-picker-trigger-compact-left">
+                <div className="ai-picker-trigger-compact-icon-wrap">
+                  <BarChart3 size={14} />
+                </div>
+                <span className="ai-picker-trigger-compact-label">
+                  + Vincular dashboard
+                </span>
+              </div>
+              <div className="ai-picker-trigger-compact-btn">
+                <CalendarRange size={13} />
+                <span>Período</span>
+              </div>
+            </button>
+          </div>
         )}
 
         <SelectProcessModal
           open={isSelectModalOpen}
           onOpenChange={setIsSelectModalOpen}
           selectedProcessId={selectedProcess?.id}
-          onSelect={(proc) => setSelectedProcess(proc)}
+          onSelect={(proc) => {
+            setSelectedProcess(proc);
+            setSelectedDashboard(null);
+          }}
+        />
+
+        <SelectDashboardModal
+          open={isDashboardModalOpen}
+          onOpenChange={setIsDashboardModalOpen}
+          currentSelection={selectedDashboard}
+          onSelect={(dash) => {
+            setSelectedDashboard(dash);
+            setSelectedProcess(null);
+          }}
         />
       </div>
 

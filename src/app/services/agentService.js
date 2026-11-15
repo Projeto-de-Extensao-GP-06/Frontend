@@ -95,11 +95,17 @@ function obterTimezoneNavegador() {
   }
 }
 
-export async function enviarMensagemAoAgente({ message, sessionId, dadosProcesso }) {
+export async function enviarMensagemAoAgente({
+  message,
+  sessionId,
+  dadosProcesso,
+  dadosDashboard,
+}) {
   const payload = {
     message,
     session_id: sessionId || null,
     dados_processo: dadosProcesso ? removerIdsProcesso(dadosProcesso) : null,
+    dados_dashboard: dadosDashboard ? removerIdsProcesso(dadosDashboard) : null,
     timezone: obterTimezoneNavegador(),
   };
 
@@ -111,6 +117,9 @@ export async function enviarMensagemAoAgente({ message, sessionId, dadosProcesso
     sessionId: data?.resumo_response?.session_id || sessionId,
     attachments: Array.isArray(data?.resumo_response?.attachments)
       ? data.resumo_response.attachments
+      : [],
+    charts: Array.isArray(data?.resumo_response?.charts)
+      ? data.resumo_response.charts
       : [],
     rawResponse: data?.raw_response || null,
   };
