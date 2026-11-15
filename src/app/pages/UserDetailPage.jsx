@@ -1,14 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, Navigate } from "react-router";
-import { ArrowLeft, User, Shield, AlertTriangle, Save, CheckCircle, RefreshCw } from "lucide-react";
+import { ArrowLeft, User, Shield, AlertTriangle, Save, CheckCircle, RefreshCw, Info, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { StatusBadge } from "../components/StatusBadge";
 import { getInitials } from "../components/UserAvatar";
-import { listarUsuarios, atualizarUsuario, reativarUsuario } from "../services/usuarioService";
+import { listarUsuarios, atualizarUsuario, desativarUsuario, reativarUsuario } from "../services/usuarioService";
 import { listarCargos } from "../services/cargoService";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { useAuth } from "../contexts/AuthContext";
-import { hasPermission } from "../utils/permissions";
+import { hasPermission, normalizePermission } from "../utils/permissions";
 import "../../styles/user-detail-page.css";
 
 const normalizeUser = (user) => ({
@@ -20,9 +20,31 @@ const normalizeUser = (user) => ({
   status: user.ativo ? "ativo" : "inativo",
 });
 
+const isAdminCargo = (cargoNome, cargoId, cargosList = []) => {
+  if (
+    String(cargoId) === "1" ||
+    normalizePermission(cargoNome) === "ADMIN"
+  ) {
+    return true;
+  }
+
+  const foundCargo = cargosList.find(
+    (c) =>
+      String(c.cargoId ?? c.id) === String(cargoId) ||
+      normalizePermission(c.nome) === normalizePermission(cargoNome)
+  );
+
+  if (!foundCargo || !Array.isArray(foundCargo.permissoes)) return false;
+
+  return foundCargo.permissoes.some(
+    (p) => normalizePermission(p?.nome ?? p) === "TODAS AS PERMISSÕES"
+  );
+};
+
 export default function UserDetailPage() {
   const { id } = useParams();
   const [user, setUser] = useState(null);
+  const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,10 +52,14 @@ export default function UserDetailPage() {
       setLoading(true);
       try {
         const users = await listarUsuarios();
-        const foundUser = users.find((u) => String(u.id) === id);
+        const usersList = Array.isArray(users) ? users : [];
+        const normalizedList = usersList.map(normalizeUser);
+        setAllUsers(normalizedList);
+
+        const foundUser = normalizedList.find((u) => String(u.id) === String(id));
         if (foundUser) {
-          setUser(normalizeUser(foundUser));
-          document.title = `SGPJ | Usuário - ${foundUser.nome}`;
+          setUser(foundUser);
+          document.title = `SGPJ | Usuário - ${foundUser.name}`;
         }
       } catch (error) {
         toast.error(error.message || "Não foi possível carregar o usuário.");
@@ -47,10 +73,10 @@ export default function UserDetailPage() {
   if (loading) return <div className="user-detail-page">Carregando...</div>;
   if (!user) return <Navigate to="/app/usuarios" replace />;
 
-  return <UserDetail user={user} />;
+  return <UserDetail user={user} allUsers={allUsers} />;
 }
 
-function UserDetail({ user }) {
+function UserDetail({ user, allUsers }) {
   const navigate = useNavigate();
   const { user: loggedUser } = useAuth();
   const canEditUser = hasPermission(loggedUser, "EDITAR USUÁRIO");
@@ -68,6 +94,32 @@ function UserDetail({ user }) {
 
   const isInactive = status === "inativo";
 
+  const isOwnUser = useMemo(() => {
+    if (!loggedUser) return false;
+    if (loggedUser.id !== undefined && loggedUser.id !== null && String(user.id) === String(loggedUser.id)) {
+      return true;
+    }
+    if (user.email && loggedUser.email) {
+      return user.email.trim().toLowerCase() === loggedUser.email.trim().toLowerCase();
+    }
+    return false;
+  }, [loggedUser, user.id, user.email]);
+
+  const isLastActiveAdmin = useMemo(() => {
+    const isCurrentActiveAdmin =
+      status === "ativo" && isAdminCargo(user.role, user.cargoId, cargos);
+    if (!isCurrentActiveAdmin) return false;
+
+    const otherActiveAdminExists = (allUsers || []).some(
+      (u) =>
+        String(u.id) !== String(user.id) &&
+        u.status === "ativo" &&
+        isAdminCargo(u.role, u.cargoId, cargos)
+    );
+
+    return !otherActiveAdminExists;
+  }, [allUsers, cargos, status, user.id, user.role, user.cargoId]);
+
   useEffect(() => {
     const loadCargos = async () => {
       try {
@@ -82,19 +134,25 @@ function UserDetail({ user }) {
   }, []);
 
   const handleSave = async () => {
-    if (!canEditUser) return;
+    if (!canEditUser || isOwnUser) return;
     const selectedCargo = cargos.find((c) => c.nome === role);
     if (!selectedCargo) {
       toast.error("Selecione um cargo válido.");
       return;
     }
 
+    const selectedCargoId = selectedCargo.cargoId ?? selectedCargo.id;
+    if (isLastActiveAdmin && !isAdminCargo(selectedCargo.nome, selectedCargoId, cargos)) {
+      toast.error("Não é possível alterar o cargo do único administrador ativo do sistema.");
+      return;
+    }
+
     setSaving(true);
     try {
       await atualizarUsuario(user.id, {
-        nome: name,
-        email,
-        cargoId: selectedCargo.cargoId,
+        nome: name.trim(),
+        email: email.trim(),
+        cargoId: selectedCargoId,
         ativo: status === "ativo",
       });
       setSaved(true);
@@ -108,16 +166,10 @@ function UserDetail({ user }) {
   };
 
   const handleDeactivate = async () => {
-    if (!canDeleteUser) return;
-    const selectedCargo = cargos.find((c) => c.nome === role);
+    if (!canDeleteUser || isOwnUser || isLastActiveAdmin) return;
     setSaving(true);
     try {
-      await atualizarUsuario(user.id, {
-        nome: name,
-        email,
-        cargoId: selectedCargo?.cargoId,
-        ativo: false,
-      });
+      await desativarUsuario(user.id);
       setStatus("inativo");
       setDeactivateDialogOpen(false);
       navigate("/app/usuarios");
@@ -130,7 +182,7 @@ function UserDetail({ user }) {
   };
 
   const handleReactivate = async () => {
-    if (!canDeleteUser) return;
+    if (!canDeleteUser || isOwnUser) return;
     setSaving(true);
     try {
       await reativarUsuario(user.id);
@@ -146,6 +198,36 @@ function UserDetail({ user }) {
   };
 
   const initials = getInitials(name || user.name);
+
+  const personalDataTooltip = isOwnUser
+    ? "Dados pessoais da sua própria conta devem ser alterados na tela de Meu Perfil."
+    : !canEditUser
+      ? "Sem permissão para editar usuário"
+      : "";
+
+  const cargoTooltip = isOwnUser
+    ? "Você não pode alterar seu próprio cargo. Peça a outro administrador."
+    : isLastActiveAdmin
+      ? "Não é possível alterar o cargo do único administrador ativo do sistema."
+      : isInactive
+        ? "Reative o usuário para alterar seu cargo."
+        : !canEditUser
+          ? "Sem permissão para editar usuário"
+          : "Selecionar cargo do usuário";
+
+  const saveTooltip = isOwnUser
+    ? "Você não pode alterar seu próprio registro por esta tela. Acesse 'Editar meu perfil'."
+    : !canEditUser
+      ? "Sem permissão para editar usuário"
+      : "Salvar alterações";
+
+  const deactivateTooltip = isOwnUser
+    ? "Você não pode desativar sua própria conta. Peça a outro administrador."
+    : isLastActiveAdmin
+      ? "Não é possível desativar o único administrador ativo do sistema."
+      : !canDeleteUser
+        ? "Sem permissão para excluir/desativar usuário"
+        : "Desativar Usuário";
 
   return (
     <div className="user-detail-page">
@@ -168,9 +250,14 @@ function UserDetail({ user }) {
             </span>
           </div>
           <div className="user-detail-copy">
-            <h1 className="user-detail-name">
-              {name || user.name}
-            </h1>
+            <div className="user-detail-name-row">
+              <h1 className="user-detail-name">
+                {name || user.name}
+              </h1>
+              {isOwnUser && (
+                <span className="user-detail-self-badge">Você</span>
+              )}
+            </div>
             <div className="user-detail-status-row">
               <StatusBadge status={status} />
               <span className="user-detail-role">
@@ -184,6 +271,46 @@ function UserDetail({ user }) {
 
       {/* ── Content ── */}
       <div className="user-detail-content">
+        {/* Banner explicativo para o próprio usuário */}
+        {isOwnUser && (
+          <div className="user-detail-notice user-detail-notice--self" role="status">
+            <div className="user-detail-notice__body">
+              <Info size={18} className="user-detail-notice__icon" />
+              <div className="user-detail-notice__copy">
+                <p className="user-detail-notice__title">Este é o seu próprio usuário</p>
+                <p className="user-detail-notice__text">
+                  Por segurança, você não pode alterar seu próprio cargo nem desativar sua própria conta.
+                  Para atualizar seus dados pessoais (nome, e-mail e senha), utilize a tela de Perfil.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate("/app/perfil")}
+              className="user-detail-btn-profile-link"
+            >
+              <ExternalLink size={14} />
+              Editar meu perfil
+            </button>
+          </div>
+        )}
+
+        {/* Banner explicativo para proteção do último administrador */}
+        {!isOwnUser && isLastActiveAdmin && (
+          <div className="user-detail-notice user-detail-notice--admin" role="status">
+            <div className="user-detail-notice__body">
+              <Shield size={18} className="user-detail-notice__icon" />
+              <div className="user-detail-notice__copy">
+                <p className="user-detail-notice__title">Proteção do último administrador</p>
+                <p className="user-detail-notice__text">
+                  Este usuário é o único administrador ativo do sistema. A alteração de cargo e a desativação
+                  estão bloqueadas para impedir que o sistema fique sem administradores.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Informações e Gerenciamento */}
         <div className="user-detail-card">
           <h3 className="user-detail-card-title">
@@ -198,7 +325,8 @@ function UserDetail({ user }) {
               onChange={(e) => setName(e.target.value)}
               className="user-detail-input"
               placeholder="Nome do usuário"
-              disabled={!canEditUser}
+              disabled={!canEditUser || isOwnUser}
+              title={personalDataTooltip}
             />
           </div>
 
@@ -210,8 +338,21 @@ function UserDetail({ user }) {
               onChange={(e) => setEmail(e.target.value)}
               className="user-detail-input"
               placeholder="email@exemplo.com"
-              disabled={!canEditUser}
+              disabled={!canEditUser || isOwnUser}
+              title={personalDataTooltip}
             />
+            {isOwnUser && (
+              <span className="user-detail-field-hint">
+                Dados pessoais (nome e e-mail) devem ser editados em{" "}
+                <button
+                  type="button"
+                  onClick={() => navigate("/app/perfil")}
+                  className="user-detail-inline-link"
+                >
+                  Meu Perfil
+                </button>.
+              </span>
+            )}
           </div>
 
           <div className="user-detail-field">
@@ -220,20 +361,31 @@ function UserDetail({ user }) {
               value={role}
               onChange={(e) => setRole(e.target.value)}
               className="user-detail-select"
-              disabled={isInactive || !canEditUser}
+              disabled={isInactive || !canEditUser || isOwnUser || isLastActiveAdmin}
+              title={cargoTooltip}
             >
               {cargos.map((cargo) => (
-                <option key={cargo.cargoId} value={cargo.nome}>
+                <option key={cargo.cargoId ?? cargo.id} value={cargo.nome}>
                   {cargo.nome}
                 </option>
               ))}
             </select>
+            {isOwnUser && (
+              <span className="user-detail-field-hint">
+                Você não pode alterar seu próprio cargo. Peça a outro administrador.
+              </span>
+            )}
+            {!isOwnUser && isLastActiveAdmin && (
+              <span className="user-detail-field-hint">
+                Não é possível alterar o cargo do único administrador ativo do sistema.
+              </span>
+            )}
           </div>
 
           <button
-            onClick={() => canEditUser && setSaveDialogOpen(true)}
-            disabled={saving || !canEditUser}
-            title={canEditUser ? "Salvar alterações" : "Sem permissão para editar usuário"}
+            onClick={() => canEditUser && !isOwnUser && setSaveDialogOpen(true)}
+            disabled={saving || !canEditUser || isOwnUser}
+            title={saveTooltip}
             className={`user-detail-btn-save ${
               saved ? "is-saved" : ""
             }`}
@@ -251,20 +403,35 @@ function UserDetail({ user }) {
 
         {/* Desativar ou Reativar */}
         {!isInactive ? (
-          <button
-            onClick={() => canDeleteUser && setDeactivateDialogOpen(true)}
-            disabled={!canDeleteUser}
-            title={canDeleteUser ? "Desativar Usuário" : "Sem permissão para excluir/desativar usuário"}
-            className="user-detail-btn-deactivate"
-          >
-            <AlertTriangle size={15} className="user-detail-dialog__icon" />
-            Desativar Usuário
-          </button>
+          <div className="user-detail-deactivate-wrap">
+            <button
+              onClick={() => canDeleteUser && !isOwnUser && !isLastActiveAdmin && setDeactivateDialogOpen(true)}
+              disabled={!canDeleteUser || isOwnUser || isLastActiveAdmin}
+              title={deactivateTooltip}
+              className="user-detail-btn-deactivate"
+            >
+              <AlertTriangle size={15} className="user-detail-dialog__icon" />
+              Desativar Usuário
+            </button>
+            {(isOwnUser || isLastActiveAdmin) && (
+              <p className="user-detail-action-hint">
+                {isOwnUser
+                  ? "Você não pode desativar sua própria conta. Peça a outro administrador."
+                  : "Não é possível desativar o único administrador ativo do sistema."}
+              </p>
+            )}
+          </div>
         ) : (
           <button
-            onClick={() => canDeleteUser && setReactivateDialogOpen(true)}
-            disabled={!canDeleteUser}
-            title={canDeleteUser ? "Reativar Usuário" : "Sem permissão para excluir/reativar usuário"}
+            onClick={() => canDeleteUser && !isOwnUser && setReactivateDialogOpen(true)}
+            disabled={!canDeleteUser || isOwnUser}
+            title={
+              isOwnUser
+                ? "Você não pode alterar o status da sua própria conta."
+                : canDeleteUser
+                  ? "Reativar Usuário"
+                  : "Sem permissão para excluir/reativar usuário"
+            }
             className="user-detail-btn-reactivate"
           >
             <RefreshCw size={15} />
@@ -379,6 +546,3 @@ function UserDetail({ user }) {
     </div>
   );
 }
-
-
-

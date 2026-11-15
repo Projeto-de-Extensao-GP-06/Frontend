@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { Plus, Shield, ChevronRight, UserCog, Search, X } from "lucide-react";
+import { Plus, Shield, ChevronRight, UserCog, Search, X, User } from "lucide-react";
 import { toast } from "sonner";
 import { StatusBadge } from "../components/StatusBadge";
 import { UserAvatar } from "../components/UserAvatar";
@@ -40,8 +40,8 @@ export default function UsersPage() {
   const [cargos, setCargos] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const canCreateUser = hasPermission(user, "CRIAR USUÁRIO");
+  const { user: loggedUser } = useAuth();
+  const canCreateUser = hasPermission(loggedUser, "CRIAR USUÁRIO");
 
   const loadUsers = async () => {
     setLoading(true);
@@ -277,29 +277,59 @@ export default function UsersPage() {
             )}
           </div>
         ) : (
-          paginated.map((user) => (
-            <div
-              key={user.id}
-              className="user-row"
-              onClick={() => navigate(`/app/usuarios/${user.id}`)}
-            >
-              <div className="user-row-main">
-                <UserAvatar name={user.name} />
-                <div className="user-row-copy">
-                  <p className="user-row-name">{user.name}</p>
-                  <p className="user-row-email">{user.email}</p>
+          paginated.map((user) => {
+            const isSelf = Boolean(
+              loggedUser &&
+                (String(user.id) === String(loggedUser.id) ||
+                  (user.email &&
+                    loggedUser.email &&
+                    user.email.toLowerCase() === loggedUser.email.toLowerCase()))
+            );
+            return (
+              <div
+                key={user.id}
+                className={`user-row ${isSelf ? "user-row--self" : ""}`}
+                onClick={() => navigate(`/app/usuarios/${user.id}`)}
+              >
+                <div className="user-row-main">
+                  <UserAvatar name={user.name} />
+                  <div className="user-row-copy">
+                    <div className="user-row-name-wrap">
+                      <p className="user-row-name">{user.name}</p>
+                      {isSelf && (
+                        <span className="user-row-self-badge" title="Este é o seu usuário logado">
+                          Você
+                        </span>
+                      )}
+                    </div>
+                    <p className="user-row-email">{user.email}</p>
+                  </div>
+                  <ChevronRight size={16} className="user-row-chevron" />
                 </div>
-                <ChevronRight size={16} className="user-row-chevron" />
+                <div className="user-row-footer">
+                  <StatusBadge status={user.status} />
+                  {isSelf && (
+                    <button
+                      type="button"
+                      className="user-row-profile-link"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate("/app/perfil");
+                      }}
+                      title="Editar seus dados pessoais na tela de Perfil"
+                    >
+                      <User size={11} />
+                      Editar meu perfil
+                    </button>
+                  )}
+                  <span className="user-row-role">
+                    <Shield size={11} className="user-row-role-icon" />
+                    {user.role}
+                  </span>
+                </div>
               </div>
-              <div className="user-row-footer">
-                <StatusBadge status={user.status} />
-                <span className="user-row-role">
-                  <Shield size={11} className="user-row-role-icon" />
-                  {user.role}
-                </span>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
       <PaginationBar page={safePage} total={totalPages} onPage={setPage} />

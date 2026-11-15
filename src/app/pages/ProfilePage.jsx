@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "../components/ui/button";
 import { useAuth } from "../contexts/AuthContext";
 import { startOneDriveLogin } from "../services/oneDriveService";
-import { buscarPerfilAtual, atualizarUsuario, salvarUsuarioLogado, alterarMinhaSenha } from "../services/usuarioService";
+import { buscarPerfilAtual, atualizarMeuPerfil, salvarUsuarioLogado, alterarMinhaSenha } from "../services/usuarioService";
 import "../../styles/profile-page.css";
 
 export default function ProfilePage() {
@@ -102,23 +102,16 @@ export default function ProfilePage() {
       toast.error("Identificador do usuário não encontrado.");
       return;
     }
-    const cargoId = currentUser.cargo?.id || currentUser.cargoId;
-    if (!cargoId) {
-      toast.error("Não foi possível identificar o cargo da sua conta para salvar as alterações.");
-      return;
-    }
 
     setSaving(true);
     try {
       const payload = {
         nome: name.trim(),
         email: email.trim(),
-        cargoId,
-        ativo: currentUser.ativo ?? true,
       };
 
       const emailMudou = email.trim().toLowerCase() !== (currentUser.email || "").trim().toLowerCase();
-      const atualizado = await atualizarUsuario(currentUser.id, payload);
+      const atualizado = await atualizarMeuPerfil(payload);
 
       if (emailMudou) {
         toast.success("E-mail atualizado com sucesso! Por segurança, faça login novamente com seu novo e-mail.", {

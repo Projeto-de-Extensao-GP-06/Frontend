@@ -31,6 +31,17 @@ export async function atualizarUsuario(id, dados) {
   return response.data;
 }
 
+export async function atualizarMeuPerfil(dados) {
+  // dados esperados: { nome, email }
+  const response = await api.put("/usuarios/meu-perfil", dados);
+  return response.data;
+}
+
+export async function desativarUsuario(id) {
+  const response = await api.delete(`/usuarios/${id}`);
+  return response.data;
+}
+
 export async function reativarUsuario(id) {
   const response = await api.post(`/usuarios/reactivate/${id}`);
   return response.data;
