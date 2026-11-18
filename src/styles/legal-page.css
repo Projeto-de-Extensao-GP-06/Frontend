@@ -36,9 +36,9 @@
 .legal-page__brand {
   display: block;
   flex: 0 1 auto;
-  max-width: min(40vw, 10rem);
+  max-width: min(40vw, 80rem);
   width: auto;
-  height: 2.5rem;
+  height: 5.5rem;
   object-fit: contain;
   object-position: right center;
 }
