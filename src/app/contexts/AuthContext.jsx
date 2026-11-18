@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { authService } from "../services/authService";
+import { limparSessaoAgenteArmazenada, removerSessaoAgenteLocal } from "../services/agentService";
 
 const AuthContext = createContext({});
 
@@ -49,6 +50,7 @@ export function AuthProvider({ children }) {
                 console.warn("Sessão inválida ou expirada:", err.message);
                 setUser(null);
                 localStorage.removeItem(STORAGE_USER_KEY);
+                removerSessaoAgenteLocal();
             } finally {
                 setLoading(false);
             }
@@ -59,6 +61,9 @@ export function AuthProvider({ children }) {
 
     // Função de Login
     const login = async (email, senha) => {
+        // Garante que nenhuma sessão em cache de outro usuário permaneça ao iniciar nova autenticação
+        removerSessaoAgenteLocal();
+
         const userData = await authService.login(email, senha);
 
         // Atualiza estado e persiste apenas dados mínimos de UX no localStorage
@@ -70,6 +75,9 @@ export function AuthProvider({ children }) {
 
     // Função de Logout
     const logout = async () => {
+        // Exclui a sessão do agente primeiro, enquanto o token do agente ainda é válido
+        await limparSessaoAgenteArmazenada();
+
         try {
             // Logout do Backend Java
             await authService.logout();

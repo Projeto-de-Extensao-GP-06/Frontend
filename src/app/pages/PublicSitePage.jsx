@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router";
 import { Menu, X, Instagram, Linkedin, Phone, Mail, ChevronRight, CheckCircle, Send, Shield, Briefcase, Users, User, Building2, Check, HeartHandshake, Landmark, Loader2 } from "lucide-react";
 import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import { Turnstile } from "@marsidev/react-turnstile";
+import { ElfsightWidget } from "react-elfsight-widget";
 import { toast } from "sonner";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -14,36 +15,39 @@ import { maskPhone, maskCNJ, maskCNPJ } from "../utils/masks";
 import { isValidCNPJ, isValidEmail, isValidPhone, isValidCNJ } from "../utils/validators";
 import { criarSolicitacao } from "../services/solicitacaoService";
 import siteLogoImage from "../../imports/nova_logo.png";
+import aboutPhoto from "../../imports/thauany.png";
+import { BrandLogo } from "../components/BrandLogo";
+import { ProfessionalTimeline } from "../components/ProfessionalTimeline";
 import "../../styles/public-site-page.css";
 const areas = [{
   icon: Briefcase,
   title: "Direito Empresarial",
-  desc: "Assessoria jurídica estratégica para empresas, com atuação voltada à prevenção e solução de conflitos, segurança nas relações comerciais e redução de riscos.",
-  services: ["Negociação e elaboração de acordos", "Elaboração e revisão de contratos", "Recuperação de crédito", "Cobrança judicial e extrajudicial", "Análise e gestão de riscos jurídicos", "Assessoria em relações comerciais"]
+  desc: "Assessoria jurídica estratégica para empresas e instituições financeiras, com foco na prevenção de conflitos, segurança nas relações comerciais e recuperação de crédito.",
+  services: ["Recuperação de crédito", "Cobrança judicial e extrajudicial", "Negociação e elaboração de acordos", "Elaboração e revisão de contratos empresariais", "Assessoria em relações comerciais", "Gestão de riscos"]
 }, {
   icon: Shield,
   title: "Direito Civil",
-  desc: "Atuação na prevenção e resolução de conflitos envolvendo relações patrimoniais, contratuais e de consumo, buscando soluções jurídicas eficientes e adequadas a cada caso.",
-  services: ["Responsabilidade civil", "Direito do consumidor", "Cobrança judicial e extrajudicial", "Contratos e obrigações", "Questões relacionadas a locação", "Indenizações e reparação de danos"]
+  desc: "Atuação na prevenção e resolução de conflitos relacionados às relações patrimoniais, contratuais e de consumo, com soluções jurídicas adequadas a cada caso.",
+  services: ["Responsabilidade civil", "Direito do consumidor", "Contratos e obrigações", "Indenizações e reparação de danos", "Cobranças e obrigações civis"]
 }, {
   icon: Landmark,
   title: "Direito de Família e Sucessões",
-  desc: "Atuação jurídica individualizada em questões familiares e sucessórias, com orientação técnica em momentos que exigem segurança jurídica e cuidado na condução do processo.",
-  services: ["Inventário judicial e extrajudicial", "Partilha de bens", "Alimentos", "Revisão de alimentos", "Guarda e regularização de guarda", "Questões relacionadas à sucessão e patrimônio"]
+  desc: "Atuação jurídica individualizada em questões familiares e sucessórias, com orientação técnica, acolhimento e cuidado na condução de cada demanda.",
+  services: ["Inventário judicial e extrajudicial", "Partilha de bens", "Ações de alimentos e revisão de pensão", "Guarda e regulamentação de convivência", "Divórcio e dissolução de união estável", "Tutela e Curatela"]
 }];
 const whatsappUrl = "https://wa.me/5511987664030";
 const steps = [{
   num: "01",
-  title: "Envie seu caso",
-  desc: "Preencha o formulário com sua situação e entraremos em contato."
+  title: "Entre em contato",
+  desc: "Você pode iniciar seu atendimento preenchendo o formulário disponível no site ou, se preferir, entrar em contato diretamente pelo WhatsApp. Conte brevemente sua situação para que possamos compreender sua necessidade."
 }, {
   num: "02",
   title: "Analisamos sua situação",
-  desc: "Nossa equipe analisa seu caso com sigilo e atenção especializada."
+  desc: "Nossa equipe analisará as informações e os documentos enviados, com atenção, sigilo e responsabilidade, para compreender as particularidades do seu caso e identificar as possibilidades jurídicas."
 }, {
   num: "03",
   title: "Entramos em contato",
-  desc: "Retornamos com orientações claras e próximos passos personalizados."
+  desc: "Após a análise, entraremos em contato para apresentar as orientações iniciais, esclarecer suas dúvidas e explicar os próximos passos, incluindo as possibilidades de atuação jurídica."
 }];
 const COMO_CONHECEU_OPTIONS = [
   { value: "INSTAGRAM", label: "Instagram" },
@@ -53,6 +57,8 @@ const COMO_CONHECEU_OPTIONS = [
 ];
 
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || "1x00000000000000000000AA";
+const ELFSIGHT_INSTAGRAM_WIDGET_ID = import.meta.env.VITE_ELFSIGHT_INSTAGRAM_WIDGET_ID || "d19f7bbe-5c85-4cfc-a6ad-67cca5802cce";
+const INSTAGRAM_URL = "https://www.instagram.com/thauanybezerra.adv/";
 const IS_SECURE = typeof window !== "undefined" && window.location.protocol === "https:";
 
 const STORAGE_KEY_FORM = "public_site_contact_form";
@@ -113,12 +119,12 @@ export default function PublicSitePage() {
           return () => clearTimeout(t);
         }
       }
-    } catch {}
+    } catch { }
 
     const saveScroll = () => {
       try {
         sessionStorage.setItem(STORAGE_KEY_SCROLL, String(window.scrollY));
-      } catch {}
+      } catch { }
     };
 
     window.addEventListener("scroll", saveScroll, { passive: true });
@@ -150,7 +156,7 @@ export default function PublicSitePage() {
       };
       try {
         sessionStorage.setItem(STORAGE_KEY_FORM, JSON.stringify(formData));
-      } catch {}
+      } catch { }
     }
   }, [clientType, name, companyName, cnpj, contactName, profession, email, phone, processNumber, comoConheceu, description, accepted, submitted]);
 
@@ -319,7 +325,7 @@ export default function PublicSitePage() {
       try {
         sessionStorage.removeItem(STORAGE_KEY_FORM);
         sessionStorage.removeItem(STORAGE_KEY_SCROLL);
-      } catch {}
+      } catch { }
     } catch (err) {
       let mensagemErro = "Não foi possível enviar sua solicitação. Tente novamente mais tarde.";
       if (err.response?.data?.errors && typeof err.response.data.errors === "object") {
@@ -361,451 +367,518 @@ export default function PublicSitePage() {
     try {
       sessionStorage.removeItem(STORAGE_KEY_FORM);
       sessionStorage.removeItem(STORAGE_KEY_SCROLL);
-    } catch {}
+    } catch { }
   };
   return <div className="public-site">
 
-      <header className="site-header">
-        <div className="site-header__inner">
-          <div className="site-header__logo" onClick={() => scrollTo("hero")} style={{ cursor: "pointer" }}>
-            <ImageWithFallback src={siteLogoImage} alt="Thauany Bezerra Advocacia" className="site-logo" />
-          </div>
-
-          {/* ── Desktop Navigation ── */}
-          <nav className="site-header__desktop-nav" aria-label="Navegação do site">
-            {[
-              { id: "hero", label: "Início" },
-              { id: "areas", label: "Áreas de Atuação" },
-              { id: "como-funciona", label: "Como Funciona" },
-              { id: "sobre", label: "Sobre" },
-              { id: "contato", label: "Contato" }
-            ].map(item => (
-              <button
-                key={item.id}
-                onClick={() => scrollTo(item.id)}
-                className="site-header__desktop-link"
-              >
-                {item.label}
-              </button>
-            ))}
-          </nav>
-
-          <div className="site-header__actions">
-            {/* Desktop CTA */}
-            <Button
-              onClick={() => navigate("/login")}
-              className="site-header__colaborador-btn"
-            >
-              Área do Colaborador
-            </Button>
-
-            {/* Mobile menu button */}
-            <button onClick={() => setMenuOpen(true)} className="site-header__menu-btn" aria-label="Abrir menu">
-              <Menu size={22} />
-            </button>
-          </div>
+    <header className="site-header">
+      <div className="site-header__inner">
+        <div className="site-header__logo" onClick={() => scrollTo("hero")} style={{ cursor: "pointer" }}>
+          <ImageWithFallback src={siteLogoImage} alt="Thauany Bezerra Advocacia" className="site-logo" />
         </div>
-      </header>
 
-      {menuOpen && <div className="site-nav-overlay">
-          <div className="site-nav-overlay__backdrop" onClick={() => setMenuOpen(false)} />
-          <div className="site-drawer">
-            <div className="site-drawer__top">
-              <span className="site-drawer__title">Menu</span>
-              <button onClick={() => setMenuOpen(false)} className="site-drawer__close"><X size={20} /></button>
-            </div>
-            <nav className="site-drawer__nav">
-              {["hero", "areas", "como-funciona", "sobre", "contato"].map(id => {
+        {/* ── Desktop Navigation ── */}
+        <nav className="site-header__desktop-nav" aria-label="Navegação do site">
+          {[
+            { id: "hero", label: "Início" },
+            { id: "areas", label: "Áreas de Atuação" },
+            { id: "sobre", label: "Sobre" },
+            { id: "como-funciona", label: "Como Funciona" },
+            { id: "contato", label: "Contato" }
+          ].map(item => (
+            <button
+              key={item.id}
+              onClick={() => scrollTo(item.id)}
+              className="site-header__desktop-link"
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="site-header__actions">
+          {/* Desktop CTA */}
+          <Button
+            onClick={() => navigate("/login")}
+            className="site-header__colaborador-btn"
+          >
+            Área do Colaborador
+          </Button>
+
+          {/* Mobile menu button */}
+          <button onClick={() => setMenuOpen(true)} className="site-header__menu-btn" aria-label="Abrir menu">
+            <Menu size={22} />
+          </button>
+        </div>
+      </div>
+    </header>
+
+    {menuOpen && <div className="site-nav-overlay">
+      <div className="site-nav-overlay__backdrop" onClick={() => setMenuOpen(false)} />
+      <div className="site-drawer">
+        <div className="site-drawer__top">
+          <span className="site-drawer__title">Menu</span>
+          <button onClick={() => setMenuOpen(false)} className="site-drawer__close"><X size={20} /></button>
+        </div>
+        <nav className="site-drawer__nav">
+          {["hero", "areas", "sobre", "como-funciona", "contato"].map(id => {
             const labels = { hero: "Início", areas: "Áreas de Atuação", "como-funciona": "Como Funciona", sobre: "Sobre", contato: "Entrar em Contato" };
             return <button key={id} onClick={() => scrollTo(id)} className="site-drawer__link">
-                    {labels[id]}
-                    <ChevronRight size={14} className="site-drawer__link-icon" />
-                  </button>;
+              {labels[id]}
+              <ChevronRight size={14} className="site-drawer__link-icon" />
+            </button>;
           })}
-              <div className="site-drawer__cta">
-                <Button onClick={() => { navigate("/login"); setMenuOpen(false); }} className="site-drawer__cta-btn">
-                  Área do Colaborador
-                </Button>
-              </div>
-            </nav>
+          <div className="site-drawer__cta">
+            <Button onClick={() => { navigate("/login"); setMenuOpen(false); }} className="site-drawer__cta-btn">
+              Área do Colaborador
+            </Button>
           </div>
-        </div>}
+        </nav>
+      </div>
+    </div>}
 
-      <section id="hero" className="site-hero">
-        <div className="site-hero__bg" />
-        <div className="site-hero__content">
-          <div className="site-hero__badge">
-            <div className="site-hero__badge-dot" />
-            <span className="site-hero__badge-text">Advocacia especializada</span>
-          </div>
-          <h1 className="site-hero__title">Thauany<br /><span className="site-hero__title-accent">Bezerra</span></h1>
-          <p className="site-hero__subtitle">Advocacia</p>
-          <p className="site-hero__desc">Orientação jurídica segura para decisões importantes da sua vida e do seu negócio.</p>
+    <section id="hero" className="site-hero">
+      <div className="site-image-bg"></div>
+      <div className="site-hero__fade">
+        <div className="site-hero__fade-content">
+          <h2 className="site-hero__fade-title">Mais que soluções jurídicas, um atendimento próximo, humano e estratégico.</h2>
+          <p className="site-hero__fade-text">Assessoria jurídica especializada em recuperação de crédito, cobrança judicial e extrajudicial e gestão estratégica de demandas. Atuação pautada pela eficiência, transparência e atendimento próximo e humanizado.</p>
           <div className="site-hero__actions">
             <Button onClick={() => scrollTo("contato")} className="site-hero__cta">Entrar em contato</Button>
             <button onClick={() => scrollTo("como-funciona")} className="site-hero__link">Como funciona?</button>
           </div>
         </div>
-      </section>
+      </div>
 
-      <section id="areas" className="site-section site-section--gray">
-        <div className="site-section__inner">
-          <div className="site-section__head">
-            <p className="site-section__kicker">Especialidades</p>
-            <h2 className="site-section__title">Áreas de Atuação</h2>
+      {/* <div className="site-hero__bg" />
+        <div className="site-hero__content">
+          <div className="site-hero__badge">
+            <div className="site-hero__badge-dot" />
+            <span className="site-hero__badge-text">Atendimento on-line por todo o Brasil</span>
           </div>
-          <div className="site-areas-grid">
-            {areas.map((area, i) => {
+          <h1 className="site-hero__title"><BrandLogo name="Thauany Bezerra" subtitle="Advocacia" /></h1>
+          <p className="site-hero__desc">Orientação jurídica segura para decisões importantes da sua vida e do seu negócio.</p>
+          <div className="site-hero__actions">
+            <Button onClick={() => scrollTo("contato")} className="site-hero__cta">Entrar em contato</Button>
+            <button onClick={() => scrollTo("como-funciona")} className="site-hero__link">Como funciona?</button>
+          </div>
+        </div> */}
+    </section>
+
+    <section id="areas" className="site-section site-section--gray">
+      <div className="site-section__inner">
+        <div className="site-section__head">
+          <p className="site-section__kicker">Especialidades</p>
+          <h2 className="site-section__title">Áreas de Atuação</h2>
+        </div>
+        <div className="site-areas-grid">
+          {areas.map((area, i) => {
             const Icon = area.icon;
             return <div key={i} className="site-area-card">
-                  <div className="site-area-card__icon-wrap"><Icon size={18} className="site-area-card__icon" /></div>
-                   <h3 className="site-area-card__title">{area.title}</h3>
-                   <p className="site-area-card__desc">{area.desc}</p>
-                  <ul className="site-area-card__services">
-                    {area.services.map(service => <li key={service}>{service}</li>)}
-                  </ul>
-                </div>;
+              <div className="site-area-card__icon-wrap"><Icon size={18} className="site-area-card__icon" /></div>
+              <h3 className="site-area-card__title">{area.title}</h3>
+              <p className="site-area-card__desc">{area.desc}</p>
+              <ul className="site-area-card__services">
+                {area.services.map(service => <li key={service}>{service}</li>)}
+              </ul>
+            </div>;
           })}
-          </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section id="como-funciona" className="site-section site-section--white">
-        <div className="site-section__inner">
-          <div className="site-section__head">
-            <p className="site-section__kicker">Processo</p>
-            <h2 className="site-section__title">Como Funciona</h2>
-          </div>
-          <div className="site-steps">
-            {steps.map((step, i) => <div key={i} className="site-step">
-                <div className="site-step__track">
-                  <div className="site-step__circle"><span className="site-step__num">{step.num}</span></div>
-                  {i < steps.length - 1 && <div className="site-step__line" />}
-                </div>
-                <div className="site-step__copy">
-                  <h3 className="site-step__title">{step.title}</h3>
-                  <p className="site-step__desc">{step.desc}</p>
-                </div>
-              </div>)}
-          </div>
+    <section id="sobre" className="site-section site-section--dark site-section--flush-bottom">
+      <div className="site-about__layout">
+        <div className="site-about__photo-wrap">
+          <img className="site-about__photo" src={aboutPhoto} alt="Thauany Bezerra" />
         </div>
-      </section>
-
-      <section id="sobre" className="site-section site-section--dark">
-        <div className="site-section__inner site-section__inner--center">
-          <p className="site-section__kicker">Quem sou eu</p>
-          <h2 className="site-section__title site-section__title--light">Sobre</h2>
-          <div className="site-about__avatar"><Users size={36} className="site-about__avatar-icon" /></div>
-          <p className="site-about__text">Sou advogada, especializada em Direito Contratual pela PUC Campinas, com sólida experiência na área de recuperação de crédito e ativos.</p>
-          <p className="site-about__text site-about__text--muted">Minha atuação é pautada pela busca de soluções jurídicas estratégicas, personalizadas e eficientes, sempre com foco nas necessidades e objetivos de cada cliente.</p>
-          <p className="site-about__text site-about__text--muted">Acredito em uma advocacia baseada em ética, transparência, responsabilidade e sigilo, construída por meio de relações de confiança e de um atendimento próximo e humanizado.</p>
+        <div className="site-about__content">
+          <p className="site-section__kicker">Sobre</p>
+          <h2 className="site-section__title site-section__title--light">Quem sou eu</h2>
+          <p className="site-about__text">Sou advogada atuante na área jurídica desde 2019. Ao longo da minha trajetória, tive a oportunidade de trabalhar em grandes escritórios de advocacia, experiência que contribuiu para a construção de uma visão estratégica, técnica e comprometida com a busca de soluções jurídicas.</p>
+          <p className="site-about__text site-about__text--muted">Sou especializada em Direito Contratual pela PUC Campinas e possuo sólida experiência na área de recuperação de crédito e ativos, atuando na condução de demandas jurídicas e na busca pela satisfação de direitos.
+            Acredito que a advocacia vai muito além dos processos. Cada demanda envolve pessoas, expectativas e objetivos que merecem atenção e responsabilidade.
+          </p>
+          <p className="site-about__text site-about__text--muted">Por isso, meu trabalho é pautado na ética, transparência, estratégia e dedicação, buscando oferecer um atendimento próximo, individualizado e soluções jurídicas alinhadas às necessidades de cada cliente.</p>
+          <ProfessionalTimeline className="site-about__timeline" />
         </div>
-      </section>
+      </div>
 
-      <section className="site-section site-section--white">
-        <div className="site-section__inner">
-          <div className="site-section__head">
-            <p className="site-section__kicker">Compromisso</p>
-            <h2 className="site-section__title">Missão, Visão e Valores</h2>
+      <div className="site-about__instagram">
+        <div className="site-about__instagram-header">
+          <div>
+            <p className="site-section__kicker">Instagram</p>
+            <h3 className="site-about__instagram-title">Acompanhe conteúdos e atualizações</h3>
           </div>
-          <div className="site-principles">
-            <article className="site-principle-card"><HeartHandshake size={22} className="site-principle-card__icon" /><h3>Missão</h3><p>Oferecer soluções jurídicas estratégicas e personalizadas, unindo conhecimento técnico, ética e atendimento próximo para proporcionar segurança e resultados aos meus clientes.</p></article>
-            <article className="site-principle-card"><Building2 size={22} className="site-principle-card__icon" /><h3>Visão</h3><p>Ser referência em uma advocacia estratégica, reconhecida pela excelência técnica, confiança e qualidade na prestação dos serviços jurídicos.</p></article>
-            <article className="site-principle-card"><Shield size={22} className="site-principle-card__icon" /><h3>Valores</h3><p><strong>Ética:</strong> atuar com integridade, responsabilidade e respeito.</p><p><strong>Transparência:</strong> manter uma comunicação clara e objetiva em todas as etapas da atuação.</p><p><strong>Confiança:</strong> construir relações profissionais pautadas pelo respeito e pela credibilidade.</p></article>
-          </div>
+          <a
+            href={INSTAGRAM_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="site-about__instagram-link"
+          >
+            <Instagram size={18} />
+            <span>@thauanybezerra.adv</span>
+          </a>
         </div>
-      </section>
 
-      <section id="contato" className="site-section site-section--gray">
-        <div className="site-section__inner">
-          <div className="site-section__head">
-            <p className="site-section__kicker">Fale conosco</p>
-            <h2 className="site-section__title">Envie seu caso</h2>
-            <p className="site-section__sub">Preencha o formulário e envie seu caso para nossa equipe</p>
-          </div>
-          <div className="site-contact-card">
-            {submitted ? (
-              <div className="site-contact-success">
-                <CheckCircle size={48} className="site-contact-success__icon" />
-                <h3 className="site-contact-success__title">Solicitação Enviada!</h3>
-                <p className="site-contact-success__desc">
-                  Recebemos seu caso com sucesso. Nossa equipe jurídica analisará todas as informações e entrará em contato em breve através do e-mail ou telefone informado.
-                </p>
-                <Button onClick={handleReset} className="site-contact-submit" style={{ marginTop: "1rem" }}>
-                  Enviar outro caso
-                </Button>
-              </div>
-            ) : (
-              <form className="site-contact-form" onSubmit={handleSubmit}>
-                {/* Switcher PF / PJ */}
-                <div className="site-contact-type-wrap">
-                  <span className="site-contact-type-label">Tipo de solicitante:</span>
-                  <div className="site-contact-type-grid">
-                    <button
-                      type="button"
-                      className={`site-contact-type-btn ${
-                        clientType === "PF" ? "site-contact-type-btn--active" : ""
+        <div className="site-about__instagram-widget">
+          {ELFSIGHT_INSTAGRAM_WIDGET_ID ? (
+            <ElfsightWidget widgetId={ELFSIGHT_INSTAGRAM_WIDGET_ID} lazy="in-viewport" />
+          ) : (
+            <div className="site-about__instagram-fallback">
+              <Instagram size={24} className="site-about__instagram-fallback-icon" />
+              <p className="site-about__instagram-fallback-text">
+                Configure <code>VITE_ELFSIGHT_INSTAGRAM_WIDGET_ID</code> para exibir o feed do Instagram aqui.
+              </p>
+              <a
+                href={INSTAGRAM_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="site-about__instagram-fallback-btn"
+              >
+                Visitar perfil no Instagram
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+
+    <section id="como-funciona" className="site-section site-section--white">
+      <div className="site-section__inner">
+        <div className="site-section__head">
+          <p className="site-section__kicker">Processo</p>
+          <h2 className="site-section__title">Como Funciona o atendimento</h2>
+          <p>Um atendimento jurídico pensado para compreender sua necessidade e oferecer a orientação adequada para o seu caso.</p>
+        </div>
+        <div className="site-steps">
+          {steps.map((step, i) => <div key={i} className="site-step">
+            <div className="site-step__track">
+              <div className="site-step__circle"><span className="site-step__num">{step.num}</span></div>
+              {i < steps.length - 1 && <div className="site-step__line" />}
+            </div>
+            <div className="site-step__copy">
+              <h3 className="site-step__title">{step.title}</h3>
+              <p className="site-step__desc">{step.desc}</p>
+            </div>
+          </div>)}
+        </div>
+        <div className="site-online">
+          <h3 className="site-online__title">Atendimento On-line</h3>
+          <p className="site-online__lead">Seu atendimento também pode acontecer por videoconferência!</p>
+          <p className="site-online__text">Caso a situação exija uma conversa mais detalhada, poderá ser agendada uma reunião on-line, em horário previamente combinado, para que você possa explicar melhor seu caso, esclarecer dúvidas e receber orientações.
+            Nosso compromisso é oferecer um atendimento pautado no sigilo, na transparência e na responsabilidade, com atenção às particularidades de cada situação.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section className="site-section site-section--dark">
+      <div className="site-section__inner">
+        <div className="site-section__head">
+          <p className="site-section__kicker">Compromisso</p>
+          <h2 className="site-section__title site-section__title--light">Missão, Visão e Valores</h2>
+        </div>
+        <div className="site-principles">
+          <article className="site-principle-card"><HeartHandshake size={22} className="site-principle-card__icon" /><h3>Missão</h3><p>Oferecer soluções jurídicas estratégicas e personalizadas, unindo conhecimento técnico, ética e atendimento próximo para proporcionar segurança e resultados aos meus clientes.</p></article>
+          <article className="site-principle-card"><Building2 size={22} className="site-principle-card__icon" /><h3>Visão</h3><p>Ser referência em uma advocacia estratégica, reconhecida pela excelência técnica, confiança e qualidade na prestação dos serviços jurídicos.</p></article>
+          <article className="site-principle-card"><Shield size={22} className="site-principle-card__icon" /><h3>Valores</h3><p><strong>Ética:</strong> atuar com integridade, responsabilidade e respeito.</p><p><strong>Transparência:</strong> manter uma comunicação clara e objetiva em todas as etapas da atuação.</p><p><strong>Confiança:</strong> construir relações profissionais pautadas pelo respeito e pela credibilidade.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="contato" className="site-section site-section--gray">
+      <div className="site-section__inner">
+        <div className="site-section__head">
+          <p className="site-section__kicker">Fale conosco</p>
+          <h2 className="site-section__title">Envie seu caso</h2>
+          <p className="site-section__sub">Preencha o formulário e envie seu caso para nossa equipe ou, se preferir, entre em contato diretamente pelo WhatsApp.</p>
+          <a href={whatsappUrl} target="_blank" rel="noreferrer" className="site-contact-whatsapp" aria-label="Conversar pelo WhatsApp: (11) 98766-4030">
+            <WhatsAppIcon className="site-contact-whatsapp__icon" />
+            <span>(11) 98766-4030</span>
+          </a>
+        </div>
+        <div className="site-contact-card">
+          {submitted ? (
+            <div className="site-contact-success">
+              <CheckCircle size={48} className="site-contact-success__icon" />
+              <h3 className="site-contact-success__title">Solicitação Enviada!</h3>
+              <p className="site-contact-success__desc">
+                Recebemos seu caso com sucesso. Nossa equipe jurídica analisará todas as informações e entrará em contato em breve através do e-mail ou telefone informado.
+              </p>
+              <Button onClick={handleReset} className="site-contact-submit" style={{ marginTop: "1rem" }}>
+                Enviar outro caso
+              </Button>
+            </div>
+          ) : (
+            <form className="site-contact-form" onSubmit={handleSubmit}>
+              {/* Switcher PF / PJ */}
+              <div className="site-contact-type-wrap">
+                <span className="site-contact-type-label">Tipo de solicitante:</span>
+                <div className="site-contact-type-grid">
+                  <button
+                    type="button"
+                    className={`site-contact-type-btn ${clientType === "PF" ? "site-contact-type-btn--active" : ""
                       }`}
-                      onClick={() => setClientType("PF")}
-                    >
-                      <div className="site-contact-type-badge">PF</div>
-                      <div className="site-contact-type-copy">
-                        <p className="site-contact-type-title">Pessoa Física</p>
-                        <p className="site-contact-type-desc">Atendimento individual</p>
-                      </div>
-                    </button>
-
-                    <button
-                      type="button"
-                      className={`site-contact-type-btn ${
-                        clientType === "PJ" ? "site-contact-type-btn--active" : ""
-                      }`}
-                      onClick={() => setClientType("PJ")}
-                    >
-                      <div className="site-contact-type-badge">PJ</div>
-                      <div className="site-contact-type-copy">
-                        <p className="site-contact-type-title">Pessoa Jurídica</p>
-                        <p className="site-contact-type-desc">Empresas e negócios</p>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="site-contact-grid">
-                  {clientType === "PF" ? (
-                    <>
-                      <div>
-                        <Label className="site-contact-label">Nome Completo *</Label>
-                        <Input
-                          required
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          className="site-contact-input"
-                          placeholder="Seu nome completo"
-                          maxLength={150}
-                        />
-                      </div>
-
-                      <div>
-                        <Label className="site-contact-label">Profissão / Ocupação *</Label>
-                        <Input
-                          required
-                          value={profession}
-                          onChange={(e) => setProfession(e.target.value)}
-                          className="site-contact-input"
-                          placeholder="Ex: Engenheiro, Professor, Autônomo"
-                          maxLength={100}
-                        />
-                      </div>
-
-                      <div>
-                        <Label className="site-contact-label">E-mail *</Label>
-                        <Input
-                          type="email"
-                          required
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="site-contact-input"
-                          placeholder="seu@email.com"
-                          maxLength={255}
-                        />
-                      </div>
-
-                      <div>
-                        <Label className="site-contact-label">Telefone / WhatsApp *</Label>
-                        <Input
-                          required
-                          value={phone}
-                          onChange={(e) => setPhone(maskPhone(e.target.value))}
-                          className="site-contact-input"
-                          placeholder="(xx) 9xxxx-xxxx"
-                          maxLength={15}
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div>
-                        <Label className="site-contact-label">Razão Social / Nome da Empresa *</Label>
-                        <Input
-                          required
-                          value={companyName}
-                          onChange={(e) => setCompanyName(e.target.value)}
-                          className="site-contact-input"
-                          placeholder="Ex: Construtech Soluções e Engenharia LTDA"
-                          maxLength={150}
-                        />
-                      </div>
-
-                      <div>
-                        <Label className="site-contact-label">CNPJ *</Label>
-                        <Input
-                          required
-                          value={cnpj}
-                          onChange={(e) => setCnpj(maskCNPJ(e.target.value))}
-                          className="site-contact-input site-contact-input--mono"
-                          placeholder="00.000.000/0000-00"
-                          maxLength={18}
-                        />
-                      </div>
-
-                      <div className="site-contact-pj-box">
-                        <div className="site-contact-pj-header">
-                          <div className="site-contact-pj-title-wrap">
-                            <User size={16} style={{ color: "#0f2357" }} />
-                            <h4 className="site-contact-pj-title">Contato Principal da Empresa</h4>
-                          </div>
-                        </div>
-                        <p className="site-contact-pj-notice">
-                          Informe abaixo o responsável que será registrado como o <strong>contato principal</strong> para o acompanhamento deste caso.
-                        </p>
-
-                        <div className="site-contact-pj-grid">
-                          <div>
-                            <Label className="site-contact-label">Nome do Contato Principal *</Label>
-                            <Input
-                              required
-                              value={contactName}
-                              onChange={(e) => setContactName(e.target.value)}
-                              className="site-contact-input"
-                              placeholder="Ex: Carlos Mendes"
-                              maxLength={150}
-                            />
-                          </div>
-
-                          <div>
-                            <Label className="site-contact-label">Cargo *</Label>
-                            <Input
-                              required
-                              value={profession}
-                              onChange={(e) => setProfession(e.target.value)}
-                              className="site-contact-input"
-                              placeholder="Ex: Diretor Executivo, Gerente Jurídico"
-                              maxLength={100}
-                            />
-                          </div>
-
-                          <div>
-                            <Label className="site-contact-label">E-mail do Contato *</Label>
-                            <Input
-                              type="email"
-                              required
-                              value={email}
-                              onChange={(e) => setEmail(e.target.value)}
-                              className="site-contact-input"
-                              placeholder="carlos@empresa.com.br"
-                              maxLength={255}
-                            />
-                          </div>
-
-                          <div>
-                            <Label className="site-contact-label">Telefone / WhatsApp do Contato *</Label>
-                            <Input
-                              required
-                              value={phone}
-                              onChange={(e) => setPhone(maskPhone(e.target.value))}
-                              className="site-contact-input"
-                              placeholder="(xx) 9xxxx-xxxx"
-                              maxLength={15}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  <div>
-                    <Label className="site-contact-label">N° do Processo (CNJ)</Label>
-                    <Input
-                      value={processNumber}
-                      onChange={(e) => setProcessNumber(maskCNJ(e.target.value))}
-                      className="site-contact-input site-contact-input--mono"
-                      placeholder="Opcional"
-                      maxLength={25}
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="comoConheceu" className="site-contact-label">
-                      Como conheceu? *
-                    </Label>
-                    <select
-                      id="comoConheceu"
-                      name="comoConheceu"
-                      required
-                      value={comoConheceu}
-                      onChange={(e) => setComoConheceu(e.target.value)}
-                      className="site-contact-select"
-                    >
-                      <option value="" disabled>
-                        Selecione uma opção
-                      </option>
-                      {COMO_CONHECEU_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="site-contact-grid__full">
-                    <div className="site-contact-label-wrap">
-                      <Label className="site-contact-label" style={{ marginBottom: 0 }}>
-                        {clientType === "PF" ? "Descreva sua Situação *" : "Descreva a Necessidade da Empresa *"}
-                      </Label>
-                      <span className="site-contact-char-count">
-                        {description.length}/2000 caracteres
-                      </span>
+                    onClick={() => setClientType("PF")}
+                  >
+                    <div className="site-contact-type-badge">PF</div>
+                    <div className="site-contact-type-copy">
+                      <p className="site-contact-type-title">Pessoa Física</p>
+                      <p className="site-contact-type-desc">Atendimento individual</p>
                     </div>
-                    <Textarea
-                      required
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      className="site-contact-textarea"
-                      maxLength={2000}
-                      placeholder={
-                        clientType === "PF"
-                          ? "Descreva brevemente o seu caso..."
-                          : "Descreva a situação jurídica, contrato ou litígio envolvendo a empresa..."
-                      }
-                    />
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`site-contact-type-btn ${clientType === "PJ" ? "site-contact-type-btn--active" : ""
+                      }`}
+                    onClick={() => setClientType("PJ")}
+                  >
+                    <div className="site-contact-type-badge">PJ</div>
+                    <div className="site-contact-type-copy">
+                      <p className="site-contact-type-title">Pessoa Jurídica</p>
+                      <p className="site-contact-type-desc">Empresas e negócios</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <div className="site-contact-grid">
+                {clientType === "PF" ? (
+                  <>
+                    <div>
+                      <Label className="site-contact-label">Nome Completo *</Label>
+                      <Input
+                        required
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="site-contact-input"
+                        placeholder="Seu nome completo"
+                        maxLength={150}
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="site-contact-label">Profissão / Ocupação *</Label>
+                      <Input
+                        required
+                        value={profession}
+                        onChange={(e) => setProfession(e.target.value)}
+                        className="site-contact-input"
+                        placeholder="Ex: Engenheiro, Professor, Autônomo"
+                        maxLength={100}
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="site-contact-label">E-mail *</Label>
+                      <Input
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="site-contact-input"
+                        placeholder="seu@email.com"
+                        maxLength={255}
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="site-contact-label">Telefone / WhatsApp *</Label>
+                      <Input
+                        required
+                        value={phone}
+                        onChange={(e) => setPhone(maskPhone(e.target.value))}
+                        className="site-contact-input"
+                        placeholder="(xx) 9xxxx-xxxx"
+                        maxLength={15}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <Label className="site-contact-label">Razão Social / Nome da Empresa *</Label>
+                      <Input
+                        required
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        className="site-contact-input"
+                        placeholder="Ex: Construtech Soluções e Engenharia LTDA"
+                        maxLength={150}
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="site-contact-label">CNPJ *</Label>
+                      <Input
+                        required
+                        value={cnpj}
+                        onChange={(e) => setCnpj(maskCNPJ(e.target.value))}
+                        className="site-contact-input site-contact-input--mono"
+                        placeholder="00.000.000/0000-00"
+                        maxLength={18}
+                      />
+                    </div>
+
+                    <div className="site-contact-pj-box">
+                      <div className="site-contact-pj-header">
+                        <div className="site-contact-pj-title-wrap">
+                          <User size={16} style={{ color: "#0f2357" }} />
+                          <h4 className="site-contact-pj-title">Contato Principal da Empresa</h4>
+                        </div>
+                      </div>
+                      <p className="site-contact-pj-notice">
+                        Informe abaixo o responsável que será registrado como o <strong>contato principal</strong> para o acompanhamento deste caso.
+                      </p>
+
+                      <div className="site-contact-pj-grid">
+                        <div>
+                          <Label className="site-contact-label">Nome do Contato Principal *</Label>
+                          <Input
+                            required
+                            value={contactName}
+                            onChange={(e) => setContactName(e.target.value)}
+                            className="site-contact-input"
+                            placeholder="Ex: Carlos Mendes"
+                            maxLength={150}
+                          />
+                        </div>
+
+                        <div>
+                          <Label className="site-contact-label">Cargo *</Label>
+                          <Input
+                            required
+                            value={profession}
+                            onChange={(e) => setProfession(e.target.value)}
+                            className="site-contact-input"
+                            placeholder="Ex: Diretor Executivo, Gerente Jurídico"
+                            maxLength={100}
+                          />
+                        </div>
+
+                        <div>
+                          <Label className="site-contact-label">E-mail do Contato *</Label>
+                          <Input
+                            type="email"
+                            required
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="site-contact-input"
+                            placeholder="carlos@empresa.com.br"
+                            maxLength={255}
+                          />
+                        </div>
+
+                        <div>
+                          <Label className="site-contact-label">Telefone / WhatsApp do Contato *</Label>
+                          <Input
+                            required
+                            value={phone}
+                            onChange={(e) => setPhone(maskPhone(e.target.value))}
+                            className="site-contact-input"
+                            placeholder="(xx) 9xxxx-xxxx"
+                            maxLength={15}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <div>
+                  <Label className="site-contact-label">N° do Processo (CNJ)</Label>
+                  <Input
+                    value={processNumber}
+                    onChange={(e) => setProcessNumber(maskCNJ(e.target.value))}
+                    className="site-contact-input site-contact-input--mono"
+                    placeholder="Opcional"
+                    maxLength={25}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="comoConheceu" className="site-contact-label">
+                    Como conheceu? *
+                  </Label>
+                  <select
+                    id="comoConheceu"
+                    name="comoConheceu"
+                    required
+                    value={comoConheceu}
+                    onChange={(e) => setComoConheceu(e.target.value)}
+                    className="site-contact-select"
+                  >
+                    <option value="" disabled>
+                      Selecione uma opção
+                    </option>
+                    {COMO_CONHECEU_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="site-contact-grid__full">
+                  <div className="site-contact-label-wrap">
+                    <Label className="site-contact-label" style={{ marginBottom: 0 }}>
+                      {clientType === "PF" ? "Descreva sua Situação *" : "Descreva a Necessidade da Empresa *"}
+                    </Label>
+                    <span className="site-contact-char-count">
+                      {description.length}/2000 caracteres
+                    </span>
                   </div>
-                </div>
-
-                <div className="site-contact-privacy">
-                  <Checkbox
-                    id="privacy"
-                    checked={accepted}
-                    onCheckedChange={(v) => setAccepted(!!v)}
-                    className="site-contact-checkbox"
-                  />
-                  <label htmlFor="privacy" className="site-contact-privacy__label">
-                    Li e aceito as{" "}
-                    <Link to="/politica-de-privacidade" className="site-contact-privacy__link">
-                      Políticas de privacidade
-                    </Link>{" "}
-                    e{" "}
-                    <Link to="/termos-de-uso" className="site-contact-privacy__link">
-                      Termos de uso
-                    </Link>
-                  </label>
-                </div>
-
-                {/* Honeypot field (proteção silenciosa contra bots) */}
-                <div style={{ display: "none" }} aria-hidden="true">
-                  <input
-                    type="text"
-                    name="website_url_hp"
-                    tabIndex={-1}
-                    autoComplete="off"
-                    value={honeypot}
-                    onChange={(e) => setHoneypot(e.target.value)}
+                  <Textarea
+                    required
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="site-contact-textarea"
+                    maxLength={2000}
+                    placeholder={
+                      clientType === "PF"
+                        ? "Descreva brevemente o seu caso..."
+                        : "Descreva a situação jurídica, contrato ou litígio envolvendo a empresa..."
+                    }
                   />
                 </div>
+              </div>
 
-                {/* Ações: Desafio Cloudflare Turnstile + Botão Enviar caso */}
-                <div className="site-contact-actions">
-                  {IS_SECURE && (
+              <div className="site-contact-privacy">
+                <Checkbox
+                  id="privacy"
+                  checked={accepted}
+                  onCheckedChange={(v) => setAccepted(!!v)}
+                  className="site-contact-checkbox"
+                />
+                <label htmlFor="privacy" className="site-contact-privacy__label">
+                  Li e aceito as{" "}
+                  <Link to="/politica-de-privacidade" className="site-contact-privacy__link">
+                    Políticas de privacidade
+                  </Link>{" "}
+                  e{" "}
+                  <Link to="/termos-de-uso" className="site-contact-privacy__link">
+                    Termos de uso
+                  </Link>
+                </label>
+              </div>
+
+              {/* Honeypot field (proteção silenciosa contra bots) */}
+              <div style={{ display: "none" }} aria-hidden="true">
+                <input
+                  type="text"
+                  name="website_url_hp"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                />
+              </div>
+
+              {/* Ações: Desafio Cloudflare Turnstile + Botão Enviar caso */}
+              <div className="site-contact-actions">
+                {IS_SECURE && (
                   <div className="site-contact-turnstile">
                     <Turnstile
                       ref={turnstileRef}
@@ -820,63 +893,63 @@ export default function PublicSitePage() {
                       }}
                     />
                   </div>
+                )}
+
+                <Button
+                  type="submit"
+                  disabled={!accepted || (IS_SECURE && !turnstileToken) || isSubmitting}
+                  className="site-contact-submit"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Enviando...
+                    </>
+                  ) : (
+                    <>
+                      <Send size={16} />
+                      Enviar caso
+                    </>
                   )}
-
-                  <Button
-                    type="submit"
-                    disabled={!accepted || (IS_SECURE && !turnstileToken) || isSubmitting}
-                    className="site-contact-submit"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin" />
-                        Enviando...
-                      </>
-                    ) : (
-                      <>
-                        <Send size={16} />
-                        Enviar caso
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </form>
-            )}
-          </div>
+                </Button>
+              </div>
+            </form>
+          )}
         </div>
-      </section>
+      </div>
+    </section>
 
-      <footer className="site-footer">
-        <div className="site-footer__inner">
-          <div className="site-footer__logo">
-            <ImageWithFallback
-              src={siteLogoImage}
-              alt="Thauany Bezerra Advocacia"
-              className="site-footer__logo-img"
-            />
-          </div>
-          <div className="site-footer__contacts">
-            <a href={whatsappUrl} target="_blank" rel="noreferrer" className="site-footer__contact"><Phone size={16} className="site-footer__contact-icon" /><span className="site-footer__contact-text">(11) 98766-4030</span></a>
-            <a href="mailto:tthauany.bezerra@gmail.com" className="site-footer__contact"><Mail size={16} className="site-footer__contact-icon" /><span className="site-footer__contact-text">tthauany.bezerra@gmail.com</span></a>
-          </div>
-          <div className="site-footer__social">
-            <a href="https://www.instagram.com/thauanybezerra.adv/" target="_blank" rel="noreferrer" aria-label="Instagram" className="site-footer__social-link"><Instagram size={18} className="site-footer__social-icon" /></a>
-            <a href={whatsappUrl} target="_blank" rel="noreferrer" aria-label="WhatsApp" className="site-footer__social-link"><WhatsAppIcon className="site-footer__social-icon" /></a>
-            <a href="https://www.linkedin.com/in/thauany-santos-8521911a1/" target="_blank" rel="noreferrer" aria-label="LinkedIn" className="site-footer__social-link"><Linkedin size={18} className="site-footer__social-icon" /></a>
-          </div>
-          <div className="site-footer__legal">
-            <div className="site-footer__legal-links">
-              <Link to="/politica-de-privacidade" className="site-footer__legal-link">Políticas de privacidade</Link>
-              <Link to="/termos-de-uso" className="site-footer__legal-link">Termos de uso</Link>
-            </div>
-            <p className="site-footer__copy">© 2026 Thauany Bezerra Advocacia. Todos os direitos reservados.</p>
-          </div>
+    <footer className="site-footer">
+      <div className="site-footer__inner">
+        <div className="site-footer__logo">
+          <ImageWithFallback
+            src={siteLogoImage}
+            alt="Thauany Bezerra Advocacia"
+            className="site-footer__logo-img"
+          />
         </div>
-      </footer>
+        <div className="site-footer__contacts">
+          <a href={whatsappUrl} target="_blank" rel="noreferrer" className="site-footer__contact"><Phone size={16} className="site-footer__contact-icon" /><span className="site-footer__contact-text">(11) 98766-4030</span></a>
+          <a href="mailto:tthauany.bezerra@gmail.com" className="site-footer__contact"><Mail size={16} className="site-footer__contact-icon" /><span className="site-footer__contact-text">tthauany.bezerra@gmail.com</span></a>
+        </div>
+        <div className="site-footer__social">
+          <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" aria-label="Instagram" className="site-footer__social-link"><Instagram size={18} className="site-footer__social-icon" /></a>
+          <a href={whatsappUrl} target="_blank" rel="noreferrer" aria-label="WhatsApp" className="site-footer__social-link"><WhatsAppIcon className="site-footer__social-icon" /></a>
+          <a href="https://www.linkedin.com/in/thauany-santos-8521911a1/" target="_blank" rel="noreferrer" aria-label="LinkedIn" className="site-footer__social-link"><Linkedin size={18} className="site-footer__social-icon" /></a>
+        </div>
+        <div className="site-footer__legal">
+          <div className="site-footer__legal-links">
+            <Link to="/politica-de-privacidade" className="site-footer__legal-link">Políticas de privacidade</Link>
+            <Link to="/termos-de-uso" className="site-footer__legal-link">Termos de uso</Link>
+          </div>
+          <p className="site-footer__copy">© 2026 Thauany Bezerra Advocacia. Todos os direitos reservados.</p>
+        </div>
+      </div>
+    </footer>
 
-      <a href={whatsappUrl} target="_blank" rel="noreferrer" className="site-whatsapp-float" aria-label="Conversar pelo WhatsApp" title="Conversar pelo WhatsApp">
-        <WhatsAppIcon />
-      </a>
+    <a href={whatsappUrl} target="_blank" rel="noreferrer" className="site-whatsapp-float" aria-label="Conversar pelo WhatsApp" title="Conversar pelo WhatsApp">
+      <WhatsAppIcon />
+    </a>
 
-    </div>;
+  </div>;
 }

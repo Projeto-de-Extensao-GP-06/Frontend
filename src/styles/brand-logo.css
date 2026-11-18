@@ -1,0 +1,71 @@
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Montserrat:wght@400;500;600&display=swap");
+
+.brand-logo {
+  --logo-navy: #020c35;
+  --logo-gold: #ebaf32;
+  --logo-size: clamp(5.5rem, 22vw, 11rem); /* altura do monograma */
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--logo-size) * 0.12);
+  max-width: 100%;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.brand-logo__monogram {
+  flex: none;
+  width: var(--logo-size);
+  height: var(--logo-size);
+  overflow: visible;
+}
+
+.brand-logo__t,
+.brand-logo__b {
+  font-family: "Cormorant Garamond", "Playfair Display", serif;
+  font-weight: 600;
+}
+
+.brand-logo__divider {
+  display: none; /* divisor vertical não se aplica ao layout empilhado */
+}
+
+.brand-logo__text {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--logo-size) * 0.14);
+  align-items: stretch;
+  min-width: 0;
+}
+
+.brand-logo__name {
+  color: #fff;
+  font-family: "Cormorant Garamond", "Playfair Display", serif;
+  font-size: calc(var(--logo-size) * 0.37);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.brand-logo__subtitle {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--logo-size) * 0.08);
+}
+
+.brand-logo__rule {
+  flex: 1;
+  height: 2px;
+  background: var(--logo-gold);
+}
+
+.brand-logo__subtitle-text {
+  color: var(--logo-gold);
+  font-family: "Montserrat", sans-serif;
+  font-size: calc(var(--logo-size) * 0.13);
+  font-weight: 500;
+  letter-spacing: 0.4em;
+  margin-right: -0.4em;
+  line-height: 1;
+}
