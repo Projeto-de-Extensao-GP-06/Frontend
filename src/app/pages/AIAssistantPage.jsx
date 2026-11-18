@@ -19,6 +19,7 @@ import { SelectDashboardModal, formatDateBr } from "../components/SelectDashboar
 import { IcsAttachmentCard } from "../components/IcsAttachmentCard";
 import { ChatChartCard } from "../components/ChatChartCard";
 import {
+  AGENT_CHAT_SESSION_STORAGE_KEY,
   enviarMensagemAoAgente,
   limparSessaoAgente,
   removerIdsProcesso,
@@ -30,10 +31,11 @@ import {
 } from "../services/dashboardService";
 import { toast } from "sonner";
 import { useNavigate } from "react-router";
+import { useAuth } from "../contexts/AuthContext";
 import "../../styles/ai-assistant-page.css";
 import "../../styles/select-process-modal.css";
 
-const SESSION_STORAGE_KEY = "sgpj_maria_chat_session";
+const SESSION_STORAGE_KEY = AGENT_CHAT_SESSION_STORAGE_KEY;
 const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutos de inatividade
 
 const now = () =>
@@ -58,12 +60,19 @@ const INITIAL_MESSAGE = {
   time: now(),
 };
 
-function readStoredSession() {
+function readStoredSession(currentUserId) {
   try {
+    if (!currentUserId) return null;
     const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
     const nowTs = Date.now();
+
+    // Garante que uma sessão salva por outro usuário nunca seja carregada
+    if (!data.userId || data.userId !== currentUserId) {
+      sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      return null;
+    }
 
     // Se excedeu o tempo máximo de inatividade, descarta a sessão
     if (data.lastActivity && nowTs - data.lastActivity > INACTIVITY_TIMEOUT_MS) {
@@ -80,10 +89,12 @@ function readStoredSession() {
   }
 }
 
-function persistSession(sessionObj) {
+function persistSession(sessionObj, currentUserId) {
   try {
+    if (!currentUserId) return;
     const payload = {
       ...sessionObj,
+      userId: currentUserId,
       lastActivity: Date.now(),
     };
     sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(payload));
@@ -102,13 +113,15 @@ function removeStoredSession() {
 
 export default function AIAssistantPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const currentUserId = user?.id ?? user?.email ?? null;
 
   useEffect(() => {
     document.title = "SGPJ | MarIA";
   }, []);
 
-  // Recupera dados salvos da sessão caso ainda estejam válidos
-  const [initialData] = useState(() => readStoredSession());
+  // Recupera dados salvos da sessão caso ainda estejam válidos e pertençam ao usuário atual
+  const [initialData] = useState(() => readStoredSession(currentUserId));
   const hasSavedChat = Boolean(
     initialData?.messages && initialData.messages.some((m) => m.role === "user")
   );
@@ -204,15 +217,18 @@ export default function AIAssistantPage() {
 
   // Persiste a sessão no sessionStorage sempre que messages, sessionId, selectedProcess ou selectedDashboard mudarem
   useEffect(() => {
-    if (sessionId || messages.length > 1 || selectedProcess || selectedDashboard) {
-      persistSession({
-        sessionId,
-        messages,
-        selectedProcess,
-        selectedDashboard,
-      });
+    if (currentUserId && (sessionId || messages.length > 1 || selectedProcess || selectedDashboard)) {
+      persistSession(
+        {
+          sessionId,
+          messages,
+          selectedProcess,
+          selectedDashboard,
+        },
+        currentUserId
+      );
     }
-  }, [messages, sessionId, selectedProcess, selectedDashboard]);
+  }, [currentUserId, messages, sessionId, selectedProcess, selectedDashboard]);
 
   // Monitora a inatividade: reseta se o tempo limite for atingido
   const handleInactivityExpiry = useCallback(() => {
@@ -230,7 +246,7 @@ export default function AIAssistantPage() {
 
   useEffect(() => {
     const checkExpiry = () => {
-      const stored = readStoredSession();
+      const stored = readStoredSession(currentUserId);
       // Se havia sessão ativa no estado mas o storage expirou
       if (!stored && (sessionId || messages.length > 1 || selectedProcess || selectedDashboard)) {
         handleInactivityExpiry();
@@ -255,7 +271,7 @@ export default function AIAssistantPage() {
       window.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("focus", checkExpiry);
     };
-  }, [sessionId, messages.length, selectedProcess, selectedDashboard, handleInactivityExpiry]);
+  }, [currentUserId, sessionId, messages.length, selectedProcess, selectedDashboard, handleInactivityExpiry]);
 
   // "+ Nova conversa"
   const handleNewChat = async () => {

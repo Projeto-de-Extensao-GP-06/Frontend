@@ -14,6 +14,8 @@ const SYSTEM_CARGO_IDS = new Set(["1", "2"]);
 const SYSTEM_CARGOS = new Set(["ADMIN", "SEM CARGO"]);
 const MODULE_ORDER = ["PROCESSO", "SOLICITAÇÃO", "CLIENTE", "CARGO", "USUÁRIO", "DOCUMENTO"];
 const ACTION_ORDER = ["CRIAR", "EDITAR", "EXCLUIR", "ACEITAR", "NEGAR"];
+// Módulos em que "Excluir" é exibido como "Desativar" (apenas rótulo; o nome da permissão no backend não muda)
+const DEACTIVATE_MODULES = new Set(["USUÁRIO", "USUÁRIOS", "USUARIO", "USUARIOS"]);
 
 const stripAccents = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 const titleCase = (value) => {
@@ -400,9 +402,11 @@ export default function RolesPage() {
                 <div className="perms-grid">
                   {module.permissions.map(perm => {
                     const isChecked = !!checkedPerms[perm.id];
-                    const label = titleCase(getPermissionAction(perm.nome));
+                    const action = getPermissionAction(perm.nome);
+                    const isDeactivate = action === "EXCLUIR" && DEACTIVATE_MODULES.has(getPermissionModule(perm.nome));
+                    const label = isDeactivate ? "Desativar" : titleCase(action);
                     const isSystemRole = isSystemCargo(selectedRoleData);
-                    return <button key={perm.id} onClick={() => togglePerm(perm.id)} disabled={!canEditRole || saving || !selectedRoleData || isSystemRole} title={isSystemRole ? "Cargo do sistema não pode ser editado" : canEditRole ? perm.nome : "Sem permissão para editar cargo"} className={`perm-btn ${isChecked ? "perm-btn--on" : "perm-btn--off"}`}>
+                    return <button key={perm.id} onClick={() => togglePerm(perm.id)} disabled={!canEditRole || saving || !selectedRoleData || isSystemRole} title={isSystemRole ? "Cargo do sistema não pode ser editado" : canEditRole ? (isDeactivate ? perm.nome.replace(/EXCLUIR/i, "DESATIVAR") : perm.nome) : "Sem permissão para editar cargo"} className={`perm-btn ${isChecked ? "perm-btn--on" : "perm-btn--off"}`}>
                       <div className={`perm-btn__box ${isChecked ? "perm-btn__box--checked" : ""}`}>
                         {isChecked && <Check size={10} className="perm-btn__check" strokeWidth={3} />}
                       </div>

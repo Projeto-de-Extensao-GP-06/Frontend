@@ -125,6 +125,37 @@ export async function enviarMensagemAoAgente({
   };
 }
 
+export const AGENT_CHAT_SESSION_STORAGE_KEY = "sgpj_maria_chat_session";
+
+/**
+ * Remove imediatamente a sessão de chat do agente do sessionStorage local.
+ */
+export function removerSessaoAgenteLocal() {
+  try {
+    sessionStorage.removeItem(AGENT_CHAT_SESSION_STORAGE_KEY);
+  } catch {
+    // ignora falha ao acessar o sessionStorage
+  }
+}
+
+/**
+ * Exclui a sessão de chat do agente guardada no navegador (backend + sessionStorage).
+ * Deve ser chamada ANTES de revogar o token do agente, pois a exclusão exige autenticação.
+ */
+export async function limparSessaoAgenteArmazenada() {
+  try {
+    const raw = sessionStorage.getItem(AGENT_CHAT_SESSION_STORAGE_KEY);
+    const sessionId = raw ? JSON.parse(raw)?.sessionId : null;
+    if (sessionId) {
+      await limparSessaoAgente(sessionId);
+    }
+  } catch (err) {
+    console.warn("Não foi possível excluir a sessão do agente:", err);
+  } finally {
+    removerSessaoAgenteLocal();
+  }
+}
+
 export async function limparSessaoAgente(sessionId) {
   if (!sessionId) return { success: true };
 

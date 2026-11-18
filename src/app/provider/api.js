@@ -42,6 +42,11 @@ const isPublicRoute = () => {
 
 const handleSessionExpired = () => {
     localStorage.removeItem("@sgpj:user");
+    try {
+        sessionStorage.removeItem("sgpj_maria_chat_session");
+    } catch {
+        // ignora falha ao acessar o sessionStorage
+    }
     if (!isPublicRoute()) {
         window.location.replace("/login");
     }
